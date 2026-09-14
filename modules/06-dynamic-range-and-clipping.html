@@ -144,9 +144,10 @@
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
     <button role="tab" data-tab="p1" aria-selected="false">1 · Where the ends go</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · A few bad samples</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Stretching the middle</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Bad samples</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Stretching</button>
     <button role="tab" data-tab="p4" aria-selected="false">4 · Gain on a section</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -158,7 +159,7 @@
     <div class="plot-head" style="margin-bottom:14px">
       <h3><span class="stepno">1</span>Where the ends of the color bar go</h3>
     </div>
-    <p class="lede">The histogram in the panel is the attribute's distribution across the survey, and the
+    <p class="lede">The <span class="term" data-term="histogram">histogram</span> in the panel is the attribute's distribution across the survey, and the
       two red lines are the ends of the color bar. Everything between them is spread across the colormap.
       Everything outside is <span class="term" data-term="clipping">clipped</span>: rendered in the end
       color and no longer distinguishable from anything else out there.</p>
@@ -241,7 +242,7 @@
     <p class="lede">Clipping moves the ends. A stretch changes what happens between them: which parts of
       the range get many colors and which get few, without discarding anything.</p>
 
-    <p><b>Gamma</b> raises the normalized value to a power before the colormap is looked up. Above one, the
+    <p><b><span class="term" data-term="gamma">Gamma</span></b> raises the normalized value to a power before the colormap is looked up. Above one, the
       colors are spread over the high end of the range and the low end is compressed. Below one, the
       reverse. The histogram in the panel does not change, because the data has not changed; what changes
       is how many color levels each part of it receives.</p>
@@ -275,18 +276,18 @@
       <h3><span class="stepno">4</span>Gain on a section</h3>
     </div>
     <p class="lede">On a vertical section the same choice appears under a different name. Amplitude is
-      displayed at a clip level set as a multiple of the root mean square amplitude in the window, and
+      displayed at a clip level set as a multiple of the root mean square <span class="term" data-term="amplitude">amplitude</span> in the window, and
       turning that number down is what interpreters mean by turning the gain up.</p>
 
     <p>The section in the panel is line 2000 across the channel. The clip level control sets the ends of
       the color bar at plus and minus that many times the section's own root mean square. The readout
       gives the percentage of samples being clipped.</p>
 
-    <p>At six times the root mean square almost nothing clips and the section looks flat and grey, because
+    <p>At six times the root mean square almost nothing clips and the section looks flat and gray, because
       the strong channel reflection is holding the range open and the weaker events are compressed into a
       few colors near the middle. At one times the root mean square the section looks crisp and structural,
       the continuity of every reflector is easy to follow, and roughly a third of the samples have been
-      flattened. Below that the display becomes close to a two-colour rendering of the sign of the trace.</p>
+      flattened. Below that the display becomes close to a two-color rendering of the sign of the trace.</p>
 
     <p>Which is right depends entirely on the question.</p>
 
@@ -329,8 +330,7 @@
 
     <p>The practical answer is small: set the range from percentiles rather than extremes, keep it
       symmetric when the attribute has a meaningful zero, and write the two numbers in the figure caption
-      along with the colormap name. That is enough for someone else to reproduce the display, which is the
-      point.</p>
+      along with the colormap name. Someone else can then rebuild the display and check it.</p>
   </section>
 
   <!-- ============================== EXERCISES ============================= -->
@@ -375,7 +375,7 @@
           top of the channel sand where the bed is thickest.
           <details class="reveal"><summary>Hint</summary><span class="ans">At 6 the reflection strength
             varies visibly along the channel as the bed thickens and thins through tuning. At 1 that
-            variation has gone, because every strong sample is rendered in the same end colour. The section
+            variation has gone, because every strong sample is rendered in the same end color. The section
             at 1 is the better display for following reflectors and the worse one for saying anything at
             all about amplitude.</span></details></li>
 
@@ -385,6 +385,9 @@
             did when the range was changed in module 03. The test works on any change to the mapping
             between data and color: what stays put belongs to the data and what moves belongs to the
             display.</span></details></li>
+      
+        <li><b>A colleague's figure shows an amplitude anomaly covering a third of the survey. Which two settings would you ask for before believing it?</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">The range limits, and whether they came from percentiles or from the data's own extremes. An anomaly covering a third of a survey is often a range set so tightly that the bulk of the data saturates at one end, which turns ordinary background into an apparent feature. The stretch is the second thing to ask about, for the same reason. Neither is recoverable from the picture.</span></details></li>
       </ol>
     </div>
   </section>
@@ -442,7 +445,7 @@
       <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
         B1&ndash;B23, doi:
         <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
-      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+      <li>Kovesi, P., 2015, Good color maps: how to design them: arXiv preprint, doi:
         <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
       <li>Radovich, B. J., and R. B. Oliveros, 1998, 3-D sequence interpretation of seismic instantaneous
         attributes from the Gorgon Field: The Leading Edge, 17, 1286&ndash;1293, doi:
@@ -484,7 +487,7 @@
 <script>
 const GUIDE = {
   p1: { items: [
-      { do: "With envelope on Everything, read how many colours reach the middle half of the data. Then press 2\u201398%.", see: "15 levels becomes 21, for four per cent of the survey clipped." },
+      { do: "With envelope on Everything, read how many colors reach the middle half of the data. Then press 2\u201398%.", see: "15 levels becomes 21, for four per cent of the survey clipped." },
       { do: "Repeat the whole thing with mean curvature.", see: "6 becomes 21, and 50 at 5\u201395%, because the fault traces were holding the range open." }
   ]},
   p2: { items: [
@@ -589,7 +592,7 @@ const GUIDE = {
   /* ---- the stretch ------------------------------------------------------- */
 
   /* Applied by warping a copy of the colormap rather than the data: level i of
-     the warped table holds the colour the original had at f(i). */
+     the warped table holds the color the original had at f(i). */
   function stretchedKey() {
     if (S.stretch === 'linear') return S.cmap;
     const a = Colormaps.lut(S.cmap), n = a.length / 3, out = [];
@@ -629,7 +632,7 @@ const GUIDE = {
       xMin: d.min, xMax: d.max, bins: 110, height: 176,
       xLabel: Synthetic.LABEL[S.attr], yLabel: 'Share of the survey',
       yFmt: (v) => v.toFixed(1),
-      title: 'Distribution, with the ends of the colour bar marked'
+      title: 'Distribution, with the ends of the color bar marked'
     });
     if (!res) return;
     const ctx = res.ctx, rect = res.rect;
@@ -647,7 +650,7 @@ const GUIDE = {
     if (rg[1] < d.max) ctx.fillRect(res.X(rg[1]), rect.y, rect.x + rect.w - res.X(rg[1]), rect.h);
     ctx.restore();
     $('capHist').textContent = 'Shaded areas are clipped: every sample there is rendered in the end ' +
-      'colour and cannot be told apart from any other.';
+      'color and cannot be told apart from any other.';
   }
 
   function drawSection() {

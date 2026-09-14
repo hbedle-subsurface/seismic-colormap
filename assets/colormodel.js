@@ -44,9 +44,9 @@ const Synthetic = (function () {
   const LABEL = {
     amplitude: "Amplitude", envelope: "Envelope", phase: "Instantaneous phase (\u00b0)",
     frequency: "Instantaneous frequency (Hz)", sweetness: "Sweetness",
-    coherence: "Coherence (energy-ratio style)",
-    curvature: "Most-positive curvature (deeper marker)",
-    meanCurvature: "Mean curvature (deeper marker)",
+    coherence: "Coherence (semblance)",
+    curvature: "Most-positive curvature (ms per bin\u00b2)",
+    meanCurvature: "Mean curvature (ms per bin\u00b2)",
     thickness: "Channel sand thickness (m)", twoWayTime: "Two-way time to marker (ms)"
   };
 

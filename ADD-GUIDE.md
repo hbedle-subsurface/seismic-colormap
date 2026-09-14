@@ -88,6 +88,21 @@ PANELVIEW.init({
   corendered and blended modules draw a section without having a single
   colormap to look it up in.
 
+## assets/glossary.js — the attribute entries
+
+Each seismic attribute has an entry covering what it measures, what controls
+the result, and what can make it misleading, plus the colormap class it needs.
+Entries with a `more` field show a link out to the module set that treats that
+attribute properly. **The URLs are in the `SITES` object at the top of the file
+and are the only place in this repository that hard-codes another site's
+address — check them before publishing.**
+
+`panelview.js` adds a **What is this?** button beside the Map / Section switch.
+It opens the entry for whichever attribute is currently displayed, so the
+explanation is reachable from every module without a marked word having to be
+in the prose. `GLOSS.forAttribute()` maps model attribute names to glossary
+keys; a new attribute needs a line there.
+
 ## Checking
 
 ```

@@ -8,7 +8,7 @@
    from a handful of anchor colors, because the whole subject of this module
    set is what happens between the anchors.
 
-     Crameri, F., 2018, Scientific colour maps, doi:10.5281/zenodo.1243862
+     Crameri, F., 2018, Scientific color maps, doi:10.5281/zenodo.1243862
        — oslo, viridis's companions batlow and lajolla, roma, vik, romaO
      Thyng, K. M. et al., 2016, True colors of oceanography, Oceanography 29(3)
        — balance
@@ -30,7 +30,7 @@
      lmono        1.0 if lightness runs one way from end to end, 0.0 if it
                   returns to where it started. Sequential maps should be 1.0.
      gmin, gmax   the smallest and largest local color difference along the
-                  map, normalised so a perfectly uniform map is 1.0 throughout
+                  map, normalized so a perfectly uniform map is 1.0 throughout
      cvdmin       the same measure under the worst of protan, deutan and
                   tritan simulation. Values near zero mark a stretch of the
                   map that becomes one flat color.
@@ -84,7 +84,7 @@ const CMAP_META = {
     note: "Smith and van der Walt (2015). Dark purple through green to yellow, monotonic in lightness across the whole range." },
   batlow: { name: "Batlow", cls: "sequential", era: "scientific", uniform: true, cvdSafe: true,
     lmin: 12.1, lmax: 87.2, lmono: 1.0, gmin: 0.76, gmax: 1.47, cvdmin: 0.33,
-    note: "Crameri (2018). The default sequential map of the scientific colour maps." },
+    note: "Crameri (2018). The default sequential map of the scientific color maps." },
   lajolla: { name: "Lajolla", cls: "sequential", era: "scientific", uniform: true, cvdSafe: true,
     lmin: 8.1, lmax: 98.6, lmono: 1.0, gmin: 0.56, gmax: 1.6, cvdmin: 0.32,
     note: "Crameri (2018). Dark brown to pale yellow, which reads as a lithologic ramp and is used for sweetness in the companion paper." },
@@ -117,31 +117,31 @@ const CMAP_META = {
     note: "The hue sequence repeats several times across the range. Small differences become vivid, and any sense of which values are high and which are low is lost." },
   legacy16: { name: "Sixteen-step rainbow", cls: "sequential", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 14.9, lmax: 88.2, lmono: 0.12, gmin: 0.0, gmax: 3.12, cvdmin: 0.0,
-    note: "The same sequential rainbow quantised to sixteen levels, as an eight-bit display rendered it. Every boundary in the image at one of those sixteen values belongs to the display." },
+    note: "The same sequential rainbow quantized to sixteen levels, as an eight-bit display rendered it. Every boundary in the image at one of those sixteen values belongs to the display." },
   roma: { name: "Roma", cls: "diverging", era: "scientific", uniform: true, cvdSafe: true,
     lmin: 25.2, lmax: 89.1, lmono: 0.01, gmin: 0.74, gmax: 1.34, cvdmin: 0.62,
-    note: "Crameri (2018), a diverging map: dark red through cream to dark blue, symmetric in lightness about the centre. The companion paper uses it on GLCM energy, a sequential attribute." },
+    note: "Crameri (2018), a diverging map: dark red through cream to dark blue, symmetric in lightness about the center. The companion paper uses it on GLCM energy, a sequential attribute." },
   vik: { name: "Vik", cls: "diverging", era: "scientific", uniform: true, cvdSafe: true,
     lmin: 11.2, lmax: 91.7, lmono: 0.03, gmin: 0.92, gmax: 1.09, cvdmin: 0.66,
-    note: "Crameri (2018). Blue through pale to red, symmetric in lightness, with the neutral point at the centre of the range." },
+    note: "Crameri (2018). Blue through pale to red, symmetric in lightness, with the neutral point at the center of the range." },
   balance: { name: "Balance", cls: "diverging", era: "scientific", uniform: true, cvdSafe: true,
     lmin: 10.6, lmax: 93.8, lmono: 0.01, gmin: 0.37, gmax: 1.72, cvdmin: 0.28,
-    note: "Thyng et al. (2016), cmocean. Blue-gray-red with a non-white neutral point, so the centre does not draw the eye." },
+    note: "Thyng et al. (2016), cmocean. Blue-gray-red with a non-white neutral point, so the center does not draw the eye." },
   coolwarm: { name: "Cool-warm", cls: "diverging", era: "traditional", uniform: false, cvdSafe: true,
     lmin: 37.7, lmax: 88.0, lmono: 0.0, gmin: 0.88, gmax: 1.13, cvdmin: 0.66,
     note: "Moreland (2009). Blue to red through light gray, designed to avoid the sharp hue transitions of the rainbow while staying legible under color vision deficiency." },
   seismic: { name: "Red-white-blue", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 4.7, lmax: 99.5, lmono: 0.12, gmin: 0.23, gmax: 1.8, cvdmin: 0.04,
-    note: "The traditional amplitude and curvature display. The white neutral point is the lightest color in the map, so zero is emphasised more than any other value." },
+    note: "The traditional amplitude and curvature display. The white neutral point is the lightest color in the map, so zero is emphasized more than any other value." },
   bwr: { name: "Blue-white-red", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 32.3, lmax: 99.7, lmono: 0.18, gmin: 0.37, gmax: 1.31, cvdmin: 0.06,
     note: "The same arrangement with saturated ends, in the opposite polarity convention." },
-  rainbowwc: { name: "Rainbow, white centre", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
+  rainbowwc: { name: "Rainbow, white center", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 14.2, lmax: 100.0, lmono: 0.07, gmin: 0.54, gmax: 1.97, cvdmin: 0.34,
-    note: "The usual amplitude and impedance display: a rainbow either side of a white centre. It is diverging in hue but not in lightness, which changes several times along each arm." },
+    note: "The usual amplitude and impedance display: a rainbow either side of a white center. It is diverging in hue but not in lightness, which changes several times along each arm." },
   spectral: { name: "Red-yellow-blue", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 33.3, lmax: 98.6, lmono: 0.04, gmin: 0.29, gmax: 2.1, cvdmin: 0.02,
-    note: "Diverging through pale yellow. The two arms differ in lightness, so equal departures from the centre do not look equal." },
+    note: "Diverging through pale yellow. The two arms differ in lightness, so equal departures from the center do not look equal." },
   stoplight: { name: "Red-yellow-green", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 34.3, lmax: 98.6, lmono: 0.03, gmin: 0.47, gmax: 1.63, cvdmin: 0.11,
     note: "Used for risk and probability displays. It relies on exactly the red-green distinction that is unavailable to the commonest forms of color vision deficiency." },
@@ -162,8 +162,8 @@ const CMAP_META = {
     note: "Another legacy diverging arrangement. The cyan arm is what breaks it: 100 units between the arms as displayed, 18 under deutan simulation." },
   rg: { name: "Red-green", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 38.6, lmax: 54.2, lmono: 0.45, gmin: 0.35, gmax: 1.6, cvdmin: 0.04,
-    note: "Diverging with no neutral color at all, so the centre of the range is an olive rather than a gray. It covers 16 points of lightness in total and loses its two arms entirely under both red-green deficiencies." },
+    note: "Diverging with no neutral color at all, so the center of the range is an olive rather than a gray. It covers 16 points of lightness in total and loses its two arms entirely under both red-green deficiencies." },
   rkb: { name: "Red-black-blue", cls: "diverging", era: "traditional", uniform: false, cvdSafe: false,
     lmin: 0.0, lmax: 55.0, lmono: 0.2, gmin: 0.4, gmax: 1.64, cvdmin: 0.18,
-    note: "The convention that renders zero dark rather than light, which keeps the eye on the departures. Its arms survive color vision simulation as well as red-white-blue does, and its dark centre leaves no room at the bottom of the lightness scale for annotation." },
+    note: "The convention that renders zero dark rather than light, which keeps the eye on the departures. Its arms survive color vision simulation as well as red-white-blue does, and its dark center leaves no room at the bottom of the lightness scale for annotation." },
 };

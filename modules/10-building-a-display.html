@@ -163,10 +163,11 @@
   <p class="tabhint">Four decisions and one record. <b>The order matters more than any single choice.</b></p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · Class before colors</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Class first</button>
     <button role="tab" data-tab="p2" aria-selected="false">2 · The range</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Run the checks</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · The checks</button>
     <button role="tab" data-tab="p4" aria-selected="false">4 · Write it down</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -183,8 +184,8 @@
       any later choice.</p>
 
     <p>Two questions, from module 04. Does zero mean something, with a sign that carries information? Does
-      the attribute wrap around? Magnitudes take a sequential map, signed quantities a diverging one,
-      angles a cyclic one. The readout in the panel says which class the current attribute needs and which
+      the attribute wrap around? Magnitudes take a <span class="term" data-term="sequential">sequential</span> map, signed quantities a <span class="term" data-term="diverging">diverging</span> one,
+      angles a <span class="term" data-term="cyclic">cyclic</span> one. The readout in the panel says which class the current attribute needs and which
       class the current colormap is, and whether they agree.</p>
 
     <p>Within the right class, the second decision is whether the lightness runs one way from end to end.
@@ -197,7 +198,7 @@
         <tr><td>A magnitude with no natural zero</td><td>Sequential</td><td>Oslo, viridis, batlow, grayscale</td></tr>
         <tr><td>Signed, with a meaningful zero</td><td>Diverging, symmetric range</td><td>balance, vik, red-white-blue</td></tr>
         <tr><td>An angle that wraps</td><td>Cyclic</td><td>RomaO</td></tr>
-        <tr><td>Class labels with no order</td><td>Categorical</td><td>The ten-colour set</td></tr>
+        <tr><td>Class labels with no order</td><td>Categorical</td><td>The ten-color set</td></tr>
       </tbody>
     </table>
 
@@ -215,17 +216,17 @@
     <p class="lede">The range changes a display at least as much as the colormap does, and it is the part
       left to a default most often. The histogram in the panel has the two limits marked on it.</p>
 
-    <p>Set it from the distribution rather than from the extremes. A 2&ndash;98% clip is a reasonable
+    <p>Set it from the distribution rather than from the extremes. A 2&ndash;98% <span class="term" data-term="percentile-clip">clip</span> is a reasonable
       starting point for a clean attribute and 5&ndash;95% for a noisy one, and the difference between
       those two matters far less than the difference between either of them and using the raw minimum and
       maximum. The readout says how many of the colormap's levels are reaching the middle half of the data,
       which is the number worth watching as the limits move.</p>
 
-    <p>If the attribute has a meaningful zero, lock the range symmetric. Otherwise the neutral colour of a
+    <p>If the attribute has a meaningful zero, lock the range symmetric. Otherwise the neutral color of a
       diverging map lands wherever the middle of the range happens to fall, and the display starts
       reporting a sign that is not there.</p>
 
-    <p>Reach for a stretch only after the clip. A gamma spreads the colours over one end of the range and
+    <p>Reach for a stretch only after the clip. A <span class="term" data-term="gamma">gamma</span> spreads the colors over one end of the range and
       undoes the even spacing that module 03 measured, which is a reasonable trade when it is deliberate.
       A logarithmic stretch is the right answer for an attribute that genuinely spans orders of magnitude,
       and should be stated on the color bar when it is used.</p>
@@ -253,7 +254,7 @@
       grayscale and not in the colored version was being carried by hue, which cannot resolve it. Anything
       visible in the colored version and not in grayscale deserves a second look.</p>
 
-    <p><b>Simulate color vision deficiency.</b> The deutan and protan buttons, and the no-color button,
+    <p><b>Simulate <span class="term" data-term="cvd">color vision deficiency</span>.</b> The deutan and protan buttons, and the no-color button,
       which is the strictest test there is: what survives it is carried by lightness. The readout gives the
       smallest step that survives deutan simulation, and a number near zero means a stretch of the range
       has become one flat color.</p>
@@ -263,7 +264,7 @@
       extracted along the wrong surface, or is responding to something other than what it is supposed to
       measure. The inline direction crosses all three faults; the crossline crosses the channel.</p>
 
-    <p>Two more worth adding when they apply. If the display is corendered, toggle the second attribute off
+    <p>Two more worth adding when they apply. If the display is <span class="term" data-term="corendering">corendered</span>, toggle the second attribute off
       and on: anything that appears and disappears with it belongs to it. If the figure is going to print,
       check the dark end, because the ink limit takes the saturated colors first.</p>
   </section>
@@ -297,9 +298,9 @@
       one of them could have been made differently and produced a different figure from the same data.</span>
     </div>
 
-    <p>That is the end of the module set. What it has been arguing, in eleven different ways, is a single
-      point: the display is part of the measurement. It is chosen, it can be chosen badly, and unlike most
-      of the rest of an interpretation it leaves no trace of having been chosen at all.</p>
+    <p>That is the end of the module set. Every module has made the same argument about a different
+      control: the display is chosen, it can be chosen badly, and the image carries no record of which
+      choices were made.</p>
   </section>
 
   <!-- ============================ WHY IT MATTERS ========================== -->
@@ -312,6 +313,12 @@
     <p>The practical version is short enough to remember. Match the class to the attribute. Let lightness
       carry the detail. Set the range from the distribution. Check by moving something and seeing what
       moves with it. Write down what you did.</p>
+
+    <p>There is a second reason, which is that a figure is rarely made only for the person making it. It
+      goes into a report, onto a screen in a meeting, past a colleague who has ten seconds for it. Whatever
+      the display hides is hidden from all of them, and whatever it invents is something they will discuss.
+      Recording the settings is what lets somebody else check the figure instead of taking it on trust,
+      which is the standard applied to every other step of the work.</p>
 
     <p>None of this requires new software or new colormaps. Most of it is available in whatever package is
       already being used, and the parts that are not — a simulator, a percentile clip — take minutes to
@@ -344,7 +351,7 @@
         <li><b>Build the same display badly, on purpose.</b> Put coherence in a cyclic map at the full
           range with a gamma of 0.4.
           <details class="reveal"><summary>Hint</summary><span class="ans">The highest and lowest values
-            come out the same colour, the range is being held open by a handful of samples, and the stretch
+            come out the same color, the range is being held open by a handful of samples, and the stretch
             has undone whatever even spacing the map had. The image still looks like a competent display,
             which is the problem this module set exists to
             address.</span></details></li>
@@ -353,7 +360,7 @@
           the lock off and a 5&ndash;95% clip, then with it on.
           <details class="reveal"><summary>Hint</summary><span class="ans">Both are signed, and a
             percentile clip on either is very unlikely to come out symmetric about zero on its own. With
-            the lock off the neutral colour of a diverging map lands away from zero and the display reports
+            the lock off the neutral color of a diverging map lands away from zero and the display reports
             a sign that is not there.</span></details></li>
 
         <li><b>Run the grayscale check on a rainbow display.</b> Put envelope in the rainbow at a 2&ndash;98%
@@ -375,6 +382,12 @@
           <details class="reveal"><summary>Hint</summary><span class="ans">Most people write the attribute
             and the colormap. Most people do not write the range, the stretch or the corendering, and those
             are exactly the ones a reader cannot recover from the picture.</span></details></li>
+      
+        <li><b>Build a display, copy the record, and hand only the record to someone else. Ask them to reproduce the figure and note everything they have to ask you.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Usually the level and the corendering strength, because those are the two that leave no trace in the image. If a colleague cannot rebuild the figure from what you wrote down, they cannot check it, and the settings are part of the work in the same way the processing parameters are.</span></details></li>
+
+        <li><b>Take a figure you have already made for a talk or a report and run the four checks from step 3 on it.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">The common outcomes are a boundary that moves with the range, a feature that is stronger in grayscale than in the colormap that was used, and a display whose information is in a red-to-green distinction. None of these means the interpretation was wrong. They mean the figure was making a weaker case than the data supports.</span></details></li>
       </ol>
     </div>
   </section>
@@ -393,8 +406,8 @@
         deficiency; look at a section.</li>
       <li>Write down what a reader cannot recover from the image: the range, the stretch, the second
         attribute and its threshold. A blend needs eight pieces of information.</li>
-      <li>The display is part of the measurement, and it is the part that leaves no trace of having been
-        chosen.</li>
+      <li>A figure records its attribute and its colormap. It does not record the range, the stretch, the
+        level or the corendering, so those have to be written down.</li>
     </ul>
   </section>
 
@@ -426,15 +439,15 @@
       <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
         B1&ndash;B23, doi:
         <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
-      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of color in science
         communication: Nature Communications, 11, 5444, doi:
         <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
-      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+      <li>Kovesi, P., 2015, Good color maps: how to design them: arXiv preprint, doi:
         <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
       <li>Ware, C., M. Stone, and D. A. Szafir, 2023, Rainbow colormaps are not all bad: IEEE Computer
         Graphics and Applications, 43, 88&ndash;93, doi:
         <a href="https://doi.org/10.1109/MCG.2023.3246111">10.1109/MCG.2023.3246111</a>.</li>
-      <li>Paton, G., 2017, The effect of colour blindness on seismic interpretation: First Break, 35,
+      <li>Paton, G., 2017, The effect of color blindness on seismic interpretation: First Break, 35,
         31&ndash;38, doi:
         <a href="https://doi.org/10.3997/1365-2397.2017013">10.3997/1365-2397.2017013</a>.</li>
     </ul>
@@ -477,20 +490,20 @@ const GUIDE = {
       see: 'The sign of the attribute is only readable in the diverging map.' }
   ]},
   p2: { items: [
-    { do: 'With envelope selected, press Everything and read the colours on the middle half, then press 2\u201398%.',
+    { do: 'With envelope selected, press Everything and read the colors on the middle half, then press 2\u201398%.',
       see: 'More of the colormap reaches the bulk of the data, for a few per cent of the survey clipped.' },
     { do: 'Set the attribute to mean curvature and turn the symmetric lock on and off.',
-      see: 'With it off, the neutral colour leaves zero and weak anticlines render on the synclinal arm.' }
+      see: 'With it off, the neutral color leaves zero and weak anticlines render on the synclinal arm.' }
   ]},
   p3: { items: [
     { do: 'Put envelope in the rainbow, find a band edge on the channel flank, and move the bottom of the range.',
       see: 'The edge slides. The channel and the faults do not.' },
     { do: 'Switch the colormap to grayscale and back, watching the pockmark field.',
       see: 'Low-contrast fine detail is easier to follow in grayscale, because lightness is what resolves it.' },
-    { do: 'Press the no-colour simulation button.',
+    { do: 'Press the no-color simulation button.',
       see: 'What survives is carried by lightness. It is the strictest test available and the quickest.' },
       { do: "Move the Map cut slider to +62 and then to +150, watching which features appear.",
-        see: "The second channel and then the deeper marker. A display is a choice of level as much as a choice of colours, and the level is almost never stated in a caption." }
+        see: "The second channel and then the deeper marker. A display is a choice of level as much as a choice of colors, and the level is almost never stated in a caption." }
   ]},
   p4: { items: [
     { do: 'Build a display you would defend, then read the record and decide which lines you would have written unprompted.',
@@ -638,7 +651,7 @@ const GUIDE = {
     L.push('Colormap: ' + m.name + ' (' + m.cls + ', ' +
            (m.era === 'scientific' ? 'designed against published perceptual criteria'
                                    : 'in long-standing use') + ')' +
-           (k ? ', quantised to ' + k + ' levels' : '') + '.');
+           (k ? ', quantized to ' + k + ' levels' : '') + '.');
     const want = Synthetic.CLASS[S.attr];
     L.push('Class: attribute needs ' + want + '; colormap is ' + m.cls +
            (m.cls === want ? ' \u2014 agrees.' : ' \u2014 MISMATCH.'));
@@ -652,7 +665,7 @@ const GUIDE = {
              (S.mode === 'lightness' ? 'lightness' : S.mode === 'sat' ? 'chroma' : 'opacity') +
              ' at ' + S.strength + '% strength' +
              (S.mode === 'mask' ? ', threshold 35% with a 15% taper' : '') + '.');
-      L.push('The colour bar describes the first attribute only and not the image.');
+      L.push('The color bar describes the first attribute only and not the image.');
     }
     L.push('Data: synthetic model, 22 m maximum sand thickness, 30 Hz Ricker wavelet, ' +
            '6% noise. On real data this line would be the survey, the processing product ' +

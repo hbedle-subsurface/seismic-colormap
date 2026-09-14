@@ -109,7 +109,7 @@ const CMPLOT = (function () {
 
   /* ---------------------------------------------------------------------
      PRECOMPUTED IMAGE
-     For displays whose colours are worked out by the caller rather than by a
+     For displays whose colors are worked out by the caller rather than by a
      colormap lookup: corendered pairs, three-channel blends, anything where
      two attributes have already been combined into one RGB value per cell.
      rgb is a Uint8ClampedArray of 4*nx*ny in RGBA order, row 0 at the bottom.
@@ -166,7 +166,7 @@ const CMPLOT = (function () {
      --------------------------------------------------------------------- */
 
   /* opts.rgba, when present, is a finished RGBA buffer for the section: used
-     where the colours are composited from more than one attribute and there is
+     where the colors are composited from more than one attribute and there is
      no single colormap to look them up in. */
   function section(canvas, sec, o) {
     const p = setup(canvas, o.height || 260);
@@ -270,7 +270,7 @@ const CMPLOT = (function () {
     ctx.restore();
 
     /* Optional pointers onto the bar: [{value, label, color}]. Used to show
-       where the data's zero falls against the colormap's own centre. */
+       where the data's zero falls against the colormap's own center. */
     if (o.marks) {
       ctx.save();
       ctx.font = '10px "IBM Plex Mono", monospace';

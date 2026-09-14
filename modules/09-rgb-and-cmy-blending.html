@@ -38,7 +38,7 @@
         <p class="cap">The blend <span>&mdash; panels update as you drag</span></p>
         <canvas id="cMain" aria-label="The three attributes blended"></canvas>
         <p class="hint-line" id="capMain">&nbsp;</p>
-        <canvas id="cLegend" aria-label="What each colour in the blend means"></canvas>
+        <canvas id="cLegend" aria-label="What each color in the blend means"></canvas>
 
         <div class="stats">
           <div class="stat key"><span>Red channel</span><b id="sR">—</b></div>
@@ -115,10 +115,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · Three attributes, three channels</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Three channels</button>
     <button role="tab" data-tab="p2" aria-selected="false">2 · Reading a blend</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · The spectral decomposition blend</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · Where blends mislead</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Spectral blend</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Where it misleads</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -131,7 +132,7 @@
       <h3><span class="stepno">1</span>Three attributes, three channels</h3>
     </div>
     <p class="lede">There is no colormap here. Each attribute is normalized to its own range, multiplied by
-      a gain, and written straight into one of the three channels of the display. The three images below
+      a gain, and written straight into one of the three <span class="term" data-term="channel">channels</span> of the display. The three images below
       are those channels on their own, before they are combined.</p>
 
     <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">
@@ -203,13 +204,13 @@
     <div class="plot-head" style="margin-bottom:14px">
       <h3><span class="stepno">3</span>The spectral decomposition blend</h3>
     </div>
-    <p class="lede">The blend most seismic interpreters meet first puts three frequency bands into the
+    <p class="lede">The blend most seismic interpreters meet first is a <span class="term" data-term="spectral-decomposition">spectral decomposition</span>, which puts three frequency bands into the
       three channels. The three inputs in the panel are now the strength of the reflection from this model
       at a low, a middle and a high peak frequency, which is a simplified spectral decomposition of the
       same synthetic.</p>
 
     <p>What it shows is bed thickness, by way of tuning. A bed reflects most strongly at the frequency
-      whose quarter wavelength matches its thickness, so a thick bed is brightest in the low band and a
+      whose quarter wavelength matches its thickness, which is <span class="term" data-term="tuning">tuning</span>, so a thick bed is brightest in the low band and a
       thin one in the high band. Red for low, green for middle and blue for high is the usual convention,
       and it gives the result its familiar reading.</p>
 
@@ -251,7 +252,7 @@
       <span>The bands here are made by convolving the same reflectivity with wavelets of three different
       peak frequencies, which is the simplest thing that behaves correctly. Real spectral decomposition
       uses a time-frequency transform and produces bands from the recorded data rather than from a model,
-      but the tuning behaviour that makes the display readable is the same.</span>
+      but the tuning behavior that makes the display readable is the same.</span>
     </div>
   </section>
 
@@ -322,9 +323,9 @@
       a blend is defined by three attributes, three ranges, three gains and an assignment of attributes to
       channels, and that is eight pieces of information which are almost never written down.</p>
 
-    <p>The practical position is that a blend belongs in a figure alongside the single-channel displays
-      rather than instead of them. It shows the reader where to look; the separate displays show what is
-      there.</p>
+    <p>In practice a blend belongs in a figure next to the single-channel displays rather than in place of
+      them. Use it to find where the interesting parts of the survey are, and read the values off the
+      separate displays.</p>
   </section>
 
   <!-- ============================== EXERCISES ============================= -->
@@ -336,14 +337,14 @@
           &mdash; envelope, sweetness and sand thickness &mdash; and read the correlation figure.
           <details class="reveal"><summary>Hint</summary><span class="ans">The blend is nearly gray
             everywhere, because all three channels rise and fall together and the result sits along the
-            diagonal of the colour cube. Envelope and sweetness correlate at 1.00 in this model and
+            diagonal of the color cube. Envelope and sweetness correlate at 1.00 in this model and
             envelope and thickness at 0.91, so the readout reaches its maximum. Three attributes have been
             spent to produce something a single grayscale display would have shown better.</span></details></li>
 
         <li><b>Find the exception.</b> Now set the three frequency bands and read the correlation figure
           again, then look at the image.
           <details class="reveal"><summary>Hint</summary><span class="ans">The correlation is 0.96 and the
-            blend is full of colour, which contradicts the previous exercise. Three frequency bands all
+            blend is full of color, which contradicts the previous exercise. Three frequency bands all
             respond to whether there is a reflection, so they rise and fall together; what the display
             shows is which of them is strongest relative to the others, and that comparison survives the
             correlation. The readout is a flag to investigate rather than a
@@ -366,7 +367,7 @@
         <li><b>Read the channel sequence.</b> On step 3, follow the color from the channel axis out to the
           margin, then compare it with the sand thickness input.
           <details class="reveal"><summary>Hint</summary><span class="ans">Red along the axis where the sand
-            is thickest, through green, to blue at the margins where it is thinnest. The colour sequence is
+            is thickest, through green, to blue at the margins where it is thinnest. The color sequence is
             tracking bed thickness through tuning, without a horizon having been picked or an isochron
             computed, which is what makes spectral blends useful for channel
             systems.</span></details></li>
@@ -383,7 +384,7 @@
           <details class="reveal"><summary>Hint</summary><span class="ans">The corners have swapped: where
             all three attributes are high the inks combine and the paper goes dark, and where all three are
             low the paper is left white. Every reading rule from step 2 is reversed, and the saturated
-            colours that carried the message on screen are the ones a press reproduces
+            colors that carried the message on screen are the ones a press reproduces
             worst.</span></details></li>
       </ol>
     </div>
@@ -415,8 +416,8 @@
   <section class="tabpane" id="pm" role="tabpanel" hidden>
     <h3>Method</h3>
     <p>Each input is normalized to its own display range across the survey, multiplied by its gain, and
-      clamped to the interval from zero to one. In the additive model that value becomes the channel
-      directly. In the subtractive model it becomes an ink coverage and the channel is one minus it, which
+      clamped to the interval from zero to one. In the <span class="term" data-term="additive">additive</span> model that value becomes the channel
+      directly. In the <span class="term" data-term="subtractive">subtractive</span> model it becomes an ink coverage and the channel is one minus it, which
       is the idealized relationship from module 01.</p>
 
     <p>The channels are written in the display's own encoding rather than in linear light. That is what
@@ -427,7 +428,7 @@
     <p>The three bands in step 3 are the envelope of the same reflectivity convolved with Ricker wavelets
       at peak frequencies of 18, 30 and 48 Hz, all displayed over a common range so that their relative
       strengths are comparable. This is not a time-frequency transform; it is the simplest construction
-      that reproduces the tuning behaviour a spectral decomposition blend depends on, computed from the
+      that reproduces the tuning behavior a spectral decomposition blend depends on, computed from the
       model rather than from a recorded trace.</p>
 
     <p>The correlation figure is the largest Pearson correlation among the three pairs of inputs, computed
@@ -489,14 +490,14 @@ const GUIDE = {
       { do: "Take one gain to 3 and watch the saturation readout and that channel's image.", see: "Above about 20% saturation the channel has stopped carrying information over much of the survey." },
       { do: "Compare the blend against the three grayscale channel images below it.", see: "Everything the blend can show is in those three, and each of them is more readable on its own." },
       { do: "Press Section at the top of the panel.",
-        see: "The three channels are blended in time as well as in map view. Where the three attributes disagree the section turns a secondary colour, and where they agree it runs gray." }
+        see: "The three channels are blended in time as well as in map view. Where the three attributes disagree the section turns a secondary color, and where they agree it runs gray." }
   ]},
   p2: { items: [
       { do: "Press Rotate the three inputs three times.", see: "The image returns to where it started. Each version makes a different attribute look like the subject." },
-      { do: "Find a cyan area and say which two attributes are high there.", see: "Green and blue high, red low. Most of what is interesting in a blend is in the secondary colours." }
+      { do: "Find a cyan area and say which two attributes are high there.", see: "Green and blue high, red low. Most of what is interesting in a blend is in the secondary colors." }
   ]},
   p3: { items: [
-      { do: "Follow the colour from the channel axis out to the margin, then compare against the sand thickness input.", see: "Red where the sand is thickest, through green, to blue at the margins. Tuning is doing the work." },
+      { do: "Follow the color from the channel axis out to the margin, then compare against the sand thickness input.", see: "Red where the sand is thickest, through green, to blue at the margins. Tuning is doing the work." },
       { do: "Read the correlation figure.", see: "0.96, and the blend works anyway: the reading is which band is strongest relative to the others." }
   ]},
   p4: { items: [

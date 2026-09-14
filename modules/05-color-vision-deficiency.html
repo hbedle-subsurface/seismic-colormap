@@ -121,11 +121,12 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · What is being simulated</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · Which colormaps survive</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · The same data, four ways</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · Picks, overlays and legends</button>
-    <button role="tab" data-tab="p5" aria-selected="false">5 · What the simulation leaves out</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · What is simulated</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Which maps survive</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Four ways</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Picks and overlays</button>
+    <button role="tab" data-tab="p5" aria-selected="false">5 · What it leaves out</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -161,7 +162,7 @@
       typical color vision, and as it would appear to a viewer with the selected form. Moving the severity
       slider from zero moves continuously between them.</p>
 
-    <p>What survives the simulation is lightness. Protan vision alters it somewhat, darkening reds, and
+    <p>What survives the simulation is <span class="term" data-term="lightness">lightness</span>. Protan vision alters it somewhat, darkening reds, and
       tritan vision alters it very little, but no form of color vision deficiency removes the ability to
       tell light from dark. That single fact settles most of what follows.</p>
   </section>
@@ -195,7 +196,7 @@
 
     <p><b>Almost nothing is lost.</b> Under deutan simulation the smallest surviving step is 0.85 for Oslo,
       0.70 for grayscale, 0.63 for cool-warm and for vik, 0.56 for RomaO and 0.51 for roma. Grayscale is
-      untouched by construction, and the rest carry their data in a lightness ramp with hue added over the
+      untouched by construction, and the rest carry their data in a <span class="term" data-term="lightness">lightness</span> ramp with <span class="term" data-term="hue">hue</span> added over the
       top rather than in the hue itself.</p>
 
     <p><b>Something is lost, and the order survives.</b> Batlow measures 0.38, balance and lajolla 0.30,
@@ -271,7 +272,7 @@
       is not among them.</p>
 
     <p>That result is about the blue arm rather than about red-white-blue in particular, and the
-      neighbouring conventions in the menu show where the line falls. Blue-white-red and red-black-blue
+      neighboring conventions in the menu show where the line falls. Blue-white-red and red-black-blue
       both hold up: their arms stay 91 and 87 units apart under protan simulation. Red-white-green drops
       from 81 to 6 under deutan, magenta-white-cyan from 100 to 18, and red-green with no neutral at all
       from 85 to 8. Every one of these has been used as a polarity or risk convention. What separates them
@@ -437,7 +438,7 @@
         <li><b>Check a map you expected to fail.</b> Put mean curvature in red-white-blue under deutan, and
           then in red-yellow-green.
           <details class="reveal"><summary>Hint</summary><span class="ans">Red-white-blue holds up
-            reasonably: its arms differ in lightness as well as hue, and the white centre is the lightest
+            reasonably: its arms differ in lightness as well as hue, and the white center is the lightest
             point, so the sign is still readable. Red-yellow-green collapses, because its two arms sit at
             almost the same lightness and are separated by hue alone. The traditional seismic convention
             survives better here than the traditional risk convention does.</span></details></li>
@@ -465,6 +466,9 @@
             lightness runs one way from end to end. This is a harsher test than any real form of color
             vision deficiency, and a display that passes it has nothing left to worry about on this
             score.</span></details></li>
+      
+        <li><b>Show one of your figures to two colleagues and ask each of them to point at the feature you are describing.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">This is the only test that catches the problem reliably, and it takes less time than the simulation does. A reader who cannot see the feature will usually not say so \u2014 they will assume they are missing something obvious \u2014 so the question has to be asked directly. The people who need to read the figure are the test of whether it works.</span></details></li>
       </ol>
     </div>
   </section>
@@ -545,14 +549,14 @@
       <li>Birch, J., 2012, Worldwide prevalence of red-green color deficiency: Journal of the Optical
         Society of America A, 29, 313&ndash;320, doi:
         <a href="https://doi.org/10.1364/JOSAA.29.000313">10.1364/JOSAA.29.000313</a>.</li>
-      <li>Paton, G., 2017, The effect of colour blindness on seismic interpretation: First Break, 35,
+      <li>Paton, G., 2017, The effect of color blindness on seismic interpretation: First Break, 35,
         31&ndash;38, doi:
         <a href="https://doi.org/10.3997/1365-2397.2017013">10.3997/1365-2397.2017013</a>.</li>
       <li>Nuñez, J. R., C. R. Anderton, and R. S. Renslow, 2018, Optimizing colormaps with consideration
         for color vision deficiency to enable accurate interpretation of scientific data: PLoS ONE, 13,
         e0199239, doi:
         <a href="https://doi.org/10.1371/journal.pone.0199239">10.1371/journal.pone.0199239</a>.</li>
-      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of color in science
         communication: Nature Communications, 11, 5444, doi:
         <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
       <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
@@ -597,15 +601,15 @@ const GUIDE = {
   ]},
   p2: { items: [
       { do: "Switch between deutan and tritan and watch the ordering of the chart change.", see: "A map safe under one form is not automatically safe under another." },
-      { do: "Click the bar for viridis and read the numbers.", see: "0.27 on the smallest surviving step, 72% of the colour kept. Safe in the sense that matters, not unaffected." }
+      { do: "Click the bar for viridis and read the numbers.", see: "0.27 on the smallest surviving step, 72% of the color kept. Safe in the sense that matters, not unaffected." }
   ]},
   p3: { items: [
       { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." },
       { do: "Press Section and compare the two panels again on amplitude.",
-        see: "The reflections survive any simulation when the colormap is diverging with a light centre, because the two arms differ in lightness as well as hue." }
+        see: "The reflections survive any simulation when the colormap is diverging with a light center, because the two arms differ in lightness as well as hue." }
   ]},
   p4: { items: [
-      { do: "Put the display in the rainbow, the annotation hue on red and its lightness at 50, and follow the channel margin.", see: "The pick disappears wherever it crosses a similar colour, and over much more of the image under simulation." },
+      { do: "Put the display in the rainbow, the annotation hue on red and its lightness at 50, and follow the channel margin.", see: "The pick disappears wherever it crosses a similar color, and over much more of the image under simulation." },
       { do: "Drop the annotation lightness to 10, leaving the hue alone.", see: "Visible along its whole length, because the separation is now in the dimension that survives." }
   ]},
   p5: { items: [
@@ -638,14 +642,14 @@ const GUIDE = {
     achroma: 'very rare, about 1 in 30,000'
   };
   const NAME = { deutan: 'Deutan', protan: 'Protan', tritan: 'Tritan',
-                 achroma: 'No colour vision' };
+                 achroma: 'No color vision' };
 
   function range() { return Synthetic.RANGES[S.attr]; }
 
   /* The colormap as a particular screen in a particular room actually renders
      it: a gamma that may not match what the file assumes, plus whatever light
      is falling on the panel and being reflected back off it. Both act on the
-     colours before any eye is involved. */
+     colors before any eye is involved. */
   function displayKey() {
     if (Math.abs(S.gamma - 1) < 0.01 && S.amb < 0.5) return S.cmap;
     const a = Colormaps.lut(S.cmap), n = a.length / 3, out = [];
@@ -731,9 +735,9 @@ const GUIDE = {
     $('capMap').textContent = Colormaps.meta[S.cmap].note;
   }
 
-  /* Local colour difference along a map, before and after simulation, both
+  /* Local color difference along a map, before and after simulation, both
      divided by the same reference: the mean step of the map as displayed. A
-     self-normalised measure would hide the problem, because simulation lowers
+     self-normalized measure would hide the problem, because simulation lowers
      the average as well as the minimum. */
   function steps(key, type, sev) {
     const a = Colormaps.lut(key), n = a.length / 3, st = 8;
@@ -770,7 +774,7 @@ const GUIDE = {
     return mn;
   }
 
-  /* How much of the total colour difference along the map survives. */
+  /* How much of the total color difference along the map survives. */
   function retained(key, type, sev) {
     const ref = reference(key);
     if (!type) return 1;
@@ -797,7 +801,7 @@ const GUIDE = {
     const a = worst(key, S.type, S.sev / 100);
     $('sBefore').textContent = b.toFixed(2);
     $('sAfter').textContent = a.toFixed(2) + '  (' +
-      (100 * retained(key, S.type, S.sev / 100)).toFixed(0) + '% of the colour kept)' +
+      (100 * retained(key, S.type, S.sev / 100)).toFixed(0) + '% of the color kept)' +
       (a < 0.15 ? '  \u2014 a stretch goes flat' : '');
     const l0 = lightnessSpan(key, null);
     const l1 = lightnessSpan(key, S.type, S.sev / 100);

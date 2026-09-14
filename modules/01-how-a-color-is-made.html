@@ -149,9 +149,10 @@
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
     <button role="tab" data-tab="p1" aria-selected="false">1 · Adding light</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · Removing light with ink</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · A colormap is three functions</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Ink on paper</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Three channels</button>
     <button role="tab" data-tab="p4" aria-selected="false">4 · Building a ramp</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -261,8 +262,8 @@
       rainbow is the extreme case: the curves become a staircase, and every tread is a boundary in the
       image that the data knows nothing about.</p>
 
-    <p><b>The diverging maps</b> have a plain signature: the channels converge at the centre, either to
-      white for the traditional ones or to a mid-gray for balance and vik. A white centre is the lightest
+    <p><b>The diverging maps</b> have a plain signature: the channels converge at the center, either to
+      white for the traditional ones or to a mid-gray for balance and vik. A white center is the lightest
       point in the whole map, so zero is the most conspicuous value on the display even when it is the
       least interesting.</p>
 
@@ -290,8 +291,8 @@
       pockmarks, the fault trace, and the thinning of the sand toward the channel margins. The data has not
       changed, and the colormap still spans the same two colors. Only the lightness has been removed.</p>
 
-    <p>This is the single most useful fact about color in a scientific display, and it is why grayscale
-      remains the reference for edge detection: the visual system resolves fine spatial detail through
+    <p>This is why grayscale remains the reference display for edge detection: the visual system resolves
+      fine spatial detail through
       <span class="term" data-term="luminance">luminance</span> variation at far higher resolution than it
       resolves it through hue. Hue is good at telling categories apart. It is poor at showing where an edge
       is.</p>
@@ -501,22 +502,22 @@ const GUIDE = {
   p1: { items: [
       { do: "Set all three sliders to the same value.", see: "The ramp is grayscale and every feature in the map is carried by brightness alone." },
       { do: "Set pure blue (0, 0, 255) and read the lightness, then pure yellow (255, 255, 0).", see: "L* 32 against L* 97. The yellow ramp has three times the lightness range to work with." },
-      { do: "Put two channels at full and one at zero to make cyan, magenta or yellow.", see: "These are the lightest colours short of white, which is why they sit at the bright end of so many colormaps." }
+      { do: "Put two channels at full and one at zero to make cyan, magenta or yellow.", see: "These are the lightest colors short of white, which is why they sit at the bright end of so many colormaps." }
   ]},
   p2: { items: [
-      { do: "Switch to Ink and check that the sliders are already sitting at the separation of the same colour.", see: "Nothing was converted: it is the same colour described from the other direction." },
+      { do: "Switch to Ink and check that the sliders are already sitting at the separation of the same color.", see: "Nothing was converted: it is the same color described from the other direction." },
       { do: "Set a saturated blue and lower the ink coverage limit to 150%. Then set a mid gray and do the same.", see: "The blue lightens; the gray does not move, because black ink can carry all of it." },
       { do: "Take the black slider to 100%.", see: "Everything goes dark whatever the three colored inks are doing." }
   ]},
   p3: { items: [
-      { do: "Select the rainbow and count the places where a channel curve turns or leaves a plateau.", see: "Six. Each is a position where the rate of colour change jumps, and each becomes an edge in an image." },
+      { do: "Select the rainbow and count the places where a channel curve turns or leaves a plateau.", see: "Six. Each is a position where the rate of color change jumps, and each becomes an edge in an image." },
       { do: "Compare against viridis.", see: "Three smooth curves, none of which doubles back." },
-      { do: "Select the sixteen-step rainbow.", see: "The curves become a staircase: every tread is a range of data rendered in one colour." }
+      { do: "Select the sixteen-step rainbow.", see: "The curves become a staircase: every tread is a range of data rendered in one color." }
   ]},
   p4: { items: [
-      { do: "Pick any colour and switch Hold lightness constant on and off.", see: "The map goes nearly blank while the strip stays colourful." },
+      { do: "Pick any color and switch Hold lightness constant on and off.", see: "The map goes nearly blank while the strip stays colorful." },
       { do: "Switch the ramp to start from white instead of black.", see: "Still monotonic, running the other way." },
-      { do: "Set a strongly saturated colour and turn constant lightness on.", see: "The chroma readout falls, because that much chroma is not available at that lightness." }
+      { do: "Set a strongly saturated color and turn constant lightness on.", see: "The chroma readout falls, because that much chroma is not available at that lightness." }
   ]}
 };
 </script>

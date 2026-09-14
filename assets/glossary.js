@@ -16,6 +16,25 @@
    without a stylesheet edit, the way count.js and popout.js are.
    =========================================================================== */
 
+
+/* ---------------------------------------------------------------------------
+   Links out to the attribute module sets. An entry with a `more` field gets a
+   line at the foot of its popup pointing at the site that covers that
+   attribute properly. CHECK THESE URLs BEFORE PUBLISHING — they are the only
+   place in the repository that hard-codes another site's address.
+   --------------------------------------------------------------------------- */
+
+const SITES = {
+  singleTrace: { url: 'https://hbedle-subsurface.github.io/single-trace',
+                 label: 'How Single-Trace Attributes Actually Work' },
+  geometric:   { url: 'https://hbedle-subsurface.github.io/geometric-attributes',
+                 label: 'How Geometric Attributes Actually Work' },
+  spectral:    { url: 'https://hbedle-subsurface.github.io/spectral-attributes/',
+                 label: 'How Spectral Attributes Actually Work' },
+  resolution:  { url: 'https://hbedle-subsurface.github.io/seismic_resolution',
+                 label: 'Seismic Resolution' }
+};
+
 const GLOSSARY = {
 
   colormap: { term: "Colormap",
@@ -105,20 +124,25 @@ const GLOSSARY = {
   ricker: { term: "Ricker wavelet",
     def: "A zero-phase wavelet defined by a single peak frequency, with a central peak and two side lobes. It is used throughout these modules to make the synthetic seismic." },
 
-  envelope: { term: "Envelope",
-    def: "The magnitude of the analytic trace, sqrt(a² + h²), where a is the seismic trace and h is its Hilbert transform. It measures the strength of the reflection independent of the phase, so it is always positive and calls for a sequential colormap." },
+  envelope: { term: "Envelope", cls: "sequential",
+    def: "The strength of the reflection, independent of whether the trace happens to be at a peak, a trough or a zero crossing at that instant. It is computed as the magnitude of the analytic trace, sqrt(a\u00b2 + h\u00b2), where a is the trace and h is its Hilbert transform. What controls it is the size of the impedance contrast and how the top and base of a bed interfere, so a bright envelope can mean a strong contrast, or a bed at tuning thickness, and the two are not separable from the envelope alone. Always positive, so it takes a sequential colormap.",
+    more: 'singleTrace' },
 
-  "instantaneous-phase": { term: "Instantaneous phase",
-    def: "The angle of the analytic trace, atan2(h, a), reported between −180° and +180°. It follows the continuity of an event independent of its strength, and it wraps at ±180°, which makes it a cyclic attribute." },
+  "instantaneous-phase": { term: "Instantaneous phase", cls: "cyclic",
+    def: "Where in its cycle the waveform is at each sample, as an angle from \u2212180\u00b0 to +180\u00b0, computed as atan2(h, a). Because it discards amplitude entirely it follows a weak reflection as confidently as a strong one, which makes it good for tracing continuity through a dim zone and unreliable where there is no reflection to measure. It wraps: +179\u00b0 and \u2212179\u00b0 are two degrees apart, so it needs a cyclic colormap.",
+    more: 'singleTrace' },
 
-  sweetness: { term: "Sweetness",
-    def: "The envelope divided by the square root of the instantaneous frequency (Radovich and Oliveros, 1998; Hart, 2008). High values are often associated with sand-rich intervals, which combine high amplitude with lower frequency." },
+  sweetness: { term: "Sweetness", cls: "sequential",
+    def: "The envelope divided by the square root of the instantaneous frequency (Radovich and Oliveros, 1998; Hart, 2008), so it is high where a reflection is both strong and low-frequency. Clean sands often produce that combination, which is why sweetness is used to look for sand-rich intervals. It is an empirical association rather than a measurement of lithology: a thick shale with a strong base will also read as sweet.",
+    more: 'singleTrace' },
 
-  coherence: { term: "Coherence",
-    def: "A family of attributes measuring the similarity of neighboring traces over a short analysis window. Low values occur where waveforms differ from trace to trace, as across faults and at stratigraphic edges. It runs from low to high with no natural center, so it takes a sequential colormap." },
+  coherence: { term: "Coherence", cls: "sequential",
+    def: "How similar neighboring traces are to each other over a short window. Where the waveform is continuous the traces match and coherence is near one; where something interrupts it \u2014 a fault, a channel edge, a change in facies \u2014 they stop matching and it falls. A low value says the traces differ, not why, so a lineament on a coherence map can be a fault, a stratigraphic edge, an acquisition footprint or noise. In this module set it is computed as semblance over a 3 \u00d7 3 trace window.",
+    more: 'geometric' },
 
-  curvature: { term: "Curvature",
-    def: "The rate of change of dip along a reflector. Most-positive and most-negative curvature separate anticlinal from synclinal bending, so the sign is meaningful and the attribute takes a diverging colormap with a neutral center." },
+  curvature: { term: "Curvature", cls: "diverging",
+    def: "How fast the dip of a reflector changes along it, measured from second derivatives of a picked surface. Positive values are anticlinal bending and negative values synclinal, so the sign carries the information and the attribute needs a diverging colormap centered on zero. It is computed from the picked horizon rather than from the traces, so anything that moves the pick \u2014 noise, low bandwidth, a mis-tracked loop \u2014 appears as curvature that is not in the ground.",
+    more: 'geometric' },
 
   aberrancy: { term: "Aberrancy",
     def: "A third-order measure of reflector geometry that locates where the shape of a surface changes most rapidly (Qi and Marfurt, 2018). Its azimuth wraps through 360°, so it is displayed with a cyclic colormap, often masked by aberrancy magnitude." },
@@ -165,6 +189,18 @@ const GLOSSARY = {
   "single-hue-ramp": { term: "Single-hue ramp",
     def: "A colormap running from black or white to one color, so that lightness increases steadily and the hue stays fixed. The simplest construction that is monotonic in lightness." },
 
+  "instantaneous-frequency": { term: "Instantaneous frequency", cls: "sequential",
+    def: "The rate at which the instantaneous phase advances, reported in Hz. It is not the frequency of the wavelet: it is a sample-by-sample number that responds to how reflections interfere, so a thin bed whose top and base overlap reads differently from an isolated interface. It is unstable where the envelope is low, because the phase of near-noise advances erratically, and this module set takes its absolute value and caps it at 120 Hz to keep the display readable.",
+    more: 'singleTrace' },
+
+  amplitude: { term: "Amplitude", cls: "diverging",
+    def: "The recorded trace value at a sample, which is the reflectivity of the earth convolved with the wavelet. Its sign is the polarity of the reflection \u2014 a peak where impedance increases downward, a trough where it decreases, under a zero-phase wavelet and the usual convention \u2014 so zero means something and the attribute takes a diverging colormap. Its size depends on the impedance contrast and on interference between nearby interfaces together, which is why a bright amplitude has more than one possible cause.",
+    more: 'resolution' },
+
+  "spectral-decomposition": { term: "Spectral decomposition", cls: "sequential",
+    def: "Splitting the seismic into narrow frequency bands and displaying the strength of each. A bed reflects most strongly at the frequency whose quarter wavelength matches its thickness, so the band a reflection is brightest in carries information about bed thickness. Displaying three bands in three color channels is the usual way of showing that.",
+    more: 'spectral' },
+
   histogram: { term: "Histogram",
     def: "A count of how many samples fall in each interval of the data range. The shape of the histogram determines how much of a display a given color range will actually cover." }
 };
@@ -185,7 +221,11 @@ const GLOSSARY = {
     'font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;color:#16191C;display:none}',
     '#gloss-pop b{display:block;margin-bottom:3px}',
     '#gloss-pop .x{float:right;cursor:pointer;color:#5C6670;font-size:12px;',
-    'text-decoration:underline}'
+    'text-decoration:underline}',
+    '#gloss-pop .gcls{display:block;margin-top:6px;font-size:13px;color:#5C6670}',
+    '#gloss-pop .gmore{display:block;margin-top:8px;padding-top:7px;',
+    'border-top:1px solid #C9CDD2;font-size:13px;color:#841617;text-decoration:none}',
+    '#gloss-pop .gmore:hover{text-decoration:underline}'
   ].join('');
 
   function start() {
@@ -199,14 +239,8 @@ const GLOSSARY = {
 
     function hide() { pop.style.display = 'none'; }
 
-    document.addEventListener('click', function (ev) {
-      var t = ev.target.closest ? ev.target.closest('.term') : null;
-      if (!t) {
-        if (!(ev.target.closest && ev.target.closest('#gloss-pop'))) hide();
-        return;
-      }
-      ev.preventDefault();
-      var key = t.dataset.term || t.textContent.trim().toLowerCase();
+    /* Render the popup for one entry, anchored to a rectangle on screen. */
+    function showFor(key, r) {
       var e = GLOSSARY[key];
       pop.innerHTML = '';
       var x = document.createElement('span');
@@ -215,23 +249,67 @@ const GLOSSARY = {
       var name = document.createElement('b');
       name.textContent = e ? e.term : key;
       var def = document.createElement('span');
-      def.textContent = e ? e.def
-        : 'No glossary entry for "' + key + '" yet.';
+      def.textContent = e ? e.def : 'No glossary entry for "' + key + '" yet.';
       pop.appendChild(x); pop.appendChild(name); pop.appendChild(def);
 
+      if (e && e.cls) {
+        var c = document.createElement('span');
+        c.className = 'gcls';
+        c.textContent = 'Needs a ' + e.cls + ' colormap.';
+        pop.appendChild(c);
+      }
+      if (e && e.more && SITES[e.more]) {
+        var a2 = document.createElement('a');
+        a2.className = 'gmore';
+        a2.href = SITES[e.more].url;
+        a2.target = '_blank';
+        a2.rel = 'noopener';
+        a2.textContent = 'More on this in ' + SITES[e.more].label + ' \u2192';
+        pop.appendChild(a2);
+      }
+
       pop.style.display = 'block';
-      var r = t.getBoundingClientRect();
       var left = r.left + window.scrollX;
       var maxLeft = window.scrollX + document.documentElement.clientWidth
                     - pop.offsetWidth - 14;
       if (left > maxLeft) left = Math.max(8, maxLeft);
       pop.style.left = left + 'px';
       pop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    }
+
+    document.addEventListener('click', function (ev) {
+      var t = ev.target.closest ? ev.target.closest('.term') : null;
+      if (!t) {
+        if (!(ev.target.closest && ev.target.closest('#gloss-pop'))) hide();
+        return;
+      }
+      ev.preventDefault();
+      showFor(t.dataset.term || t.textContent.trim().toLowerCase(),
+              t.getBoundingClientRect());
     });
 
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') hide();
     });
+
+    /* Opened from a control rather than from a marked word: the panel uses
+       this to explain whichever attribute is on screen. */
+    window.GLOSS = {
+      open: function (key, anchor) { showFor(key, anchor.getBoundingClientRect()); },
+      has: function (key) { return !!GLOSSARY[key]; },
+      /* model attribute names to glossary keys */
+      forAttribute: function (attr) {
+        const map = {
+          envelope: 'envelope', sweetness: 'sweetness', coherence: 'coherence',
+          phase: 'instantaneous-phase', frequency: 'instantaneous-frequency',
+          amplitude: 'amplitude', curvature: 'curvature',
+          meanCurvature: 'curvature',
+          bandLow: 'spectral-decomposition', bandMid: 'spectral-decomposition',
+          bandHigh: 'spectral-decomposition'
+        };
+        return map[attr] || null;
+      }
+    };
   }
 
   if (document.readyState === 'loading') {

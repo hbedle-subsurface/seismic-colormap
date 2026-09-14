@@ -106,10 +106,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · Equal steps, unequal changes</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · Boundaries that are not there</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Measuring every map</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · What uniformity does not promise</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Unequal steps</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · False boundaries</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Every map measured</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What it misses</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -121,7 +122,7 @@
     <div class="plot-head" style="margin-bottom:14px">
       <h3><span class="stepno">1</span>Equal steps in the data, unequal changes in the color</h3>
     </div>
-    <p class="lede">The blocks below divide the data range into equal steps. Every neighboring pair differs
+    <p class="lede">The blocks below divide the <span class="term" data-term="colorbar">data range</span> into equal steps. Every neighboring pair differs
       by exactly the same amount, and the numbers under them say so. What the eye reports is a different
       matter.</p>
 
@@ -218,7 +219,7 @@
       rendered in a single color each.</p>
 
     <p><b>A diverging map is slow at its neutral point, by design.</b> Balance measures 4.7, which places
-      it well down the chart, and the slow part is the mid gray at the centre where the map turns around.
+      it well down the chart, and the slow part is the mid gray at the center where the map turns around.
       That is not a defect. A diverging map is meant to compress near zero and spend its color on the
       departures, and comparing its number against a sequential map's is comparing two different
       intentions.</p>
@@ -265,7 +266,7 @@
       <li><b>Uniformity</b> says the map does not distort the spacing of whatever it manages to show. A map
         that fails it invents boundaries and hides real differences in its flat stretches.</li>
       <li><b>Resolving power</b> says the map can show fine, low-contrast detail at all. It comes almost
-        entirely from lightness, which is what module 02 measured.</li>
+        entirely from <span class="term" data-term="lightness">lightness</span>, which is what module 02 measured.</li>
     </ul>
 
     <p>The scientific sequential maps are built to have both: lightness climbing steadily from one end to
@@ -278,10 +279,10 @@
   <!-- ============================ WHY IT MATTERS ========================== -->
   <section class="tabpane" id="pw" role="tabpanel" hidden>
     <h3>Why it matters</h3>
-    <p>An invented boundary is more dangerous than a hidden feature, because it has the shape of a result.
-      A band edge running across a seismic attribute map follows a contour of the attribute, which means it
-      is smooth, continuous, and frequently parallel to genuine geology. It looks like a fluid contact, a
-      facies boundary or a diagenetic front, and nothing about its appearance distinguishes it from one.</p>
+    <p>A band edge produced by a colormap follows a contour of the attribute, so it is smooth, continuous
+      and often roughly parallel to real geology. It looks like a fluid contact, a facies boundary or a
+      diagenetic front, and nothing in its appearance separates it from one. That is why an invented
+      boundary causes more trouble than a hidden feature: it has the shape of a result.</p>
 
     <p>Published interpretations have been drawn along such edges. The check is cheap and takes seconds:
       change the display range and see what moves.</p>
@@ -345,6 +346,9 @@
             is a gradual thinning toward the channel margin, which is what the model contains. Nothing in
             the sand body changes at the value where the rim appeared; the rim is the position at which the
             color table turns from green to yellow.</span></details></li>
+      
+        <li><b>You find a smooth, continuous edge running across an envelope map. Name three things it could be, and the test for each.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">A real stratigraphic or structural edge; a false boundary from a colormap that turns quickly at that value; or the limit of the display range, where everything beyond it has been clipped to one color. The tests are all the same shape: change the colormap, change the range, and see what holds still. An edge that survives all three is in the data, and one that moves is in the display.</span></details></li>
       </ol>
     </div>
   </section>
@@ -396,7 +400,7 @@
 
     <h3>References</h3>
     <ul>
-      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+      <li>Kovesi, P., 2015, Good color maps: how to design them: arXiv preprint, doi:
         <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
       <li>Rogowitz, B. E., and L. A. Treinish, 1998, Data visualization: the end of the rainbow: IEEE
         Spectrum, 35, 52&ndash;59, doi:
@@ -404,7 +408,7 @@
       <li>Borland, D., and R. M. Taylor, 2007, Rainbow color map (still) considered harmful: IEEE Computer
         Graphics and Applications, 27, 14&ndash;17, doi:
         <a href="https://doi.org/10.1109/MCG.2007.323435">10.1109/MCG.2007.323435</a>.</li>
-      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of color in science
         communication: Nature Communications, 11, 5444, doi:
         <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
       <li>Gołębiowska, I., and A. Çöltekin, 2022, What's wrong with the rainbow? An interdisciplinary
@@ -464,7 +468,7 @@ const GUIDE = {
   ]},
   p3: { items: [
       { do: "Click the bar for balance and note where it sits in the chart.", see: "Well down it, because a diverging map is slow at its neutral point by design. The number is not a fault." },
-      { do: "Find the repeating spectrum.", see: "It measures better than balance and is close to unusable, because the metric only asks about neighbouring values." }
+      { do: "Find the repeating spectrum.", see: "It measures better than balance and is close to unusable, because the metric only asks about neighboring values." }
   ]},
   p4: { items: [
       { do: "Read the two sets of numbers, then look at the two images.", see: "The hue ramp scores better on every figure and shows nothing." },
@@ -633,7 +637,7 @@ const GUIDE = {
                    x0 + (i + 0.5) * bw, 78);
     }
     ctx.textAlign = 'left';
-    ctx.fillText('every neighbouring pair differs by the same amount', x0, 100);
+    ctx.fillText('every neighboring pair differs by the same amount', x0, 100);
   }
 
   /* A field with no edges anywhere: a linear gradient plus one broad rise. */
@@ -676,7 +680,7 @@ const GUIDE = {
     ctx.font = '10px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#5C6670';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('peaks in the local colour difference \u2193', 2, 2);
+    ctx.fillText('peaks in the local color difference \u2193', 2, 2);
     for (let i = 1; i < m.g.length - 1; i++) {
       if (m.g[i] < 1.25 || m.g[i] < m.g[i - 1] || m.g[i] < m.g[i + 1]) continue;
       const t = i / (m.g.length - 1);

@@ -127,10 +127,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · One image, two attributes</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · Lightness from the second</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Showing it only where it means something</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Two attributes</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Lightness</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Transparency</button>
     <button role="tab" data-tab="p4" aria-selected="false">4 · What it costs</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -142,7 +143,7 @@
     <div class="plot-head" style="margin-bottom:14px">
       <h3><span class="stepno">1</span>One image, two attributes</h3>
     </div>
-    <p class="lede">The obvious way to show two attributes at once is to give each a colormap and lay one
+    <p class="lede">The obvious way to show two attributes at once is to give each a <span class="term" data-term="colormap">colormap</span> and lay one
       over the other at half opacity. It does not work: both colormaps are trying to use the same three
       dimensions of the display, and the result is a mixture that reports neither.</p>
 
@@ -154,9 +155,9 @@
       <thead><tr><th>Method</th><th>What the second attribute does</th><th>Where it suits</th></tr></thead>
       <tbody>
         <tr><td>First only</td><td>Nothing; the reference display</td><td>Always worth looking at first</td></tr>
-        <tr><td>Lightness</td><td>Darkens the image where it is low</td><td>An edge attribute over anything: coherence over amplitude, energy or sweetness</td></tr>
+        <tr><td>Lightness</td><td>Darkens the image where it is low</td><td>An edge attribute over anything: <span class="term" data-term="coherence">coherence</span> over <span class="term" data-term="amplitude">amplitude</span>, energy or <span class="term" data-term="sweetness">sweetness</span></td></tr>
         <tr><td>Saturation</td><td>Drains the color toward gray where it is low</td><td>Where the first attribute is only meaningful in part of the survey</td></tr>
-        <tr><td>Transparency</td><td>Decides where the first is shown at all</td><td>An attribute with a companion magnitude: azimuth with aberrancy strength, phase with reflection strength</td></tr>
+        <tr><td>Transparency</td><td>Decides where the first is shown at all</td><td>An attribute with a companion magnitude: <span class="term" data-term="aberrancy">aberrancy</span> azimuth with aberrancy strength, <span class="term" data-term="instantaneous-phase">phase</span> with reflection strength</td></tr>
       </tbody>
     </table>
 
@@ -233,7 +234,7 @@
       reflection is strong and close to noise where the trace is weak, and a phase display renders both
       with equal confidence.</p>
 
-    <p>The transparency method uses the second attribute to decide where the first is shown. Where the
+    <p>The <span class="term" data-term="transparency">transparency</span> method uses the second attribute to decide where the first is shown. Where the
       second is above the threshold the first appears in full color; where it is below, the display falls
       back to a neutral gray. The taper sets how abruptly that happens.</p>
 
@@ -281,7 +282,7 @@
     <p><b>Color vision deficiency hits corendered displays harder.</b> The simulation buttons are in the
       panel. A single-attribute display that fails under deutan simulation is missing information; a
       corendered one is missing information from one layer while the other layer continues to look
-      authoritative, and the result is harder to recognise as broken. Corendering with a colormap whose
+      authoritative, and the result is harder to recognize as broken. Corendering with a colormap whose
       hue is doing the work, such as a rainbow, produces exactly this.</p>
 
     <p>Three checks make the compromise safe enough to live with.</p>
@@ -374,6 +375,9 @@
             rainbow carries that in hue. The result still looks like a competent corendered display while
             one of its two layers has stopped working, which is harder to notice than a single-attribute
             display failing outright.</span></details></li>
+      
+        <li><b>A dark lineament runs across a corendered display. Give three explanations and a test for each.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Low coherence, meaning something interrupts the waveform \u2014 a fault, a channel edge, noise. Low envelope, meaning a genuinely weak reflection. Or the dark end of the colormap, where two quite different values are both rendered near black. Toggle the second attribute off: if the lineament goes, it belongs to that attribute. Switch to a colormap that stops short of black: if it goes, it was the colormap running out of room.</span></details></li>
       </ol>
     </div>
   </section>
@@ -473,14 +477,14 @@
 <script>
 const GUIDE = {
   p1: { items: [
-      { do: "Put envelope in colour with coherence on lightness, then swap the two attributes.", see: "Coherence on the lightness renders the faults as thin dark lineaments. The other way round wastes the dimension that could resolve them." },
-      { do: "Try saturation instead of lightness with the same pair.", see: "The image keeps its brightness and loses its colour where coherence is low, which is a weaker but quieter cue." }
+      { do: "Put envelope in color with coherence on lightness, then swap the two attributes.", see: "Coherence on the lightness renders the faults as thin dark lineaments. The other way round wastes the dimension that could resolve them." },
+      { do: "Try saturation instead of lightness with the same pair.", see: "The image keeps its brightness and loses its color where coherence is low, which is a weaker but quieter cue." }
   ]},
   p2: { items: [
       { do: "Take the strength to 100% with Oslo and look at the low-envelope areas outside the channel.", see: "They are black, and so are the low-coherence areas: two different things rendered identically." },
-      { do: "Read the range left to the first attribute at 0%, 50% and 80% strength.", see: "L* 2 to 91 becomes L* 1 to 52. The colour bar has stopped describing the image." },
-      { do: "Press Section with envelope in colour and coherence on the lightness.",
-        see: "The strong reflections carry the colour and the faults cut dark notches through them. Most of a section is quiet, so most of it is dark, which is what an envelope section looks like before any corendering." }
+      { do: "Read the range left to the first attribute at 0%, 50% and 80% strength.", see: "L* 2 to 91 becomes L* 1 to 52. The color bar has stopped describing the image." },
+      { do: "Press Section with envelope in color and coherence on the lightness.",
+        see: "The strong reflections carry the color and the faults cut dark notches through them. Most of a section is quiet, so most of it is dark, which is what an envelope section looks like before any corendering." }
   ]},
   p3: { items: [
       { do: "Set phase in RomaO with the method on First only, then switch to Transparency with envelope as the mask.", see: "Unmasked, the display is equally confident where it is measuring noise. Masked, it speaks only where there is a reflection." },
@@ -555,7 +559,7 @@ const GUIDE = {
         const f = 1 - st * (1 - nb[i]);
         r = srgb(lin(r) * f); g = srgb(lin(g) * f); b = srgb(lin(b) * f);
       } else if (S.mode === 'saturation') {
-        const f = st * (1 - nb[i]);                 // how far toward grey
+        const f = st * (1 - nb[i]);                 // how far toward gray
         const Y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
         r = srgb(lin(r) * (1 - f) + Y * f);
         g = srgb(lin(g) * (1 - f) + Y * f);
@@ -607,8 +611,8 @@ const GUIDE = {
 
   /* ---- the second attribute's strip -------------------------------------- */
 
-  /* Not a colour bar: the second attribute has no colours of its own. This
-     shows what it does to a mid-range colour of the first. */
+  /* Not a color bar: the second attribute has no colors of its own. This
+     shows what it does to a mid-range color of the first. */
   function drawStripB() {
     const cv = $('cBarB');
     const w = Math.max(240, cv.parentNode.clientWidth || 0);
@@ -663,7 +667,7 @@ const GUIDE = {
     ctx.fillText(rb[1].toPrecision(2), x0 + ww, 6 + bh + 4);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#16191C';
-    ctx.fillText(Synthetic.LABEL[S.attrB] + ' \u2014 what it does to one colour of the first',
+    ctx.fillText(Synthetic.LABEL[S.attrB] + ' \u2014 what it does to one color of the first',
                  x0, 6 + bh + 19);
   }
 
@@ -695,7 +699,7 @@ const GUIDE = {
     let fl = 100, fh = 0;
     for (let i = 0; i < full.length; i++) { fl = Math.min(fl, full[i]); fh = Math.max(fh, full[i]); }
     $('sSpan').textContent = (c.worstLo === null)
-      ? (S.mode === 'mask' ? 'nothing: those cells show grey' : 'the whole map, L* ' +
+      ? (S.mode === 'mask' ? 'nothing: those cells show gray' : 'the whole map, L* ' +
          fl.toFixed(0) + ' to ' + fh.toFixed(0))
       : 'L* ' + c.worstLo.toFixed(0) + ' to ' + c.worstHi.toFixed(0) +
         ', against ' + fl.toFixed(0) + ' to ' + fh.toFixed(0) + ' unmodulated';
@@ -703,7 +707,7 @@ const GUIDE = {
     $('capMain').textContent = S.mode === 'none'
       ? 'One attribute, for reference. Everything the corendered display adds should be checked against this.'
       : S.mode === 'mask'
-        ? 'Full colour where the second attribute is above the threshold, mid grey below it.'
+        ? 'Full color where the second attribute is above the threshold, mid gray below it.'
         : Colormaps.meta[S.cmap].name + ', with the second attribute taking ' +
           (S.mode === 'lightness' ? 'the lightness.' : 'the chroma.');
   }

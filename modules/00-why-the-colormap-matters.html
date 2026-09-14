@@ -129,9 +129,10 @@
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
     <button role="tab" data-tab="p1" aria-selected="false">1 · The model</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · From model to seismic</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Two colormaps, one data set</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · What a colormap can hide</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Making seismic</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Two colormaps</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What gets hidden</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -335,7 +336,7 @@
     <p><b>Boundaries can be manufactured.</b> A colormap that is not perceptually uniform changes color
       quickly at some values and slowly at others. The quick changes read as edges. They fall at values
       fixed by the color table, which means they appear in the same place on every display made with that
-      table, across every survey, which is exactly what makes them convincing.</p>
+      table, across every survey, which is why they are easy to believe.</p>
 
     <p><b>Not everyone sees the same image.</b> Color vision deficiencies affect roughly 4%&ndash;8% of men
       and up to about 2% of women (Birch, 2012). A display that carries its information in a red-green
@@ -405,6 +406,12 @@
             curvature is symmetric about zero and shows the faults as paired positive and negative
             lineaments. The colormap is the same in both; what differs is whether the attribute's own
             distribution is centered on the colormap's neutral point.</span></details></li>
+      
+        <li><b>Give two explanations for the bright envelope along the channel axis.</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Two will do. One: the sand has a large impedance contrast against the shale, so the reflection is genuinely strong. Two: the bed is close to tuning thickness there, so the reflections from its top and base interfere constructively and the composite is large. The envelope cannot separate them. What separates them is the frequency slider \u2014 a tuning effect moves when the bandwidth changes and a contrast effect does not \u2014 and the sand thickness attribute, which this model gives you and real data does not.</span></details></li>
+
+        <li><b>A colleague points at the pockmark field and calls it a facies change. What would you check before agreeing?</b>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Whether it survives a change of display. Set a different colormap, move the range, and move the level: an anomaly that is in the data holds still. Then ask what else produces a circular low-amplitude patch \u2014 in this model it is a shallow depression with a dimmed reflection beneath it, and on real data it might equally be gas in the near surface, a processing footprint or a shallow velocity anomaly. The map alone does not decide between them.</span></details></li>
       </ol>
     </div>
   </section>
@@ -413,8 +420,8 @@
   <section class="tabpane" id="pk" role="tabpanel" hidden>
     <h3>Key points</h3>
     <ul>
-      <li>A display is the data, the value range and the colormap together. Two of the three can be held
-        fixed while the third is changed, and that is how every comparison in this module set is made.</li>
+      <li>A display depends on three things: the data, the value range and the colormap. Every comparison
+        in this module set holds two of them fixed and changes the third.</li>
       <li>The eye resolves fine spatial detail mainly through changes in lightness. A colormap whose
         lightness is flat over part of its range shows little detail in that part of the data, whatever its
         hues are doing.</li>
@@ -460,7 +467,7 @@
     <h3>Colormap sources</h3>
     <p>The tables are the published definitions, sampled at 256 levels, not approximations.</p>
     <ul>
-      <li>Crameri, F., 2018, Scientific colour maps, doi:
+      <li>Crameri, F., 2018, Scientific color maps, doi:
         <a href="https://doi.org/10.5281/zenodo.1243862">10.5281/zenodo.1243862</a> &mdash; Oslo, Roma,
         RomaO, Lajolla, Batlow, Vik.</li>
       <li>Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco, 2016, True colors
@@ -483,7 +490,7 @@
       <li>Borland, D., and R. M. Taylor, 2007, Rainbow color map (still) considered harmful: IEEE Computer
         Graphics and Applications, 27, 14&ndash;17, doi:
         <a href="https://doi.org/10.1109/MCG.2007.323435">10.1109/MCG.2007.323435</a>.</li>
-      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+      <li>Kovesi, P., 2015, Good color maps: how to design them: arXiv preprint, doi:
         <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
       <li>Taner, M. T., F. Koehler, and R. E. Sheriff, 1979, Complex seismic trace analysis: Geophysics,
         44, 1041&ndash;1063, doi:
@@ -534,7 +541,7 @@ const GUIDE = {
   ]},
   p3: { items: [
       { do: "Press Rainbow / Oslo and find one feature easier to locate in each." },
-      { do: "Drag the profile CDP and compare the curve against the two colour strips beneath it.", see: "Where the curve is smooth and a strip steps, that boundary belongs to the colormap." },
+      { do: "Drag the profile CDP and compare the curve against the two color strips beneath it.", see: "Where the curve is smooth and a strip steps, that boundary belongs to the colormap." },
       { do: "Set the attribute to instantaneous phase and press Cyclic rainbow / RomaO.", see: "The cyclic rainbow puts bright bands at fixed phase values; RomaO does not." }
   ]},
   p4: { items: [

@@ -46,7 +46,7 @@
           <div class="stat key"><span>Class the attribute needs</span><b id="sNeed">—</b></div>
           <div class="stat"><span>Class of the colormap</span><b id="sHave">—</b></div>
           <div class="stat"><span>Display range</span><b id="sRange">—</b></div>
-          <div class="stat"><span>Where the colormap's centre falls</span><b id="sCentre">—</b></div>
+          <div class="stat"><span>Where the colormap's center falls</span><b id="sCentre">—</b></div>
         </div>
       </div>
 
@@ -120,10 +120,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · Reading the class off the data</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · The three mismatches</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Where the neutral point lands</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Reading the class</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Three mismatches</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · The neutral point</button>
     <button role="tab" data-tab="p4" aria-selected="false">4 · The wrap</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -138,7 +139,7 @@
     <p class="lede">Two questions decide which class an attribute needs, and both are answered by what the
       attribute measures rather than by what its display looks like.</p>
 
-    <p><b>Does zero mean anything, and does the sign?</b> Amplitude has a zero: it separates a peak from a
+    <p><b>Does zero mean anything, and does the sign?</b> <span class="term" data-term="amplitude">Amplitude</span> has a zero: it separates a peak from a
       trough, and the difference between +0.05 and −0.05 is a difference in polarity, not a difference in
       size. Curvature has a zero: it separates anticlinal from synclinal bending. Envelope does not. It is
       a magnitude, it cannot be negative, and its smallest value is simply its smallest value.</p>
@@ -147,7 +148,7 @@
       are adjacent measurements of almost the same thing. Dip azimuth and aberrancy azimuth do the same at
       360°. Nothing else in the list wraps.</p>
 
-    <p>The histogram under the map is where this can be checked rather than assumed. A sequential attribute
+    <p>The <span class="term" data-term="histogram">histogram</span> under the map is where this can be checked rather than assumed. A sequential attribute
       piles up somewhere in its range and tails off, with no particular significance to any interior value.
       An attribute with a meaningful zero is roughly symmetric about it, and the marked line falls in the
       middle of the mass rather than off to one side. A wrapping attribute is close to flat across its whole
@@ -163,7 +164,7 @@
 
     <p>Three classes follow. <span class="term" data-term="sequential">Sequential</span> maps run from dark
       to light with no interior landmark. <span class="term" data-term="diverging">Diverging</span> maps
-      have two arms either side of a neutral centre.
+      have two arms either side of a neutral center.
       <span class="term" data-term="cyclic">Cyclic</span> maps return to the same color at both ends.</p>
   </section>
 
@@ -190,10 +191,10 @@
       </div>
     </div>
 
-    <p style="margin-top:16px"><b>A diverging attribute in a sequential map.</b> Put mean curvature in Oslo.
+    <p style="margin-top:16px"><b>A diverging attribute in a sequential map.</b> Put mean <span class="term" data-term="curvature">curvature</span> in Oslo.
       The anticlinal and synclinal sides of every fault are no longer separated by anything: they are just
       two different brightnesses, and which one is which has to be recovered from the color bar. The
-      paired lineaments that make a fault recognisable on a curvature display become a single smeared
+      paired lineaments that make a fault recognizable on a curvature display become a single smeared
       band. Nothing has been hidden exactly, but the structure the attribute was computed to show has been
       taken apart.</p>
 
@@ -202,7 +203,7 @@
       lines that follow no geology. Those lines are the two ends of the colormap meeting at values that
       are adjacent in the data. Step 4 takes this apart.</p>
 
-    <p><b>A sequential attribute in a diverging map.</b> Put envelope in balance. A false centre appears
+    <p><b>A sequential attribute in a diverging map.</b> Put envelope in balance. A false center appears
       partway up the range: the display now asserts that some particular envelope value is a dividing line
       with two sides, and that value is wherever the middle of the display range happens to fall. Moving
       the range sliders moves it, which is the same test as module 03.</p>
@@ -222,7 +223,7 @@
       coincide with the attribute's own zero. If the range is not symmetric, it does not.</p>
 
     <p>The arrow above the color bar marks where zero in the data falls. With the range symmetric it sits
-      at the centre of the map, on the neutral color. Move either range slider with the symmetric lock off
+      at the center of the map, on the neutral color. Move either range slider with the symmetric lock off
       and it slides away, and the display quietly starts reporting a polarity that is not there: values
       that are positive appear on the negative arm, or the other way round.</p>
 
@@ -305,10 +306,9 @@
       A display built with an automatic range on an attribute that is not balanced about zero will do this
       by default.</p>
 
-    <p>None of this requires the scientific colormaps. A traditional red-white-blue map used on a genuinely
-      diverging attribute with a symmetric range is doing its job. The class has to be right first;
-      uniformity and accessibility are then improvements on top of a correct choice rather than substitutes
-      for one.</p>
+    <p>None of this requires the scientific colormaps. A traditional red-white-blue map on a genuinely
+      diverging attribute with a symmetric range is doing its job. Get the class right first, then look at
+      uniformity and accessibility. Those two improve a correct choice; they do not repair a wrong one.</p>
   </section>
 
   <!-- ============================== EXERCISES ============================= -->
@@ -344,7 +344,7 @@
           where the arrow above the color bar sits, then switch the lock off and raise the bottom of the
           range to 30%.
           <details class="reveal"><summary>Hint</summary><span class="ans">The arrow marking zero slides
-            away from the centre of the colormap, and weak anticlines are now rendered in the synclinal
+            away from the center of the colormap, and weak anticlines are now rendered in the synclinal
             arm. The color bar is still labelled correctly and there is nothing in the image to indicate
             the problem. This is what an automatic range does to an attribute that is not balanced about
             zero.</span></details></li>
@@ -405,7 +405,7 @@
       distinguishes one rotation from another, which is what makes it a clean test of the display.</p>
 
     <p>The arrow above the color bar is drawn at the data value zero, wherever that falls in the current
-      display range. The colormap's own centre is at the midpoint of the range by construction. When the
+      display range. The colormap's own center is at the midpoint of the range by construction. When the
       symmetric lock is on, the bottom and top of the range are held at equal distances from zero, so the
       two coincide.</p>
 
@@ -421,7 +421,7 @@
       <li>Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco, 2016, True colors
         of oceanography: Oceanography, 29, 9&ndash;13, doi:
         <a href="https://doi.org/10.5670/oceanog.2016.66">10.5670/oceanog.2016.66</a>.</li>
-      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of color in science
         communication: Nature Communications, 11, 5444, doi:
         <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
       <li>Taner, M. T., F. Koehler, and R. E. Sheriff, 1979, Complex seismic trace analysis: Geophysics,
@@ -473,10 +473,10 @@ const GUIDE = {
   p2: { items: [
       { do: "Put mean curvature in Oslo and look at one of the three faults, then switch to balance.", see: "In balance the fault is a pair of lineaments and the sign is immediate. In Oslo the pair becomes one smeared band." },
       { do: "Put envelope in balance and move the range sliders.", see: "A false dividing line appears partway up the range and moves when the range does." },
-      { do: "Put envelope in RomaO.", see: "The highest and lowest values are rendered in the same colour, with no edge to warn you." }
+      { do: "Put envelope in RomaO.", see: "The highest and lowest values are rendered in the same color, with no edge to warn you." }
   ]},
   p3: { items: [
-      { do: "Set mean curvature in balance with the symmetric lock on, note where the arrow sits, then switch the lock off and raise the bottom of the range to 30%.", see: "The arrow leaves the centre of the colormap and weak anticlines start rendering in the synclinal arm." },
+      { do: "Set mean curvature in balance with the symmetric lock on, note where the arrow sits, then switch the lock off and raise the bottom of the range to 30%.", see: "The arrow leaves the center of the colormap and weak anticlines start rendering in the synclinal arm." },
       { do: "Switch to most-positive curvature with the lock on.", see: "Half the colormap is spent on data that is nearly absent, which is why this attribute has no automatic answer." }
   ]},
   p4: { items: [
@@ -609,11 +609,11 @@ const GUIDE = {
     if (!straddlesZero(S.attr)) {
       $('sCentre').textContent = 'the attribute has no zero to line up with';
     } else {
-      const centre = (rg[0] + rg[1]) / 2;
-      const off = Math.abs(centre) / ((rg[1] - rg[0]) / 2) * 100;
+      const center = (rg[0] + rg[1]) / 2;
+      const off = Math.abs(center) / ((rg[1] - rg[0]) / 2) * 100;
       $('sCentre').textContent = off < 0.5
         ? 'sitting on zero in the data'
-        : centre.toPrecision(2) + ',  ' + off.toFixed(0) + '% of a half-range off zero';
+        : center.toPrecision(2) + ',  ' + off.toFixed(0) + '% of a half-range off zero';
     }
   }
 

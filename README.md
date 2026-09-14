@@ -1,8 +1,18 @@
 # How Colormaps Actually Work
 
 Interactive teaching modules on color, color bars and the display of seismic
-attributes. Served at
+attributes. Start at [`index.html`](index.html), served at
 <https://hbedle-subsurface.github.io/seismic-colormap>.
+
+**Who it is for.** Undergraduate geology and geophysics students meeting these
+techniques for the first time. A reader should know what a seismic trace and a
+reflector are; no color science is assumed. The attributes used as examples are
+explained where they appear, with links out to the module sets that cover them
+in their own right.
+
+**What it covers.** How a display turns attribute values into colors, what that
+choice decides, and how to tell a feature that is in the data from one the
+display introduced.
 
 Heather Bedle and April Moreno-Ward, School of Geosciences, University of
 Oklahoma, with the [AASPI](https://www.ou.edu/mcee/labs/aaspi) consortium.
@@ -63,7 +73,8 @@ assets/cmapdata.js      colormap tables, 256 levels each
 assets/colormaps.js     lookup, application to data, L* profiles, CVD simulation
 assets/colormodel.js    the synthetic model these modules run on
 assets/cmplot.js        map, precomputed image, section, color bar and line plotting
-assets/glossary.js      click a marked term, get its definition
+assets/glossary.js      term definitions, the attribute explanations, and the
+                        outbound links to the other module sets
 assets/guide.js         the per-step "try this" task list
 assets/nextmod.js       previous and next module navigation
 assets/panelview.js     map / section switch, the vertical section, the map cut
@@ -78,7 +89,7 @@ repositories.
 `assets/colormodel.js` builds a 200 × 160 survey over a twelve-interface layered
 model, spanning about 500 ms of two-way time:
 
-| | Interval | Behaviour |
+| | Interval | Behavior |
 |---|---|---|
 | Shallow marker | −152 ms | continuous, faults dying upward |
 | Pinchout wedge | −115 ms | opens to two loops at its thick end, pinches out to the west |
@@ -141,7 +152,7 @@ rather than from those constants.
 The tables in `assets/cmapdata.js` are the published definitions, sampled at 256
 levels, not approximations built from a handful of anchor colors.
 
-- Crameri, F., 2018, *Scientific colour maps*,
+- Crameri, F., 2018, *Scientific color maps*,
   doi:[10.5281/zenodo.1243862](https://doi.org/10.5281/zenodo.1243862) —
   Oslo, Roma, RomaO, Lajolla, Batlow, Vik
 - Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco,
@@ -155,7 +166,7 @@ The library also carries the colormaps that have been in long-standing use in
 interpretation, so that a scientific map and the map it is being compared
 against sit in the same menu: rainbow, spectrum, full spectrum, extended
 spectrum, heat, cyan-magenta, turbo, repeating spectrum, blue-green-yellow-
-orange-red, rainbow with a white centre, a sixteen-step rainbow, red-white-blue,
+orange-red, rainbow with a white center, a sixteen-step rainbow, red-white-blue,
 blue-white-red, red-yellow-blue, red-yellow-green, cool-warm and a cyclic hue
 wheel. They are grouped in the menus under "in common use" and are there to be
 examined rather than recommended. `bgyor`, `rainbowwc` and `legacy16` are
@@ -164,7 +175,7 @@ implementation, and no software is named anywhere in the modules.
 
 Four further legacy diverging arrangements are included because module 05 needs
 them: red-white-green, magenta-white-cyan, red-green with no neutral, and
-red-black-blue. The first three collapse under red-green colour vision
+red-black-blue. The first three collapse under red-green color vision
 deficiency where red-white-blue does not, which is the point they are there to
 make.
 

@@ -119,10 +119,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · The three dimensions</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · Which one carries detail</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Which one carries order</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · What a good map does with all three</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Three dimensions</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Fine detail</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Order</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Real colormaps</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -280,10 +281,10 @@
       a minimum. The eye reads the peak as a ridge in the data.</p>
 
     <p><b>The diverging maps</b> show a symmetric V or inverted V in lightness, which is correct for an
-      attribute with a meaningful zero: distance from the centre is what should read as magnitude, and
+      attribute with a meaningful zero: distance from the center is what should read as magnitude, and
       lightness is what reports it. The traditional red-white-blue maps take the lightness all the way to
-      100 at the centre, which makes zero the brightest thing in the image. The scientific ones stop at a
-      mid gray, which leaves the centre quiet.</p>
+      100 at the center, which makes zero the brightest thing in the image. The scientific ones stop at a
+      mid gray, which leaves the center quiet.</p>
 
     <p>Whether the lightness merely rises, or rises at an even rate, is a further question. That is
       perceptual uniformity, and module 03 measures it.</p>
@@ -367,9 +368,9 @@
         <li><b>Compare two diverging maps.</b> On step 4, look at the lightness plots for red-white-blue
           and for balance.
           <details class="reveal"><summary>Hint</summary><span class="ans">Both are symmetric, which is
-            right for an attribute with a meaningful zero. Red-white-blue reaches L* 100 at the centre, so
+            right for an attribute with a meaningful zero. Red-white-blue reaches L* 100 at the center, so
             zero is the brightest value on the display and draws the eye to wherever the attribute happens
-            to cross it. Balance stops in the mid range, which leaves the centre quiet and keeps the
+            to cross it. Balance stops in the mid range, which leaves the center quiet and keeps the
             visual emphasis on the large departures in both
             directions.</span></details></li>
       </ol>
@@ -416,7 +417,7 @@
       right, with the phase accumulated column by column, and amplitude increases from top to bottom. The
       arrangement is that of Campbell and Robson (1968), where the boundary of the visible region traces
       the observer's contrast sensitivity. Here the pattern is rendered through the ramp under
-      construction, so the boundary depends on the ramp as well as on the observer, which is the point.</p>
+      construction, so the boundary depends on the ramp as well as on the observer.</p>
 
     <p>What the pattern shows on a screen depends on the screen, on the viewing distance and on the
       observer, so the absolute position of the boundary is not meaningful. The comparison between the
@@ -427,13 +428,13 @@
       <li>Campbell, F. W., and J. G. Robson, 1968, Application of Fourier analysis to the visibility of
         gratings: The Journal of Physiology, 197, 551&ndash;566, doi:
         <a href="https://doi.org/10.1113/jphysiol.1968.sp008574">10.1113/jphysiol.1968.sp008574</a>.</li>
-      <li>Mullen, K. T., 1985, The contrast sensitivity of human colour vision to red-green and
+      <li>Mullen, K. T., 1985, The contrast sensitivity of human color vision to red-green and
         blue-yellow chromatic gratings: The Journal of Physiology, 359, 381&ndash;400, doi:
         <a href="https://doi.org/10.1113/jphysiol.1985.sp015591">10.1113/jphysiol.1985.sp015591</a>.</li>
       <li>Ware, C., M. Stone, and D. A. Szafir, 2023, Rainbow colormaps are not all bad: IEEE Computer
         Graphics and Applications, 43, 88&ndash;93, doi:
         <a href="https://doi.org/10.1109/MCG.2023.3246111">10.1109/MCG.2023.3246111</a>.</li>
-      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+      <li>Kovesi, P., 2015, Good color maps: how to design them: arXiv preprint, doi:
         <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
       <li>Brewer, C. A., 1994, Color use guidelines for mapping and visualization: Modern Cartography
         Series, 2, 123&ndash;148, doi:
@@ -476,12 +477,12 @@
 const GUIDE = {
   p1: { items: [
       { do: "Set the hue to 250 and the lightness to 30, push the chroma slider to maximum and read the number returned. Repeat at hue 330.", see: "The blue-green direction runs out of chroma long before magenta does, at every lightness." },
-      { do: "Switch Vary between lightness, chroma and hue without touching the three sliders.", see: "The same colour produces three ramps that are nothing like equally useful." }
+      { do: "Switch Vary between lightness, chroma and hue without touching the three sliders.", see: "The same color produces three ramps that are nothing like equally useful." }
   ]},
   p2: { items: [
       { do: "Step through the three ramps and note how far right and how far up the pattern stays visible.", see: "Lightness reaches much finer bars and weaker amplitudes than either of the other two." },
       { do: "Set the attribute to coherence and repeat, watching the fault traces instead.", see: "The same result on real features: they survive in lightness and vanish in hue." },
-      { do: "Read the total colour difference for the hue ramp and for the lightness ramp.", see: "The hue ramp passes through more colour and shows less. Colour difference is not resolving power." },
+      { do: "Read the total color difference for the hue ramp and for the lightness ramp.", see: "The hue ramp passes through more color and shows less. Color difference is not resolving power." },
       { do: "Press Section at the top of the panel and step through the three ramps again.",
         see: "The reflections are thin, high-contrast features, so the lightness ramp holds them and the hue ramp loses them entirely. Fine detail behaves the same way in time as it does in map view." }
   ]},
@@ -491,7 +492,7 @@ const GUIDE = {
   ]},
   p4: { items: [
       { do: "Select the rainbow and find where its lightness peaks.", see: "In the yellow, past the middle of the range. Data at that value looks like a ridge." },
-      { do: "Compare the lightness plots for red-white-blue and for balance.", see: "Both symmetric; red-white-blue reaches L* 100 at the centre, so zero is the brightest thing on the display." }
+      { do: "Compare the lightness plots for red-white-blue and for balance.", see: "Both symmetric; red-white-blue reaches L* 100 at the center, so zero is the brightest thing on the display." }
   ]}
 };
 </script>
@@ -576,7 +577,7 @@ const GUIDE = {
     ctx.font = '10.5px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#5C6670';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('the colour set by the three sliders', 96, 14);
+    ctx.fillText('the color set by the three sliders', 96, 14);
     ctx.fillText(got.clipped
       ? 'chroma reduced to what the display can show'
       : 'inside the range the display can show', 96, 32);

@@ -99,7 +99,7 @@ const PANELVIEW = (function () {
     if (!s) return;
 
     /* A display composited from more than one attribute has no single colormap
-       to look the section up in, so the module builds the colours itself from
+       to look the section up in, so the module builds the colors itself from
        the panels it asks for. */
     var rgba = null, p, attr;
     if (cfg.compose) {
@@ -187,6 +187,24 @@ const PANELVIEW = (function () {
         dirBtns.push(b);
       });
     }
+    /* an explanation of whatever attribute is on screen, without the student
+       having to find a marked word in the prose */
+    if (cfg.state) {
+      var about = el('button', null, 'What is this?');
+      about.type = 'button';
+      about.id = 'pvAbout';
+      about.addEventListener('click', function (ev) {
+        /* the glossary closes itself on any click outside a marked word, so
+           this one must not reach it */
+        ev.stopPropagation();
+        var st = cfg.state();
+        var key = (window.GLOSS && st) ? GLOSS.forAttribute(st.attr) : null;
+        if (key) GLOSS.open(key, about);
+        else if (window.GLOSS) GLOSS.open('colormap', about);
+      });
+      bar.appendChild(about);
+    }
+
     var hide = el('button', null, 'Hide panel');
     hide.type = 'button';
     hide.id = 'pvHide';

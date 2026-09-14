@@ -108,10 +108,11 @@
   <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
-    <button role="tab" data-tab="p1" aria-selected="false">1 · Taking the levels away</button>
-    <button role="tab" data-tab="p2" aria-selected="false">2 · What steps are for</button>
-    <button role="tab" data-tab="p3" aria-selected="false">3 · Where the edges go</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · Output with no order</button>
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Fewer levels</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Why use steps</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Where edges go</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · No order</button>
+    <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
     <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
@@ -123,7 +124,7 @@
     <div class="plot-head" style="margin-bottom:14px">
       <h3><span class="stepno">1</span>Taking the levels away</h3>
     </div>
-    <p class="lede">The slider reduces the colormap from its full 256 levels down to two. Nothing else
+    <p class="lede">The slider reduces the <span class="term" data-term="colormap">colormap</span> from its full 256 levels down to two. Nothing else
       changes: the attribute, the range and the colors along the map are all as they were.</p>
 
     <p>Coming down from 256, the first thing to notice is how far it can go before anything is visible. At
@@ -164,7 +165,7 @@
 
     <p>Three situations where the trade is usually worth making.</p>
 
-    <p><b>A threshold that means something.</b> Coherence below some value is where an interpreter starts
+    <p><b>A threshold that means something.</b> <span class="term" data-term="coherence">Coherence</span> below some value is where an interpreter starts
       picking faults. Setting the levels so that a bin edge falls at that value makes the display show
       directly where the criterion is met, instead of showing a gradient and leaving the threshold to the
       eye. The same argument applies to any attribute with a cutoff attached to it.</p>
@@ -208,7 +209,7 @@
       range, which is why contour intervals of equal value have been the convention for structure maps for
       as long as there have been structure maps.</p>
 
-    <p><b>Equal population</b> divides the survey so that each bin holds the same number of samples. Every
+    <p><b>Equal population</b> divides the survey so that each bin holds the same number of samples, which is the same idea as the <span class="term" data-term="percentile-clip">percentile clip</span> of module 06 applied inside the range rather than at its ends. Every
       color then does the same amount of work, and the display separates the bulk of the data rather than
       the tails. Its cost is that the bin edges are no longer round numbers and no longer evenly spaced, so
       the color bar must be labelled with the actual values or it will be misread. A reader who assumes
@@ -241,7 +242,7 @@
       arbitrary: class 3 is not between class 2 and class 4 in any sense.</p>
 
     <p>The two maps below are a classification of this survey into the number of classes selected in the
-      panel, produced by k-means on envelope and coherence together. The left one uses a sequential
+      panel, produced by k-means on <span class="term" data-term="envelope">envelope</span> and <span class="term" data-term="coherence">coherence</span> together. The left one uses a sequential
       colormap and the right one a categorical set.</p>
 
     <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
@@ -272,8 +273,8 @@
       the display is asserting an order that the method did not produce. This is worth running mentally on
       any classification figure.</p>
 
-    <p><b>Some classification output does have an order.</b> A self-organising map lays its classes out on a
-      grid so that neighbours are similar, and a colormap that follows that grid is carrying real
+    <p><b>Some classification output does have an order.</b> A self-organizing map lays its classes out on a
+      grid so that neighbors are similar, and a colormap that follows that grid is carrying real
       information rather than inventing it. The distinction is whether the ordering came from the method or
       from the display, and it has to be checked rather than assumed.</p>
   </section>
@@ -335,7 +336,7 @@
         <li><b>Break a diverging map with equal population.</b> Put mean curvature in balance at eight
           levels and switch between the two binning modes.
           <details class="reveal"><summary>Hint</summary><span class="ans">With equal population the
-            neutral colour sits at the median of the data rather than at zero, so the boundary between the
+            neutral color sits at the median of the data rather than at zero, so the boundary between the
             two arms of the colormap is no longer the boundary between anticlinal and synclinal. This is
             the module 04 problem arriving through a different door.</span></details></li>
 
@@ -392,16 +393,16 @@
       equal-population map against evenly spaced labels would misstate the attribute, so the labels move
       instead of the colors.</p>
 
-    <p>The classification in step 4 is k-means on two attributes, envelope and coherence, each standardised
-      to zero mean and unit standard deviation so that neither dominates through its units. Initial centres
+    <p>The classification in step 4 is k-means on two attributes, envelope and coherence, each standardized
+      to zero mean and unit standard deviation so that neither dominates through its units. Initial centers
       are placed at evenly spaced quantiles of the first attribute and the algorithm is run to convergence
       or twenty iterations, from a fixed starting point so the result does not change between visits. The
       class labels are then in whatever order the initialisation produced, which is exactly the point being
       made: they carry no meaning.</p>
 
-    <p>This is a deliberately plain method, chosen because it is easy to state. Self-organising maps and
+    <p>This is a deliberately plain method, chosen because it is easy to state. Self-organizing maps and
       generative topographic mapping, which are the usual tools for this in seismic work, differ in one
-      respect that matters here: they place their classes on a grid so that neighbouring classes are
+      respect that matters here: they place their classes on a grid so that neighboring classes are
       similar, so a colormap that follows the grid carries real information. k-means produces no such
       structure.</p>
 
@@ -465,7 +466,7 @@ const GUIDE = {
   p3: { items: [
       { do: "Put sweetness on 8 equal-value levels and read the largest and smallest bin shares. Then switch to equal population.", see: "74% in one bin and 0.4% in the emptiest, against an eighth in each." },
       { do: "Try the same on two-way time.", see: "Already 22% and 2.5%: a smooth surface does not need the fix." },
-      { do: "Put mean curvature in balance at 8 levels and switch the binning.", see: "With equal population the neutral colour leaves zero, which is the module 04 problem arriving by another route." }
+      { do: "Put mean curvature in balance at 8 levels and switch the binning.", see: "With equal population the neutral color leaves zero, which is the module 04 problem arriving by another route." }
   ]},
   p4: { items: [
       { do: "Move the classes slider from 3 to 8 and watch which features separate.", see: "Channel and background at three; the margin at around five; beyond six the extra classes subdivide the background." },
