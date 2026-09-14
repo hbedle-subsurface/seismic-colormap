@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building a display | How Colormaps Actually Work</title>
+<meta name="description" content="Every control in one place on one data set, the order to set them in, the checks to run, and the record that makes a figure reproducible.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 10 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Building a display</h1>
+    <p class="sub">Every control from the previous ten modules, on one data set, in the order they are
+      worth setting. The last step produces the record: the handful of numbers that let somebody else
+      reproduce the figure, which is the thing almost no published seismic display carries.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The display <span>&mdash; every control in one place</span></p>
+        <canvas id="cMain" aria-label="The display being built"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMain">&nbsp;</p>
+        <canvas id="cHist" aria-label="Histogram with the display limits marked"></canvas>
+
+        <div class="stats">
+          <div class="stat key"><span>Class needed / chosen</span><b id="sClass">—</b></div>
+          <div class="stat"><span>Clipped</span><b id="sClip">—</b></div>
+          <div class="stat"><span>Colors on the middle half</span><b id="sMid">—</b></div>
+          <div class="stat"><span>Worst step under deutan</span><b id="sCvd">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">The controls <span>&mdash; set them roughly in this order</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>1 &middot; The data</h2>
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="coherence">Coherence</option>
+                <option value="frequency">Instantaneous frequency</option>
+                <option value="amplitude">Amplitude</option>
+                <option value="meanCurvature">Mean curvature</option>
+                <option value="curvature">Most-positive curvature</option>
+                <option value="phase">Instantaneous phase</option>
+                <option value="thickness">Sand thickness (model)</option>
+                <option value="twoWayTime">Two-way time to marker (model)</option>
+              </select>
+            </div>
+
+            <h2>2 &middot; The colormap</h2>
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+            <div class="ctl">
+              <label for="levels">Levels <span class="val" id="levelsV">continuous</span></label>
+              <input type="range" id="levels" min="2" max="33" step="1" value="33">
+            </div>
+
+            <h2>3 &middot; The range</h2>
+            <div class="ctl">
+              <label for="rlo">Bottom <span class="val" id="rloV">0%</span></label>
+              <input type="range" id="rlo" min="0" max="50" step="0.5" value="0">
+            </div>
+            <div class="ctl">
+              <label for="rhi">Top <span class="val" id="rhiV">100%</span></label>
+              <input type="range" id="rhi" min="50" max="100" step="0.5" value="100">
+            </div>
+            <div class="ctl">
+              <label for="presets">From the distribution</label>
+              <div class="seg" role="group" aria-label="Range presets" id="presets" style="flex-wrap:wrap">
+                <button type="button" data-preset="full">Everything</button>
+                <button type="button" data-preset="2">2&ndash;98%</button>
+                <button type="button" data-preset="5">5&ndash;95%</button>
+              </div>
+            </div>
+            <div class="ctl">
+              <label for="sym">Symmetric about zero</label>
+              <div class="seg" role="group" aria-label="Symmetric" id="sym">
+                <button type="button" id="symOff" aria-pressed="true">Off</button>
+                <button type="button" id="symOn" aria-pressed="false">On</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctl-col">
+            <h2>4 &middot; The stretch</h2>
+            <div class="ctl">
+              <label for="stretch">Stretch</label>
+              <div class="seg" role="group" aria-label="Stretch" id="stretch">
+                <button type="button" id="stLin" aria-pressed="true">Linear</button>
+                <button type="button" id="stGam" aria-pressed="false">Gamma</button>
+                <button type="button" id="stLog" aria-pressed="false">Log</button>
+              </div>
+            </div>
+            <div class="ctl" id="ctlGamma" hidden>
+              <label for="gamma">Gamma <span class="val" id="gammaV">1.00</span></label>
+              <input type="range" id="gamma" min="0.3" max="3" step="0.05" value="1">
+            </div>
+
+            <h2>5 &middot; A second attribute</h2>
+            <div class="ctl">
+              <label for="attrB">Corender with</label>
+              <select id="attrB">
+                <option value="none">Nothing</option>
+                <option value="coherence">Coherence</option>
+                <option value="envelope">Envelope</option>
+                <option value="sweetness">Sweetness</option>
+              </select>
+            </div>
+            <div class="ctl" id="ctlMode" hidden>
+              <label for="mode">Taking</label>
+              <div class="seg" role="group" aria-label="Corendering method" id="mode">
+                <button type="button" id="mLight" aria-pressed="true">Lightness</button>
+                <button type="button" id="mSat" aria-pressed="false">Chroma</button>
+                <button type="button" id="mMask" aria-pressed="false">Opacity</button>
+              </div>
+            </div>
+            <div class="ctl" id="ctlStrength" hidden>
+              <label for="strength">Strength <span class="val" id="strengthV">70%</span></label>
+              <input type="range" id="strength" min="0" max="100" step="5" value="70">
+            </div>
+
+            <h2>6 &middot; The checks</h2>
+            <div class="ctl">
+              <label for="cvd">Color vision</label>
+              <div class="seg" role="group" aria-label="Simulation" id="cvd">
+                <button type="button" id="vOff" aria-pressed="true">Off</button>
+                <button type="button" id="vDeu" aria-pressed="false">Deutan</button>
+                <button type="button" id="vPro" aria-pressed="false">Protan</button>
+                <button type="button" id="vAch" aria-pressed="false">No color</button>
+              </div>
+            </div>
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Four decisions and one record. <b>The order matters more than any single choice.</b></p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Class before colors</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · The range</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Run the checks</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Write it down</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Class before colors</h3>
+    </div>
+    <p class="lede">The first decision is not which colormap looks best. It is which class the attribute
+      needs, and the attribute decides that, not the interpreter. Getting it wrong cannot be repaired by
+      any later choice.</p>
+
+    <p>Two questions, from module 04. Does zero mean something, with a sign that carries information? Does
+      the attribute wrap around? Magnitudes take a sequential map, signed quantities a diverging one,
+      angles a cyclic one. The readout in the panel says which class the current attribute needs and which
+      class the current colormap is, and whether they agree.</p>
+
+    <p>Within the right class, the second decision is whether the lightness runs one way from end to end.
+      That is what carries the fine detail, from module 02, and what survives color vision deficiency, from
+      module 05. Almost everything else about a colormap is a matter of taste; this is not.</p>
+
+    <table>
+      <thead><tr><th>If the attribute is</th><th>Use</th><th>Reasonable choices here</th></tr></thead>
+      <tbody>
+        <tr><td>A magnitude with no natural zero</td><td>Sequential</td><td>Oslo, viridis, batlow, grayscale</td></tr>
+        <tr><td>Signed, with a meaningful zero</td><td>Diverging, symmetric range</td><td>balance, vik, red-white-blue</td></tr>
+        <tr><td>An angle that wraps</td><td>Cyclic</td><td>RomaO</td></tr>
+        <tr><td>Class labels with no order</td><td>Categorical</td><td>The ten-colour set</td></tr>
+      </tbody>
+    </table>
+
+    <p>Grayscale belongs in that first row and is worth more than its reputation. It measured 1.8 on the
+      spacing test in module 03, better than viridis, and it is untouched by every form of color vision
+      deficiency. If a display is about where the edges are, it is often the right answer and it is almost
+      never the wrong one.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>The range</h3>
+    </div>
+    <p class="lede">The range changes a display at least as much as the colormap does, and it is the part
+      left to a default most often. The histogram in the panel has the two limits marked on it.</p>
+
+    <p>Set it from the distribution rather than from the extremes. A 2&ndash;98% clip is a reasonable
+      starting point for a clean attribute and 5&ndash;95% for a noisy one, and the difference between
+      those two matters far less than the difference between either of them and using the raw minimum and
+      maximum. The readout says how many of the colormap's levels are reaching the middle half of the data,
+      which is the number worth watching as the limits move.</p>
+
+    <p>If the attribute has a meaningful zero, lock the range symmetric. Otherwise the neutral colour of a
+      diverging map lands wherever the middle of the range happens to fall, and the display starts
+      reporting a sign that is not there.</p>
+
+    <p>Reach for a stretch only after the clip. A gamma spreads the colours over one end of the range and
+      undoes the even spacing that module 03 measured, which is a reasonable trade when it is deliberate.
+      A logarithmic stretch is the right answer for an attribute that genuinely spans orders of magnitude,
+      and should be stated on the color bar when it is used.</p>
+
+    <div class="legend">
+      <span>A strong gamma is usually a sign that something earlier is wrong: the clip, the attribute, or
+      the question. Try the clip first and the stretch second, and if a gamma above about two is needed to
+      make features appear, go back and look at why.</span>
+    </div>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Run the checks</h3>
+    </div>
+    <p class="lede">Four checks, none of which takes more than a few seconds, and each of which catches a
+      failure that is invisible from inside the finished display.</p>
+
+    <p><b>Move the range and see what moves with it.</b> Features that hold still belong to the data.
+      Features that slide belong to the colormap. This is the module 03 test and it is the single most
+      useful thing in this module set.</p>
+
+    <p><b>Compare against grayscale.</b> Switch the colormap to grayscale and back. Anything visible in
+      grayscale and not in the colored version was being carried by hue, which cannot resolve it. Anything
+      visible in the colored version and not in grayscale deserves a second look.</p>
+
+    <p><b>Simulate color vision deficiency.</b> The deutan and protan buttons, and the no-color button,
+      which is the strictest test there is: what survives it is carried by lightness. The readout gives the
+      smallest step that survives deutan simulation, and a number near zero means a stretch of the range
+      has become one flat color.</p>
+
+    <p><b>Look at the section.</b> The Section button at the top of the panel swaps the map for a vertical
+      slice. An attribute that looks convincing in map view and incoherent in section is usually being
+      extracted along the wrong surface, or is responding to something other than what it is supposed to
+      measure. The inline direction crosses all three faults; the crossline crosses the channel.</p>
+
+    <p>Two more worth adding when they apply. If the display is corendered, toggle the second attribute off
+      and on: anything that appears and disappears with it belongs to it. If the figure is going to print,
+      check the dark end, because the ink limit takes the saturated colors first.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Write it down</h3>
+    </div>
+    <p class="lede">A figure carries its colormap visibly and its range as two numbers nobody reads. Every
+      other decision is invisible. The text below is generated from the current settings and is what a
+      caption needs to make the display reproducible.</p>
+
+    <div class="tryit" style="max-width:none">
+      <p id="record" style="font:14px/1.6 'IBM Plex Mono',monospace;white-space:pre-wrap;margin:0 0 10px"></p>
+      <button class="btn small" id="copyBtn" type="button">Copy the record</button>
+      <span class="hint-line" id="copyNote" style="margin-left:10px"></span>
+    </div>
+
+    <p style="margin-top:16px">It is longer than most captions and shorter than most figures deserve. The
+      parts that matter are the ones a reader cannot recover from the image: the range, the stretch, the
+      second attribute and what it was doing, and any threshold.</p>
+
+    <p>A blend needs more again. Three attributes, three ranges, three gains and the assignment of
+      attributes to channels is eight pieces of information, from module 09, and a blend without them
+      cannot be reproduced by anyone including the person who made it.</p>
+
+    <div class="legend">
+      <span>The habit worth forming is not writing long captions. It is noticing which of your decisions
+      are invisible in the result. Everything in the generated text is a decision that was made, and every
+      one of them could have been made differently and produced a different figure from the same data.</span>
+    </div>
+
+    <p>That is the end of the module set. What it has been arguing, in eleven different ways, is a single
+      point: the display is part of the measurement. It is chosen, it can be chosen badly, and unlike most
+      of the rest of an interpretation it leaves no trace of having been chosen at all.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>Interpretation is a judgement made from what is visible. Everything in these modules follows from
+      that. A display that hides a feature produces an interpretation without it; a display that invents a
+      boundary produces one with it; and neither leaves any sign on the image.</p>
+
+    <p>The practical version is short enough to remember. Match the class to the attribute. Let lightness
+      carry the detail. Set the range from the distribution. Check by moving something and seeing what
+      moves with it. Write down what you did.</p>
+
+    <p>None of this requires new software or new colormaps. Most of it is available in whatever package is
+      already being used, and the parts that are not — a simulator, a percentile clip — take minutes to
+      arrange. What it requires is treating the display as a choice rather than as a default, which is the
+      only part that is genuinely a change in habit.</p>
+
+    <p>The counterargument deserves a hearing. Interpreters have worked productively in rainbow colormaps
+      for forty years, and Ware et al. (2023) make a reasonable case that the rainbow's bad reputation is
+      partly overstated: its high number of distinguishable colors is genuinely useful for some tasks, and
+      an experienced reader who knows a colormap's quirks can work around them. The reply is that the
+      workarounds are individual and unwritten, and that a display which needs them is doing less work than
+      it could. Where a rainbow is chosen deliberately, for a reason, that is a considered decision. Where
+      it is the default, it is not a decision at all.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Build a coherence display from nothing.</b> Set the attribute to coherence and work through
+          the six control groups in order, then read the record in step 4.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Coherence is a magnitude, so
+            sequential; grayscale or Oslo. It is heavily skewed toward one, so a percentile clip matters
+            more than usual, and the interesting variation is in the top few per cent of the range. No
+            symmetric lock, because there is no zero. It is the attribute least in need of a second
+            attribute corendered onto it, because it is usually the one being corendered onto something
+            else.</span></details></li>
+
+        <li><b>Build the same display badly, on purpose.</b> Put coherence in a cyclic map at the full
+          range with a gamma of 0.4.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The highest and lowest values
+            come out the same colour, the range is being held open by a handful of samples, and the stretch
+            has undone whatever even spacing the map had. The image still looks like a competent display,
+            which is the problem this module set exists to
+            address.</span></details></li>
+
+        <li><b>Find an attribute that needs the symmetric lock.</b> Try mean curvature and amplitude with
+          the lock off and a 5&ndash;95% clip, then with it on.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Both are signed, and a
+            percentile clip on either is very unlikely to come out symmetric about zero on its own. With
+            the lock off the neutral colour of a diverging map lands away from zero and the display reports
+            a sign that is not there.</span></details></li>
+
+        <li><b>Run the grayscale check on a rainbow display.</b> Put envelope in the rainbow at a 2&ndash;98%
+          clip, then switch to grayscale and back.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The channel margins and the
+            pockmark field are easier to follow in grayscale, because they are low-contrast fine detail and
+            that is carried by lightness. The rainbow is better at making the channel axis obvious, which
+            is the one feature that needed no help.</span></details></li>
+
+        <li><b>Use the section to catch something.</b> Set the attribute to phase and switch to the section
+          view, inline.
+          <details class="reveal"><summary>Hint</summary><span class="ans">In section the phase is coherent
+            along the reflections and noise everywhere between them, which is not visible in map view
+            because the map is extracted along the marker. It is the argument for masking a phase display
+            by reflection strength, from module 08.</span></details></li>
+
+        <li><b>Write a caption for a display you would defend.</b> Build anything you like, read the record,
+          and decide which lines you would have thought to write unprompted.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Most people write the attribute
+            and the colormap. Most people do not write the range, the stretch or the corendering, and those
+            are exactly the ones a reader cannot recover from the picture.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Class first. The attribute decides it, and no later choice repairs getting it wrong.</li>
+      <li>Within the class, pick a colormap whose lightness runs one way. That is what carries fine detail
+        and what survives color vision deficiency.</li>
+      <li>Set the range from the distribution, not from the extremes, and lock it symmetric when the
+        attribute has a meaningful zero.</li>
+      <li>Clip before stretching. A gamma above about two usually means something earlier needs
+        revisiting.</li>
+      <li>Four checks: move the range and see what moves; compare against grayscale; simulate color vision
+        deficiency; look at a section.</li>
+      <li>Write down what a reader cannot recover from the image: the range, the stretch, the second
+        attribute and its threshold. A blend needs eight pieces of information.</li>
+      <li>The display is part of the measurement, and it is the part that leaves no trace of having been
+        chosen.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>This module reuses the machinery of the ones before it. The range and the percentile presets are
+      from module 06, the stretch is applied by warping a copy of the colormap as it is there, the levels
+      are the quantization of module 07, the corendering is the linear-light compositing of module 08, and
+      the simulation is the Machado model used in module 05. Nothing new is computed; the point of the
+      module is that all of it is one display and one set of decisions.</p>
+
+    <p>The record is generated from the current settings. It reports the attribute, the colormap with its
+      source, the class agreement, the range with both the values and the percentiles they correspond to,
+      the stretch, the number of levels, any corendered attribute with its method and strength, and the
+      model parameters that produced the synthetic. On real data the last line would be the survey, the
+      processing product and the extraction surface instead.</p>
+
+    <p>The order of the six control groups is the order the decisions are worth making in, and it is not
+      arbitrary. The class constrains the colormap; the colormap and the range together decide how much of
+      the data is separable; the stretch only makes sense once the range is fixed; and a second attribute
+      should be added to a display that already works rather than used to rescue one that does not.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+        communication: Nature Communications, 11, 5444, doi:
+        <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
+      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+        <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
+      <li>Ware, C., M. Stone, and D. A. Szafir, 2023, Rainbow colormaps are not all bad: IEEE Computer
+        Graphics and Applications, 43, 88&ndash;93, doi:
+        <a href="https://doi.org/10.1109/MCG.2023.3246111">10.1109/MCG.2023.3246111</a>.</li>
+      <li>Paton, G., 2017, The effect of colour blindness on seismic interpretation: First Break, 35,
+        31&ndash;38, doi:
+        <a href="https://doi.org/10.3997/1365-2397.2017013">10.3997/1365-2397.2017013</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+    { do: 'Set the attribute to instantaneous phase and read the class line in the readouts.',
+      see: 'It asks for a cyclic colormap. Anything else puts an edge into the image at the wrap.' },
+    { do: 'Set it to mean curvature and try Oslo, then balance.',
+      see: 'The sign of the attribute is only readable in the diverging map.' }
+  ]},
+  p2: { items: [
+    { do: 'With envelope selected, press Everything and read the colours on the middle half, then press 2\u201398%.',
+      see: 'More of the colormap reaches the bulk of the data, for a few per cent of the survey clipped.' },
+    { do: 'Set the attribute to mean curvature and turn the symmetric lock on and off.',
+      see: 'With it off, the neutral colour leaves zero and weak anticlines render on the synclinal arm.' }
+  ]},
+  p3: { items: [
+    { do: 'Put envelope in the rainbow, find a band edge on the channel flank, and move the bottom of the range.',
+      see: 'The edge slides. The channel and the faults do not.' },
+    { do: 'Switch the colormap to grayscale and back, watching the pockmark field.',
+      see: 'Low-contrast fine detail is easier to follow in grayscale, because lightness is what resolves it.' },
+    { do: 'Press the no-colour simulation button.',
+      see: 'What survives is carried by lightness. It is the strictest test available and the quickest.' }
+  ]},
+  p4: { items: [
+    { do: 'Build a display you would defend, then read the record and decide which lines you would have written unprompted.',
+      see: 'Most people write the attribute and the colormap. The range, the stretch and the corendering are the ones a reader cannot recover.' }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attr: 'envelope', cmap: 'oslo', levels: 33, rlo: 0, rhi: 100,
+                sym: false, stretch: 'linear', gamma: 1,
+                attrB: 'none', mode: 'lightness', strength: 70, cvd: 'off' };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+  const lin = Colormaps.srgbToLinear, srgb = Colormaps.linearToSrgb;
+  const GRAY = [138, 142, 146];
+
+  /* ---- data and range ---------------------------------------------------- */
+
+  const sortCache = {};
+  function sorted(attr) {
+    if (!sortCache[attr]) {
+      const s = Float32Array.from(model.slice(attr));
+      s.sort();
+      sortCache[attr] = s;
+    }
+    return sortCache[attr];
+  }
+  function pctValue(p) {
+    const s = sorted(S.attr);
+    return s[Math.min(s.length - 1, Math.max(0, Math.round(p / 100 * (s.length - 1))))];
+  }
+  function valuePct(x) {
+    const s = sorted(S.attr);
+    let lo = 0, hi = s.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (s[m] < x) lo = m + 1; else hi = m; }
+    return 100 * lo / (s.length - 1);
+  }
+  function range() {
+    const s = sorted(S.attr);
+    const dmin = s[0], dmax = s[s.length - 1], span = (dmax - dmin) || 1;
+    let lo = dmin + span * S.rlo / 100;
+    let hi = dmin + span * S.rhi / 100;
+    if (S.sym && dmin < 0 && dmax > 0) {
+      const m = Math.max(Math.abs(lo), Math.abs(hi));
+      lo = -m; hi = m;
+    }
+    return [lo, hi];
+  }
+  function nLevels() { return S.levels >= 33 ? 0 : S.levels; }
+
+  /* ---- the colormap, with the stretch folded into it --------------------- */
+
+  function mapKey() {
+    if (S.stretch === 'linear') return S.cmap;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3, out = [];
+    for (let i = 0; i < 256; i++) {
+      let t = i / 255;
+      t = (S.stretch === 'gamma') ? Math.pow(t, S.gamma)
+                                  : Math.log(1 + 99 * t) / Math.log(100);
+      const j = Math.round(t * (n - 1)) * 3;
+      out.push([a[j], a[j + 1], a[j + 2]]);
+    }
+    Colormaps.define('m10', out, { name: Colormaps.meta[S.cmap].name + ', stretched' });
+    return 'm10';
+  }
+
+  /* ---- the composite ----------------------------------------------------- */
+
+  function composite() {
+    const key = mapKey();
+    const a = Colormaps.lut(key), levels = a.length / 3;
+    const v = model.slice(S.attr);
+    const rg = range();
+    const cyc = !!Synthetic.CYCLIC[S.attr];
+    const k = nLevels();
+    const n = v.length;
+    const out = new Uint8ClampedArray(4 * n);
+
+    let nb = null;
+    if (S.attrB !== 'none') {
+      const vb = model.slice(S.attrB), rb = Synthetic.RANGES[S.attrB];
+      nb = new Float32Array(n);
+      const sp = (rb[1] - rb[0]) || 1;
+      for (let i = 0; i < n; i++) {
+        let t = (vb[i] - rb[0]) / sp;
+        nb[i] = t < 0 ? 0 : t > 1 ? 1 : t;
+      }
+    }
+    const st = S.strength / 100;
+    let low = 0, high = 0;
+
+    for (let i = 0; i < n; i++) {
+      if (v[i] < rg[0]) low++; else if (v[i] > rg[1]) high++;
+      let t = (v[i] - rg[0]) / ((rg[1] - rg[0]) || 1);
+      if (cyc) t = t - Math.floor(t); else t = t < 0 ? 0 : t > 1 ? 1 : t;
+      if (k) t = Math.round(t * (k - 1)) / (k - 1);
+      const j = Math.round(t * (levels - 1)) * 3;
+      let r = a[j], g = a[j + 1], b = a[j + 2];
+
+      if (nb) {
+        if (S.mode === 'lightness') {
+          const f = 1 - st * (1 - nb[i]);
+          r = srgb(lin(r) * f); g = srgb(lin(g) * f); b = srgb(lin(b) * f);
+        } else if (S.mode === 'sat') {
+          const f = st * (1 - nb[i]);
+          const Y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+          r = srgb(lin(r) * (1 - f) + Y * f);
+          g = srgb(lin(g) * (1 - f) + Y * f);
+          b = srgb(lin(b) * (1 - f) + Y * f);
+        } else {
+          let al = Math.max(0, Math.min(1, (nb[i] - 0.35) / 0.15));
+          al = 1 - st * (1 - al);
+          r = r * al + GRAY[0] * (1 - al);
+          g = g * al + GRAY[1] * (1 - al);
+          b = b * al + GRAY[2] * (1 - al);
+        }
+      }
+      if (S.cvd !== 'off') {
+        const c = Colormaps.simulate([r, g, b], S.cvd, 1);
+        r = c[0]; g = c[1]; b = c[2];
+      }
+      const q = 4 * i;
+      out[q] = r; out[q + 1] = g; out[q + 2] = b; out[q + 3] = 255;
+    }
+    return { rgba: out, n: n, low: low, high: high, key: key, range: rg };
+  }
+
+  /* ---- the record -------------------------------------------------------- */
+
+  function record() {
+    const rg = range();
+    const m = Colormaps.meta[S.cmap];
+    const k = nLevels();
+    const L = [];
+    L.push(Synthetic.LABEL[S.attr] + ', horizon slice on the top of the sand.');
+    L.push('Colormap: ' + m.name + ' (' + m.cls + ', ' +
+           (m.era === 'scientific' ? 'designed against published perceptual criteria'
+                                   : 'in long-standing use') + ')' +
+           (k ? ', quantised to ' + k + ' levels' : '') + '.');
+    const want = Synthetic.CLASS[S.attr];
+    L.push('Class: attribute needs ' + want + '; colormap is ' + m.cls +
+           (m.cls === want ? ' \u2014 agrees.' : ' \u2014 MISMATCH.'));
+    L.push('Range: ' + rg[0].toPrecision(3) + ' to ' + rg[1].toPrecision(3) +
+           '  (' + valuePct(rg[0]).toFixed(1) + '% to ' + valuePct(rg[1]).toFixed(1) +
+           '% of the survey)' + (S.sym ? ', locked symmetric about zero' : '') + '.');
+    L.push('Stretch: ' + (S.stretch === 'linear' ? 'linear'
+           : S.stretch === 'gamma' ? 'gamma ' + S.gamma.toFixed(2) : 'logarithmic') + '.');
+    if (S.attrB !== 'none') {
+      L.push('Corendered with ' + Synthetic.LABEL[S.attrB].toLowerCase() + ' taking the ' +
+             (S.mode === 'lightness' ? 'lightness' : S.mode === 'sat' ? 'chroma' : 'opacity') +
+             ' at ' + S.strength + '% strength' +
+             (S.mode === 'mask' ? ', threshold 35% with a 15% taper' : '') + '.');
+      L.push('The colour bar describes the first attribute only and not the image.');
+    }
+    L.push('Data: synthetic model, 22 m maximum sand thickness, 30 Hz Ricker wavelet, ' +
+           '6% noise. On real data this line would be the survey, the processing product ' +
+           'and the extraction surface.');
+    return L.join('\n');
+  }
+
+  /* ---- draw -------------------------------------------------------------- */
+
+  function drawAll() {
+    const c = composite();
+    const rg = c.range;
+    CMPLOT.image($('cMain'), c.rgba, {
+      nx: model.nx, ny: model.ny, height: 252,
+      title: Synthetic.LABEL[S.attr] +
+             (S.attrB !== 'none' ? ' with ' + Synthetic.LABEL[S.attrB].toLowerCase() : '')
+    });
+    CMPLOT.colorbar($('cBar'), {
+      cmap: c.key, min: rg[0], max: rg[1], nLevels: nLevels(),
+      cvd: S.cvd === 'off' ? undefined : S.cvd,
+      label: Synthetic.LABEL[S.attr] +
+             (S.attrB !== 'none' ? ' \u2014 the second attribute is not on this bar' : '')
+    });
+
+    const s = sorted(S.attr);
+    const res = CMPLOT.histogram($('cHist'), model.slice(S.attr), {
+      xMin: s[0], xMax: s[s.length - 1], bins: 100, height: 150,
+      xLabel: Synthetic.LABEL[S.attr], yLabel: 'Share', yFmt: (v) => v.toFixed(1)
+    });
+    if (res) {
+      const ctx = res.ctx, rect = res.rect;
+      ctx.save();
+      ctx.fillStyle = 'rgba(132,22,23,0.12)';
+      if (rg[0] > s[0]) ctx.fillRect(rect.x, rect.y, res.X(rg[0]) - rect.x, rect.h);
+      if (rg[1] < s[s.length - 1]) {
+        ctx.fillRect(res.X(rg[1]), rect.y, rect.x + rect.w - res.X(rg[1]), rect.h);
+      }
+      ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.8;
+      [rg[0], rg[1]].forEach(function (x) {
+        if (x < s[0] || x > s[s.length - 1]) return;
+        ctx.beginPath();
+        ctx.moveTo(res.X(x), rect.y); ctx.lineTo(res.X(x), rect.y + rect.h);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    const want = Synthetic.CLASS[S.attr], have = Colormaps.meta[S.cmap].cls;
+    $('sClass').textContent = want + ' / ' + have + (want === have ? '  \u2014 agrees' : '  \u2014 MISMATCH');
+    $('sClip').textContent = (100 * c.low / c.n).toFixed(1) + '% low, ' +
+                             (100 * c.high / c.n).toFixed(1) + '% high';
+    const q1 = pctValue(25), q3 = pctValue(75);
+    const pos = (x) => Math.max(0, Math.min(1, (x - rg[0]) / ((rg[1] - rg[0]) || 1)));
+    $('sMid').textContent = Math.round(256 * Math.abs(pos(q3) - pos(q1))) + ' of 256';
+
+    /* smallest surviving step under deutan, against the map's own average */
+    const a = Colormaps.lut(c.key), nn = a.length / 3, stp = 8;
+    let sum = 0;
+    const d0 = [], d1 = [];
+    for (let i = 0; i + stp < nn; i++) {
+      const p = Colormaps.rgbToLab(a[3 * i], a[3 * i + 1], a[3 * i + 2]);
+      const q = Colormaps.rgbToLab(a[3 * (i + stp)], a[3 * (i + stp) + 1], a[3 * (i + stp) + 2]);
+      const dd = Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]);
+      d0.push(dd); sum += dd;
+      const ps = Colormaps.simulate([a[3 * i], a[3 * i + 1], a[3 * i + 2]], 'deutan', 1);
+      const qs = Colormaps.simulate([a[3 * (i + stp)], a[3 * (i + stp) + 1],
+                                     a[3 * (i + stp) + 2]], 'deutan', 1);
+      const P = Colormaps.rgbToLab(ps[0], ps[1], ps[2]);
+      const Q = Colormaps.rgbToLab(qs[0], qs[1], qs[2]);
+      d1.push(Math.hypot(Q[0] - P[0], Q[1] - P[1], Q[2] - P[2]));
+    }
+    const mean = sum / d0.length || 1;
+    let mn = Infinity;
+    for (let i = 0; i < d1.length; i++) mn = Math.min(mn, d1[i] / mean);
+    $('sCvd').textContent = mn.toFixed(2) + (mn < 0.15 ? '  \u2014 a stretch goes flat' : '');
+
+    $('capMain').textContent = Colormaps.meta[S.cmap].note;
+    $('record').textContent = record();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function bind(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = function () { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', function () {
+      S[key] = parseFloat(el.value);
+      if (key === 'rlo' && S.rlo > S.rhi - 1) { S.rlo = S.rhi - 1; el.value = S.rlo; }
+      if (key === 'rhi' && S.rhi < S.rlo + 1) { S.rhi = S.rlo + 1; el.value = S.rhi; }
+      show(); redraw();
+    });
+    show();
+  }
+  bind('rlo', 'rlo', (v) => v.toFixed(1) + '%');
+  bind('rhi', 'rhi', (v) => v.toFixed(1) + '%');
+  bind('gamma', 'gamma', (v) => v.toFixed(2));
+  bind('strength', 'strength', (v) => v.toFixed(0) + '%');
+  $('levels').addEventListener('input', function () {
+    S.levels = +$('levels').value;
+    $('levelsV').textContent = S.levels >= 33 ? 'continuous' : String(S.levels);
+    redraw();
+  });
+
+  function setLimits(lo, hi) {
+    const s = sorted(S.attr);
+    const span = (s[s.length - 1] - s[0]) || 1;
+    S.rlo = Math.max(0, Math.min(50, 100 * (lo - s[0]) / span));
+    S.rhi = Math.max(50, Math.min(100, 100 * (hi - s[0]) / span));
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi;
+    $('rloV').textContent = S.rlo.toFixed(1) + '%';
+    $('rhiV').textContent = S.rhi.toFixed(1) + '%';
+  }
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const s = sorted(S.attr);
+      const p = b.dataset.preset;
+      if (p === 'full') setLimits(s[0], s[s.length - 1]);
+      else setLimits(pctValue(+p), pctValue(100 - +p));
+      document.querySelectorAll('[data-preset]').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      drawAll();
+    });
+  });
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['symOff', false], ['symOn', true]], function (v) { S.sym = v; drawAll(); });
+  segment([['stLin', 'linear'], ['stGam', 'gamma'], ['stLog', 'log']], function (v) {
+    S.stretch = v; $('ctlGamma').hidden = (v !== 'gamma'); drawAll();
+  });
+  segment([['mLight', 'lightness'], ['mSat', 'sat'], ['mMask', 'mask']], function (v) {
+    S.mode = v; drawAll();
+  });
+  segment([['vOff', 'off'], ['vDeu', 'deutan'], ['vPro', 'protan'], ['vAch', 'achroma']],
+          function (v) { S.cvd = v; drawAll(); });
+
+  $('attr').addEventListener('change', function () {
+    S.attr = $('attr').value;
+    S.rlo = 0; S.rhi = 100;
+    $('rlo').value = 0; $('rhi').value = 100;
+    $('rloV').textContent = '0.0%'; $('rhiV').textContent = '100.0%';
+    drawAll();
+  });
+  $('attrB').addEventListener('change', function () {
+    S.attrB = $('attrB').value;
+    $('ctlMode').hidden = (S.attrB === 'none');
+    $('ctlStrength').hidden = (S.attrB === 'none');
+    drawAll();
+  });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach(function (cls) {
+      Object.keys(ERA).forEach(function (era) {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach(function (k) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', function () { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('copyBtn').addEventListener('click', function () {
+    const txt = record();
+    const done = function () { $('copyNote').textContent = 'copied'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () {
+        $('copyNote').textContent = 'select the text above and copy it';
+      });
+    } else {
+      $('copyNote').textContent = 'select the text above and copy it';
+    }
+  });
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('attr').value = S.attr; $('cmap').value = S.cmap; $('attrB').value = S.attrB;
+    $('levels').value = S.levels; $('levelsV').textContent = 'continuous';
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi;
+    $('rloV').textContent = '0.0%'; $('rhiV').textContent = '100.0%';
+    $('gamma').value = S.gamma; $('gammaV').textContent = '1.00';
+    $('strength').value = S.strength; $('strengthV').textContent = '70%';
+    $('symOff').setAttribute('aria-pressed', 'true');
+    $('symOn').setAttribute('aria-pressed', 'false');
+    ['stLin', 'stGam', 'stLog'].forEach(function (id, i) {
+      $(id).setAttribute('aria-pressed', String(i === 0));
+    });
+    ['vOff', 'vDeu', 'vPro', 'vAch'].forEach(function (id, i) {
+      $(id).setAttribute('aria-pressed', String(i === 0));
+    });
+    $('ctlGamma').hidden = true; $('ctlMode').hidden = true; $('ctlStrength').hidden = true;
+    $('copyNote').textContent = '';
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const rg = range();
+      return { attr: S.attr, cmap: mapKey(), min: rg[0], max: rg[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr], nLevels: nLevels(),
+               cvd: S.cvd, cvdSeverity: 1 };
+    }
+  });
+
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

@@ -479,7 +479,31 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "With envelope on Everything, read how many colours reach the middle half of the data. Then press 2\u201398%.", see: "15 levels becomes 21, for four per cent of the survey clipped." },
+      { do: "Repeat the whole thing with mean curvature.", see: "6 becomes 21, and 50 at 5\u201395%, because the fault traces were holding the range open." }
+  ]},
+  p2: { items: [
+      { do: "Set the range to Everything and raise the bad samples to 8.", see: "One sample in eight hundred takes the display over: the middle half of the data falls to 2 levels." },
+      { do: "Press 2\u201398%.", see: "Back to 21, exactly where it was before the bad samples existed." },
+      { do: "Put the attribute on sweetness and compare \u00b12 s.d. against 2\u201398%.", see: "The standard deviation limit falls below zero, because sweetness is skewed." }
+  ]},
+  p3: { items: [
+      { do: "Put the colormap on viridis, the stretch on gamma, and take the gamma to 2.5, watching the tick labels on the bar.", see: "They bunch up at one end: the map is no longer evenly spaced in the data." },
+      { do: "Put the rainbow on envelope, find a band edge on the channel flank, and change the gamma.", see: "It slides, the same way it did when the range moved in module 03." }
+  ]},
+  p4: { items: [
+      { do: "Set the section clip level to 6, then to 1, watching the top of the sand where the bed is thickest.", see: "At 6 the reflection strength varies with the bed thickness. At 1 that variation has gone and about a third of the samples are flat." },
+      { do: "Decide which of the two you would pick for following a reflector, and which for judging an amplitude anomaly.", see: "They are not the same display, and in practice they usually are." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -834,6 +858,14 @@
   window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
 
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const rg = range();
+      return { attr: S.attr, cmap: stretchedKey(), min: rg[0], max: rg[1] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

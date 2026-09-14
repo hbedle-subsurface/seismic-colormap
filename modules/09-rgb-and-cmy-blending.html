@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RGB and CMY blending | How Colormaps Actually Work</title>
+<meta name="description" content="Three attributes into three channels: how a blend is made, how to read one, and the spectral decomposition case.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 09 &nbsp;·&nbsp; Colormaps</p>
+    <h1>RGB and CMY blending</h1>
+    <p class="sub">Module 08 gave a second attribute one of the display's dimensions. A blend gives all
+      three away at once: three attributes drive the three channels directly and no colormap is involved.
+      It is the densest display in common use and the hardest to read, and the most familiar example of it
+      is the spectral decomposition blend.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The blend <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMain" aria-label="The three attributes blended"></canvas>
+        <p class="hint-line" id="capMain">&nbsp;</p>
+        <canvas id="cLegend" aria-label="What each colour in the blend means"></canvas>
+
+        <div class="stats">
+          <div class="stat key"><span>Red channel</span><b id="sR">—</b></div>
+          <div class="stat"><span>Green channel</span><b id="sG">—</b></div>
+          <div class="stat"><span>Blue channel</span><b id="sB">—</b></div>
+          <div class="stat"><span>Saturated at the top</span><b id="sSat">—</b></div>
+          <div class="stat wide"><span>Correlation between the three</span><b id="sCorr">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">What goes into each channel <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The three inputs</h2>
+            <div class="ctl">
+              <label for="aR">Red</label>
+              <select id="aR"></select>
+            </div>
+            <div class="ctl">
+              <label for="gR">Red gain <span class="val" id="gRV">1.00</span></label>
+              <input type="range" id="gR" min="0.2" max="3" step="0.05" value="1">
+            </div>
+            <div class="ctl">
+              <label for="aG">Green</label>
+              <select id="aG"></select>
+            </div>
+            <div class="ctl">
+              <label for="gG">Green gain <span class="val" id="gGV">1.00</span></label>
+              <input type="range" id="gG" min="0.2" max="3" step="0.05" value="1">
+            </div>
+            <div class="ctl">
+              <label for="aB">Blue</label>
+              <select id="aB"></select>
+            </div>
+            <div class="ctl">
+              <label for="gB">Blue gain <span class="val" id="gBV">1.00</span></label>
+              <input type="range" id="gB" min="0.2" max="3" step="0.05" value="1">
+            </div>
+          </div>
+
+          <div class="ctl-col">
+            <h2>How they are combined</h2>
+            <div class="ctl">
+              <label for="mode">Model</label>
+              <div class="seg" role="group" aria-label="Blend model" id="mode">
+                <button type="button" id="mRGB" aria-pressed="true">Additive (RGB)</button>
+                <button type="button" id="mCMY" aria-pressed="false">Subtractive (CMY)</button>
+              </div>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">Additive is what a screen does: a high value
+              adds light to its channel. Subtractive is what a press does: a high value lays down ink and
+              removes light.</p>
+
+            <div class="ctl">
+              <label for="cvd">Check under color vision deficiency</label>
+              <div class="seg" role="group" aria-label="Simulation" id="cvd">
+                <button type="button" id="vOff" aria-pressed="true">Off</button>
+                <button type="button" id="vDeu" aria-pressed="false">Deutan</button>
+                <button type="button" id="vPro" aria-pressed="false">Protan</button>
+              </div>
+            </div>
+
+            <p style="margin:6px 0 10px">
+              <button class="btn small" id="rotBtn" type="button">Rotate the three inputs</button>
+            </p>
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Three attributes, three channels</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Reading a blend</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · The spectral decomposition blend</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Where blends mislead</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Three attributes, three channels</h3>
+    </div>
+    <p class="lede">There is no colormap here. Each attribute is normalized to its own range, multiplied by
+      a gain, and written straight into one of the three channels of the display. The three images below
+      are those channels on their own, before they are combined.</p>
+
+    <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">
+      <div><canvas id="cChR" aria-label="The red channel input"></canvas></div>
+      <div><canvas id="cChG" aria-label="The green channel input"></canvas></div>
+      <div><canvas id="cChB" aria-label="The blue channel input"></canvas></div>
+    </div>
+
+    <p style="margin-top:16px">Each is a grayscale display of one attribute, which is the most legible
+      single-attribute display there is. The blend in the panel above is the three of them summed as light.
+      Everything the blend can show is present in these three images; what the blend adds is the ability to
+      see all three at once, and what it removes is the ability to read any of them.</p>
+
+    <p>The gain controls are where blends are usually won or lost. Each channel is normalized to its own
+      attribute's range, so a channel whose attribute is mostly low contributes little and the blend takes
+      on the color of whichever channel happens to be busiest. Raising that channel's gain balances it; the
+      readout says how much of the survey each channel is saturating, which is the signal that a gain has
+      gone too far.</p>
+
+    <div class="legend">
+      <span>A blend in which one channel saturates over most of the survey is not showing three attributes.
+      It is showing two, tinted. The saturation readout is the quickest check, and anything above about
+      20% on a channel is worth looking at.</span>
+    </div>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>Reading a blend</h3>
+    </div>
+    <p class="lede">A blend has no color bar, because there is no single quantity for one to describe.
+      What it has instead is eight corners, and every color in the image is somewhere between them. The
+      strip under the panel names them and gives the share of the survey sitting near each.</p>
+
+    <table>
+      <thead><tr><th>Color</th><th>Means</th></tr></thead>
+      <tbody>
+        <tr><td>Black</td><td>All three low</td></tr>
+        <tr><td>White</td><td>All three high</td></tr>
+        <tr><td>Red, green or blue</td><td>That one channel high, the other two low</td></tr>
+        <tr><td>Cyan</td><td>Green and blue high, red low</td></tr>
+        <tr><td>Magenta</td><td>Red and blue high, green low</td></tr>
+        <tr><td>Yellow</td><td>Red and green high, blue low</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two consequences follow, and both are worth stating before anyone tries to interpret a blend.</p>
+
+    <p><b>Black and white are not extremes of one thing.</b> On a sequential display, dark and light are
+      opposite ends of a single scale. In a blend they are opposite corners of a cube, and the six other
+      corners are equally far from both. A reader who carries the sequential habit into a blend will read
+      brightness as magnitude, and brightness in a blend is the sum of three magnitudes.</p>
+
+    <p><b>The secondary colors carry the information.</b> A feature that appears red is telling you
+      something about one attribute. A feature that appears cyan is telling you something about the other
+      two, and about the absence of the first. In practice most of what is interesting in a blend is in the
+      cyans, magentas and yellows, because those are where two attributes agree and the third does not.</p>
+
+    <p>This is also why the ordering of attributes to channels changes a blend so much. The rotate button
+      in the panel cycles the three inputs without changing any of them. The information content is
+      identical and the image looks completely different, because the human reading of red and cyan is not
+      symmetric: red advances and cyan recedes, and whichever attribute lands on red will look like the
+      subject of the figure.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>The spectral decomposition blend</h3>
+    </div>
+    <p class="lede">The blend most seismic interpreters meet first puts three frequency bands into the
+      three channels. The three inputs in the panel are now the strength of the reflection from this model
+      at a low, a middle and a high peak frequency, which is a simplified spectral decomposition of the
+      same synthetic.</p>
+
+    <p>What it shows is bed thickness, by way of tuning. A bed reflects most strongly at the frequency
+      whose quarter wavelength matches its thickness, so a thick bed is brightest in the low band and a
+      thin one in the high band. Red for low, green for middle and blue for high is the usual convention,
+      and it gives the result its familiar reading.</p>
+
+    <table>
+      <thead><tr><th>Appears</th><th>Means</th><th>In this model</th></tr></thead>
+      <tbody>
+        <tr><td>Red</td><td>Tuned at low frequency</td><td>The thickest part of the channel, along its axis</td></tr>
+        <tr><td>Green through cyan</td><td>Tuned at middle to high frequency</td><td>The flanks, where the sand has thinned</td></tr>
+        <tr><td>Blue</td><td>Tuned at high frequency</td><td>The channel margins, close to pinch-out</td></tr>
+        <tr><td>White</td><td>Strong in all three bands</td><td>An isolated strong reflection, where the whole bandwidth responds</td></tr>
+        <tr><td>Black</td><td>Weak in all three</td><td>Away from the sand, and in the pockmarks</td></tr>
+      </tbody>
+    </table>
+
+    <p>Moving the thickness slider is not available here, because the three bands are computed once. What
+      can be done instead is to look at where the color changes along the channel and compare it against the
+      sand thickness attribute, which is in the input menus and is a property of the model rather than a
+      measurement. The color sequence from the axis outward follows the thinning, and it does so without
+      anyone having picked a horizon or measured an isochron.</p>
+
+    <p>This is the strongest argument for blends, and it is worth being precise about why. Three bands of
+      the same attribute are not three independent things. The correlation readout says so bluntly: the low
+      and middle bands here correlate at 0.96, because both of them respond to whether there is a
+      reflection at all. A blend of three attributes that correlated that strongly would normally be a
+      two-channel display pretending to be three.</p>
+
+    <p>What rescues it is that the reading of a spectral blend is not about any band's absolute value. It
+      is about which band is strongest relative to the other two, and that comparison is meaningful however
+      strongly the three rise and fall together. The blend is not showing three attributes; it is showing
+      one attribute as a function of frequency, and color is a reasonable way to encode where the peak of
+      that function lies. The reading is qualitative &mdash; thicker here than there &mdash; and that is
+      the reading a spectral blend supports.</p>
+
+    <p>It also explains why the gains matter more here than anywhere else. Balancing the three bands so
+      that none dominates is what lets the relative comparison come through, and it is why spectral blends
+      are routinely normalized band by band before being displayed.</p>
+
+    <div class="legend">
+      <span>The bands here are made by convolving the same reflectivity with wavelets of three different
+      peak frequencies, which is the simplest thing that behaves correctly. Real spectral decomposition
+      uses a time-frequency transform and produces bands from the recorded data rather than from a model,
+      but the tuning behaviour that makes the display readable is the same.</span>
+    </div>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Where blends mislead</h3>
+    </div>
+    <p class="lede">A blend is the densest display in common use, and four things go wrong with it often
+      enough to be worth checking every time.</p>
+
+    <p><b>Correlated inputs.</b> Three attributes that measure nearly the same thing produce a blend along
+      the gray diagonal of the color cube: bright where all three are high, dark where all are low, and
+      almost no color anywhere. It looks like a competent grayscale display and it has cost three
+      attributes to make. The correlation readout in the panel gives the largest pairwise correlation
+      between the three inputs. Envelope and sweetness in this model correlate at 1.00, and envelope and
+      sand thickness at 0.91: any blend built from two of those is a two-channel display.</p>
+
+    <p>The figure is a flag rather than a verdict, and the spectral bands in step 3 are the case that shows
+      why. They correlate at 0.96 between the low and middle bands, which by the reading above would
+      condemn them, and the blend works anyway. The reason is that the correlation is measuring whether the
+      three channels rise and fall together in absolute terms, and three frequency bands necessarily do:
+      all three respond to whether there is a reflection at all. What the blend is showing is which band is
+      strongest <i>relative to the other two</i>, and that survives a high correlation intact.</p>
+
+    <p>So the readout is asking a specific question: are two of these channels carrying the same
+      information? A high number means yes unless the three inputs are related in a way that makes their
+      differences meaningful, which is exactly the situation a band decomposition is in and is not the
+      situation envelope and sweetness are in.</p>
+
+    <p><b>Gains chosen by eye.</b> Every gain setting produces a plausible image, and there is no setting
+      that is objectively correct, so the gains are usually adjusted until the picture looks right. That is
+      a decision about which features appear and it is almost never recorded. Two people blending the same
+      three volumes will not produce the same figure.</p>
+
+    <p><b>Color vision deficiency.</b> A blend is the worst case, because all of its information is in hue
+      by construction. The simulation buttons in the panel show what happens: the red and green channels
+      collapse into each other and the blend becomes a two-channel display, and unlike a colormap there is
+      no alternative version that fixes it. A blend cannot be made accessible; it can only be accompanied
+      by the single-channel displays.</p>
+
+    <p><b>Printing.</b> The subtractive model in the panel is the honest version of what happens when a
+      blend is printed. Switch to it and the image inverts in character: the corners swap, black becomes
+      white, and the saturated colors that carried the message on screen are the ones a press reproduces
+      least well, as module 01 showed. A blend designed on a monitor and printed without checking is
+      likely to lose exactly its most informative areas.</p>
+
+    <p>The check that covers most of this is the one from module 08, applied three times: look at each
+      channel on its own first. The three grayscale images in step 1 are more informative per attribute
+      than the blend is, and anything in the blend that is not in one of them is an artefact of the
+      combination.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>Blends are persuasive. They are dense, colorful and visibly the product of effort, and they appear
+      in presentations for those reasons as much as for what they show. That makes it worth being clear
+      about what a blend is good for and what it is not.</p>
+
+    <p>It is good for one thing in particular: showing that three quantities vary together in a structured
+      way across a survey, when the structure is what matters and the values are not. The spectral
+      decomposition case is the clearest example, because the three inputs are the same attribute at three
+      frequencies and the color sequence corresponds to something physical.</p>
+
+    <p>It is poor at anything quantitative, and it is poor at anything that has to survive being printed,
+      projected, or read by a colleague with a red-green deficiency. It is also poor at being reproduced:
+      a blend is defined by three attributes, three ranges, three gains and an assignment of attributes to
+      channels, and that is eight pieces of information which are almost never written down.</p>
+
+    <p>The practical position is that a blend belongs in a figure alongside the single-channel displays
+      rather than instead of them. It shows the reader where to look; the separate displays show what is
+      there.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Make a gray blend.</b> Set all three channels to attributes that measure similar things
+          &mdash; envelope, sweetness and sand thickness &mdash; and read the correlation figure.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The blend is nearly gray
+            everywhere, because all three channels rise and fall together and the result sits along the
+            diagonal of the colour cube. Envelope and sweetness correlate at 1.00 in this model and
+            envelope and thickness at 0.91, so the readout reaches its maximum. Three attributes have been
+            spent to produce something a single grayscale display would have shown better.</span></details></li>
+
+        <li><b>Find the exception.</b> Now set the three frequency bands and read the correlation figure
+          again, then look at the image.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The correlation is 0.96 and the
+            blend is full of colour, which contradicts the previous exercise. Three frequency bands all
+            respond to whether there is a reflection, so they rise and fall together; what the display
+            shows is which of them is strongest relative to the others, and that comparison survives the
+            correlation. The readout is a flag to investigate rather than a
+            verdict.</span></details></li>
+
+        <li><b>Saturate a channel.</b> Take one gain to 3 and watch the saturation readout and the image.
+          <details class="reveal"><summary>Hint</summary><span class="ans">That channel reaches its maximum
+            over a large part of the survey, and everywhere it does the channel has stopped carrying
+            information: the variation is still in the data and no longer in the picture. The blend then
+            shows two attributes over a tinted background.</span></details></li>
+
+        <li><b>Rotate the inputs.</b> On any blend, press the rotate button three times and note that the
+          image returns to where it started.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Nothing about the data changed
+            at any point, and each of the three versions suggests a different attribute is the subject of
+            the figure. Whichever attribute is on red reads as foreground. This is worth knowing before
+            choosing which attribute goes where, and worth stating in the
+            caption.</span></details></li>
+
+        <li><b>Read the channel sequence.</b> On step 3, follow the color from the channel axis out to the
+          margin, then compare it with the sand thickness input.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Red along the axis where the sand
+            is thickest, through green, to blue at the margins where it is thinnest. The colour sequence is
+            tracking bed thickness through tuning, without a horizon having been picked or an isochron
+            computed, which is what makes spectral blends useful for channel
+            systems.</span></details></li>
+
+        <li><b>Break it under simulation.</b> On step 3, switch the simulation to deutan.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The red and green channels merge,
+            so the low and middle bands become one channel and the blend loses the distinction between
+            thick and moderately thick. There is no version of the blend that fixes this, which is the
+            difference between a blend and a colormap: a colormap can be swapped for a better
+            one.</span></details></li>
+
+        <li><b>Print it.</b> Switch the model to subtractive and look at where the survey is darkest and
+          lightest.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The corners have swapped: where
+            all three attributes are high the inks combine and the paper goes dark, and where all three are
+            low the paper is left white. Every reading rule from step 2 is reversed, and the saturated
+            colours that carried the message on screen are the ones a press reproduces
+            worst.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>A blend uses no colormap. Three attributes are normalized, gained and written into the three
+        channels directly.</li>
+      <li>There are eight corners rather than two ends. Black and white are opposite corners of a cube, not
+        opposite ends of a scale, and most of the useful information is in the cyans, magentas and
+        yellows.</li>
+      <li>Which attribute goes on which channel changes the apparent subject of the figure without changing
+        any of the data.</li>
+      <li>Correlated inputs usually produce a gray blend that looks competent and carries one attribute's
+        worth of information. The exception is a set of bands of one attribute, where the reading is which
+        band is strongest relative to the others and a high correlation is expected.</li>
+      <li>The gains decide which features appear and are almost never recorded. A blend needs eight pieces
+        of information to reproduce.</li>
+      <li>A blend puts all of its content in hue, so it fails under red-green color vision deficiency and
+        there is no better blend to switch to.</li>
+      <li>The spectral decomposition case works because its three inputs are one attribute at three
+        frequencies, and the color sequence follows bed thickness through tuning.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>Each input is normalized to its own display range across the survey, multiplied by its gain, and
+      clamped to the interval from zero to one. In the additive model that value becomes the channel
+      directly. In the subtractive model it becomes an ink coverage and the channel is one minus it, which
+      is the idealized relationship from module 01.</p>
+
+    <p>The channels are written in the display's own encoding rather than in linear light. That is what
+      every implementation of this does, and it is worth knowing that it is a convention rather than a
+      physical statement: a blend is not a measurement of light, so there is no correct answer, and doing
+      it in linear light would produce a different and equally defensible image.</p>
+
+    <p>The three bands in step 3 are the envelope of the same reflectivity convolved with Ricker wavelets
+      at peak frequencies of 18, 30 and 48 Hz, all displayed over a common range so that their relative
+      strengths are comparable. This is not a time-frequency transform; it is the simplest construction
+      that reproduces the tuning behaviour a spectral decomposition blend depends on, computed from the
+      model rather than from a recorded trace.</p>
+
+    <p>The correlation figure is the largest Pearson correlation among the three pairs of inputs, computed
+      over the whole survey. The saturation figure is the largest share of cells reaching the top of any
+      one channel. The corner shares in the legend classify each cell by whether each channel is above or
+      below its midpoint, which is a coarse summary and is meant as one.</p>
+
+    <p>The color vision simulation is applied to the finished blend, as in module 08, because it is a
+      property of the reader rather than of any channel.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Partyka, G., J. Gridley, and J. Lopez, 1999, Interpretational applications of spectral
+        decomposition in reservoir characterization: The Leading Edge, 18, 353&ndash;360, doi:
+        <a href="https://doi.org/10.1190/1.1438295">10.1190/1.1438295</a>.</li>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+      <li>Meyer, G. W., and D. P. Greenberg, 1980, Perceptual color spaces for computer graphics: ACM
+        SIGGRAPH Computer Graphics, 14, 254&ndash;261, doi:
+        <a href="https://doi.org/10.1145/965105.807502">10.1145/965105.807502</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Take one gain to 3 and watch the saturation readout and that channel's image.", see: "Above about 20% saturation the channel has stopped carrying information over much of the survey." },
+      { do: "Compare the blend against the three grayscale channel images below it.", see: "Everything the blend can show is in those three, and each of them is more readable on its own." }
+  ]},
+  p2: { items: [
+      { do: "Press Rotate the three inputs three times.", see: "The image returns to where it started. Each version makes a different attribute look like the subject." },
+      { do: "Find a cyan area and say which two attributes are high there.", see: "Green and blue high, red low. Most of what is interesting in a blend is in the secondary colours." }
+  ]},
+  p3: { items: [
+      { do: "Follow the colour from the channel axis out to the margin, then compare against the sand thickness input.", see: "Red where the sand is thickest, through green, to blue at the margins. Tuning is doing the work." },
+      { do: "Read the correlation figure.", see: "0.96, and the blend works anyway: the reading is which band is strongest relative to the others." }
+  ]},
+  p4: { items: [
+      { do: "Put envelope, sweetness and sand thickness into the three channels and read the correlation.", see: "Near the maximum, and the blend is nearly gray: three attributes spent on one attribute's worth of content." },
+      { do: "Switch the model to subtractive.", see: "The corners swap and every reading rule from step 2 reverses." },
+      { do: "Switch the simulation to deutan on the spectral blend.", see: "The low and middle bands merge. There is no better blend to switch to, which is the difference from a colormap." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { aR: 'envelope', aG: 'coherence', aB: 'meanCurvature',
+                gR: 1, gG: 1, gB: 1, mode: 'rgb', cvd: 'off' };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+
+  /* The three frequency bands: the same reflectivity through wavelets of
+     three peak frequencies, which is the simplest thing that tunes correctly. */
+  const BAND_HZ = { bandLow: 18, bandMid: 30, bandHigh: 48 };
+  const bandCache = {};
+  let bandRange = null;
+  function bandValues(key) {
+    if (!bandCache[key]) {
+      Object.keys(BAND_HZ).forEach(function (k) {
+        if (!bandCache[k]) {
+          bandCache[k] = Synthetic.build({ frequency: BAND_HZ[k] }).slice('envelope');
+        }
+      });
+      let hi = 0;
+      Object.keys(BAND_HZ).forEach(function (k) {
+        const v = bandCache[k];
+        for (let i = 0; i < v.length; i++) if (v[i] > hi) hi = v[i];
+      });
+      bandRange = [0, hi];
+    }
+    return bandCache[key];
+  }
+
+  const LABEL = Object.assign({}, Synthetic.LABEL, {
+    bandLow: 'Reflection strength, 18 Hz',
+    bandMid: 'Reflection strength, 30 Hz',
+    bandHigh: 'Reflection strength, 48 Hz'
+  });
+
+  const CHOICES = ['bandLow', 'bandMid', 'bandHigh', 'envelope', 'sweetness',
+                   'coherence', 'thickness', 'frequency', 'meanCurvature'];
+
+  function input(attr) {
+    if (BAND_HZ[attr]) { const v = bandValues(attr); return { v: v, r: bandRange }; }
+    return { v: model.slice(attr), r: Synthetic.RANGES[attr] };
+  }
+
+  /* normalized, gained and clamped */
+  function channel(attr, gain) {
+    const q = input(attr);
+    const out = new Float32Array(q.v.length);
+    const span = (q.r[1] - q.r[0]) || 1;
+    for (let i = 0; i < q.v.length; i++) {
+      let t = (q.v[i] - q.r[0]) / span * gain;
+      out[i] = t < 0 ? 0 : t > 1 ? 1 : t;
+    }
+    return out;
+  }
+
+  /* ---- the blend --------------------------------------------------------- */
+
+  function blend() {
+    const R = channel(S.aR, S.gR), G = channel(S.aG, S.gG), B = channel(S.aB, S.gB);
+    const n = R.length;
+    const out = new Uint8ClampedArray(4 * n);
+    const corner = new Float64Array(8);
+    let satR = 0, satG = 0, satB = 0;
+    for (let i = 0; i < n; i++) {
+      let r = R[i], g = G[i], b = B[i];
+      if (r > 0.995) satR++;
+      if (g > 0.995) satG++;
+      if (b > 0.995) satB++;
+      corner[(r > 0.5 ? 1 : 0) | (g > 0.5 ? 2 : 0) | (b > 0.5 ? 4 : 0)]++;
+      if (S.mode === 'cmy') { r = 1 - r; g = 1 - g; b = 1 - b; }
+      let cr = 255 * r, cg = 255 * g, cb = 255 * b;
+      if (S.cvd !== 'off') {
+        const c = Colormaps.simulate([cr, cg, cb], S.cvd, 1);
+        cr = c[0]; cg = c[1]; cb = c[2];
+      }
+      const k = 4 * i;
+      out[k] = cr; out[k + 1] = cg; out[k + 2] = cb; out[k + 3] = 255;
+    }
+    return { rgba: out, n: n, corner: corner,
+             sat: [satR / n, satG / n, satB / n], R: R, G: G, B: B };
+  }
+
+  function corr(a, b) {
+    const n = a.length;
+    let sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+    for (let i = 0; i < n; i++) {
+      sa += a[i]; sb += b[i]; saa += a[i] * a[i]; sbb += b[i] * b[i]; sab += a[i] * b[i];
+    }
+    const ca = saa / n - (sa / n) * (sa / n);
+    const cb = sbb / n - (sb / n) * (sb / n);
+    const cab = sab / n - (sa / n) * (sb / n);
+    return (ca > 1e-12 && cb > 1e-12) ? cab / Math.sqrt(ca * cb) : 0;
+  }
+
+  /* ---- the eight corners ------------------------------------------------- */
+
+  const CORNER_NAME = ['all three low', 'red only', 'green only', 'yellow',
+                       'blue only', 'magenta', 'cyan', 'all three high'];
+
+  function drawLegend(c) {
+    const cv = $('cLegend');
+    const w = Math.max(240, cv.parentNode.clientWidth || 0);
+    if (w < 200) return;
+    const h = 74;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const pad = 8, bw = (w - 2 * pad) / 8;
+    ctx.font = '9.5px "IBM Plex Mono", monospace';
+    for (let i = 0; i < 8; i++) {
+      let r = (i & 1) ? 1 : 0, g = (i & 2) ? 1 : 0, b = (i & 4) ? 1 : 0;
+      if (S.mode === 'cmy') { r = 1 - r; g = 1 - g; b = 1 - b; }
+      let col = [255 * r, 255 * g, 255 * b];
+      if (S.cvd !== 'off') col = Colormaps.simulate(col, S.cvd, 1);
+      ctx.fillStyle = 'rgb(' + Math.round(col[0]) + ',' + Math.round(col[1]) +
+                      ',' + Math.round(col[2]) + ')';
+      ctx.fillRect(pad + i * bw, 4, bw - 3, 26);
+      ctx.strokeStyle = 'rgba(22,25,28,.4)'; ctx.lineWidth = 1;
+      ctx.strokeRect(pad + i * bw + 0.5, 4.5, bw - 3, 26);
+      ctx.fillStyle = '#5C6670';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText((100 * c.corner[i] / c.n).toFixed(0) + '%', pad + i * bw + (bw - 3) / 2, 34);
+      const words = CORNER_NAME[i].split(' ');
+      words.forEach(function (word, j) {
+        ctx.fillText(word, pad + i * bw + (bw - 3) / 2, 47 + j * 10);
+      });
+    }
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  let last = null;
+
+  function drawAll() {
+    const c = blend();
+    last = c;
+    CMPLOT.image($('cMain'), c.rgba, {
+      nx: model.nx, ny: model.ny, height: 270,
+      title: (S.mode === 'rgb' ? 'Additive blend' : 'Subtractive blend') + ': ' +
+             LABEL[S.aR] + ', ' + LABEL[S.aG] + ', ' + LABEL[S.aB]
+    });
+    drawLegend(c);
+
+    $('sR').textContent = LABEL[S.aR] + '  \u00d7' + S.gR.toFixed(2);
+    $('sG').textContent = LABEL[S.aG] + '  \u00d7' + S.gG.toFixed(2);
+    $('sB').textContent = LABEL[S.aB] + '  \u00d7' + S.gB.toFixed(2);
+    const mx = Math.max(c.sat[0], c.sat[1], c.sat[2]);
+    $('sSat').textContent = (100 * mx).toFixed(1) + '% on the busiest channel';
+    const cc = Math.max(Math.abs(corr(c.R, c.G)), Math.abs(corr(c.R, c.B)),
+                        Math.abs(corr(c.G, c.B)));
+    $('sCorr').textContent = cc.toFixed(2) +
+      (cc > 0.8 ? '  \u2014 two of the three are carrying the same information' : '');
+
+    $('capMain').textContent = S.mode === 'rgb'
+      ? 'Each attribute adds light to one channel. White is all three high; black is all three low.'
+      : 'Each attribute lays down ink in one channel. White is all three low; dark is all three high.';
+
+    if (S.tab === 'p1') {
+      [['cChR', c.R, 'Red channel: '], ['cChG', c.G, 'Green channel: '],
+       ['cChB', c.B, 'Blue channel: ']].forEach(function (q, i) {
+        CMPLOT.map($(q[0]), q[1], {
+          nx: model.nx, ny: model.ny, cmap: 'gray', min: 0, max: 1, height: 214,
+          title: q[2] + LABEL[[S.aR, S.aG, S.aB][i]]
+        });
+      });
+    }
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  ['R', 'G', 'B'].forEach(function (ch) {
+    const sel = $('a' + ch);
+    CHOICES.forEach(function (k) {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = LABEL[k];
+      sel.appendChild(o);
+    });
+    sel.value = S['a' + ch];
+    sel.addEventListener('change', function () { S['a' + ch] = sel.value; redraw(); });
+
+    const g = $('g' + ch), out = $('g' + ch + 'V');
+    g.addEventListener('input', function () {
+      S['g' + ch] = parseFloat(g.value);
+      out.textContent = S['g' + ch].toFixed(2);
+      redraw();
+    });
+  });
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['mRGB', 'rgb'], ['mCMY', 'cmy']], function (v) { S.mode = v; drawAll(); });
+  segment([['vOff', 'off'], ['vDeu', 'deutan'], ['vPro', 'protan']], function (v) {
+    S.cvd = v; drawAll();
+  });
+
+  $('rotBtn').addEventListener('click', function () {
+    const a = S.aR, g = S.gR;
+    S.aR = S.aG; S.gR = S.gG;
+    S.aG = S.aB; S.gG = S.gB;
+    S.aB = a; S.gB = g;
+    ['R', 'G', 'B'].forEach(function (ch) {
+      $('a' + ch).value = S['a' + ch];
+      $('g' + ch).value = S['g' + ch];
+      $('g' + ch + 'V').textContent = S['g' + ch].toFixed(2);
+    });
+    drawAll();
+  });
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    ['R', 'G', 'B'].forEach(function (ch) {
+      $('a' + ch).value = S['a' + ch];
+      $('g' + ch).value = S['g' + ch];
+      $('g' + ch + 'V').textContent = '1.00';
+    });
+    $('mRGB').setAttribute('aria-pressed', 'true');
+    $('mCMY').setAttribute('aria-pressed', 'false');
+    [['vOff', 'off'], ['vDeu', 'deutan'], ['vPro', 'protan']]
+      .forEach((b) => $(b[0]).setAttribute('aria-pressed', String(b[1] === S.cvd)));
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+  const START = {
+    p3: { aR: 'bandLow', aG: 'bandMid', aB: 'bandHigh', gR: 1, gG: 1, gB: 1 },
+    p4: { aR: 'bandLow', aG: 'bandMid', aB: 'bandHigh', gR: 1, gG: 1, gB: 1 }
+  };
+  const seen = {};
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    if (START[id] && !seen[id]) {
+      Object.assign(S, START[id]);
+      ['R', 'G', 'B'].forEach(function (ch) {
+        $('a' + ch).value = S['a' + ch];
+        $('g' + ch).value = S['g' + ch];
+        $('g' + ch + 'V').textContent = S['g' + ch].toFixed(2);
+      });
+    }
+    seen[id] = true;
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  seen.p1 = true;
+  showTab('p1');
+  PANELVIEW.init({ model: model });
+
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

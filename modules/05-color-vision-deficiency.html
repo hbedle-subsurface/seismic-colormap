@@ -587,7 +587,34 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Put envelope in the rainbow with deutan at 100% and compare the two panels at the channel axis.", see: "The green-to-red part of the range flattens, and that is the part holding the anomaly." },
+      { do: "Bring the severity up from zero slowly.", see: "There is no threshold. It degrades continuously, which is what the anomalous forms actually are." }
+  ]},
+  p2: { items: [
+      { do: "Switch between deutan and tritan and watch the ordering of the chart change.", see: "A map safe under one form is not automatically safe under another." },
+      { do: "Click the bar for viridis and read the numbers.", see: "0.27 on the smallest surviving step, 72% of the colour kept. Safe in the sense that matters, not unaffected." }
+  ]},
+  p3: { items: [
+      { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." }
+  ]},
+  p4: { items: [
+      { do: "Put the display in the rainbow, the annotation hue on red and its lightness at 50, and follow the channel margin.", see: "The pick disappears wherever it crosses a similar colour, and over much more of the image under simulation." },
+      { do: "Drop the annotation lightness to 10, leaving the hue alone.", see: "Visible along its whole length, because the separation is now in the dimension that survives." }
+  ]},
+  p5: { items: [
+      { do: "Set the colormap to Oslo and raise the light falling on the screen to 15%.", see: "The lightness span falls from 100 to 54 and the smallest step drops to a tenth." },
+      { do: "Try grayscale at the same setting.", see: "Its smallest step goes to zero. A lit room removes the dark end of the display trusted most for edges." },
+      { do: "Push the screen gamma to 1.8 and back to 0.7.", see: "Neither is the colormap you chose, and neither involves any eye at all." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1018,6 +1045,16 @@
   window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
 
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const r = Synthetic.RANGES[S.attr];
+      return { attr: S.attr, cmap: displayKey(), min: r[0], max: r[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr],
+               cvd: S.type, cvdSeverity: S.sev / 100 };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

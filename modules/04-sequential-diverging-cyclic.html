@@ -462,7 +462,31 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Step through envelope, mean curvature and phase looking only at the histogram, and decide the class before reading the menu.", see: "A magnitude piles up and tails off; a signed quantity straddles the marked zero; a wrapping one is flat from end to end." },
+      { do: "Look at most-positive curvature.", see: "It has a meaningful zero and an asymmetric distribution, which is the awkward case step 3 is about." }
+  ]},
+  p2: { items: [
+      { do: "Put mean curvature in Oslo and look at one of the three faults, then switch to balance.", see: "In balance the fault is a pair of lineaments and the sign is immediate. In Oslo the pair becomes one smeared band." },
+      { do: "Put envelope in balance and move the range sliders.", see: "A false dividing line appears partway up the range and moves when the range does." },
+      { do: "Put envelope in RomaO.", see: "The highest and lowest values are rendered in the same colour, with no edge to warn you." }
+  ]},
+  p3: { items: [
+      { do: "Set mean curvature in balance with the symmetric lock on, note where the arrow sits, then switch the lock off and raise the bottom of the range to 30%.", see: "The arrow leaves the centre of the colormap and weak anticlines start rendering in the synclinal arm." },
+      { do: "Switch to most-positive curvature with the lock on.", see: "Half the colormap is spent on data that is nearly absent, which is why this attribute has no automatic answer." }
+  ]},
+  p4: { items: [
+      { do: "Put phase in balance and drag the wrap rotation through a full turn.", see: "A hard edge sweeps across the survey. Nothing in the data changed: every pair of samples is the same distance apart." },
+      { do: "Switch the colormap to RomaO and rotate again.", see: "Nothing happens, which is the whole point of a cyclic colormap." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -753,6 +777,15 @@
   seen.p1 = true;
   syncControls();
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const rg = range();
+      return { attr: S.attr, cmap: S.cmap, min: rg[0], max: rg[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

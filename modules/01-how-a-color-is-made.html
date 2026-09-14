@@ -494,7 +494,34 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Set all three sliders to the same value.", see: "The ramp is grayscale and every feature in the map is carried by brightness alone." },
+      { do: "Set pure blue (0, 0, 255) and read the lightness, then pure yellow (255, 255, 0).", see: "L* 32 against L* 97. The yellow ramp has three times the lightness range to work with." },
+      { do: "Put two channels at full and one at zero to make cyan, magenta or yellow.", see: "These are the lightest colours short of white, which is why they sit at the bright end of so many colormaps." }
+  ]},
+  p2: { items: [
+      { do: "Switch to Ink and check that the sliders are already sitting at the separation of the same colour.", see: "Nothing was converted: it is the same colour described from the other direction." },
+      { do: "Set a saturated blue and lower the ink coverage limit to 150%. Then set a mid gray and do the same.", see: "The blue lightens; the gray does not move, because black ink can carry all of it." },
+      { do: "Take the black slider to 100%.", see: "Everything goes dark whatever the three colored inks are doing." }
+  ]},
+  p3: { items: [
+      { do: "Select the rainbow and count the places where a channel curve turns or leaves a plateau.", see: "Six. Each is a position where the rate of colour change jumps, and each becomes an edge in an image." },
+      { do: "Compare against viridis.", see: "Three smooth curves, none of which doubles back." },
+      { do: "Select the sixteen-step rainbow.", see: "The curves become a staircase: every tread is a range of data rendered in one colour." }
+  ]},
+  p4: { items: [
+      { do: "Pick any colour and switch Hold lightness constant on and off.", see: "The map goes nearly blank while the strip stays colourful." },
+      { do: "Switch the ramp to start from white instead of black.", see: "Still monotonic, running the other way." },
+      { do: "Set a strongly saturated colour and turn constant lightness on.", see: "The chroma readout falls, because that much chroma is not available at that lightness." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -937,6 +964,14 @@
 
   pushSliders();
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const r = Synthetic.RANGES[S.attr];
+      return { attr: S.attr, cmap: currentMapKey(), min: r[0], max: r[1] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

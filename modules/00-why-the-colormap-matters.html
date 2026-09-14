@@ -497,7 +497,33 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Drag the section line across the survey and stop where the red line crosses the widest part of the channel.", see: "The sand lens in the section is at its thickest there. Near a margin the top and base reflections almost touch." },
+      { do: "Set the sand thickness to 6 m, then back to 22 m, watching the section.", see: "Below about 10 m the two reflections stop being separable and merge into one loop." },
+      { do: "Set the attribute to two-way time and find the three faults.", see: "Three steps running across the map, plus a patch of fine texture in one corner: the polygonal swarm." }
+  ]},
+  p2: { items: [
+      { do: "Take the peak frequency down to 12 Hz and watch the wavelet and the trace.", see: "The wavelet lengthens and the two red spikes stop producing two separate loops." },
+      { do: "Set the sand impedance to 7.5, above the shale value of 6.5.", see: "Both spikes reverse and the loop turns over." },
+      { do: "Move the CDP slider from the channel axis out to a margin.", see: "The thickness in the plot title falls and the loop narrows toward a single event." }
+  ]},
+  p3: { items: [
+      { do: "Press Rainbow / Oslo and find one feature easier to locate in each." },
+      { do: "Drag the profile CDP and compare the curve against the two colour strips beneath it.", see: "Where the curve is smooth and a strip steps, that boundary belongs to the colormap." },
+      { do: "Set the attribute to instantaneous phase and press Cyclic rainbow / RomaO.", see: "The cyclic rainbow puts bright bands at fixed phase values; RomaO does not." }
+  ]},
+  p4: { items: [
+      { do: "Set the pockmark dimming to 10%, then raise the noise until the pockmarks disappear in the upper panel. Check the lower panel at that same noise.", see: "They disappear at different noise levels, so the detection limit is a property of the display." },
+      { do: "Set the attribute to mean curvature with the noise at zero and find the polygonal fault swarm, then raise the noise to 20%.", see: "The swarm is buried while the three main faults stay put." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -855,6 +881,16 @@
   seen.p1 = true;
   rebuild();
   showTab('p1');
+  /* the Map / Section switch and the panel collapse */
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const r = Synthetic.RANGES[S.attr];
+      return { attr: S.attr, cmap: S.cmapA, min: r[0], max: r[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

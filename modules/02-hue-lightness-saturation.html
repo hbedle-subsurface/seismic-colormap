@@ -470,7 +470,31 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Set the hue to 250 and the lightness to 30, push the chroma slider to maximum and read the number returned. Repeat at hue 330.", see: "The blue-green direction runs out of chroma long before magenta does, at every lightness." },
+      { do: "Switch Vary between lightness, chroma and hue without touching the three sliders.", see: "The same colour produces three ramps that are nothing like equally useful." }
+  ]},
+  p2: { items: [
+      { do: "Step through the three ramps and note how far right and how far up the pattern stays visible.", see: "Lightness reaches much finer bars and weaker amplitudes than either of the other two." },
+      { do: "Set the attribute to coherence and repeat, watching the fault traces instead.", see: "The same result on real features: they survive in lightness and vanish in hue." },
+      { do: "Read the total colour difference for the hue ramp and for the lightness ramp.", see: "The hue ramp passes through more colour and shows less. Colour difference is not resolving power." }
+  ]},
+  p3: { items: [
+      { do: "Put the ramp on lightness, shuffle, and put the swatches in order.", see: "Immediate, and nobody disagrees." },
+      { do: "Now put it on hue, shuffle twice, and write down an order each time.", see: "The two answers often differ, because there is no order to find." }
+  ]},
+  p4: { items: [
+      { do: "Select the rainbow and find where its lightness peaks.", see: "In the yellow, past the middle of the range. Data at that value looks like a ridge." },
+      { do: "Compare the lightness plots for red-white-blue and for balance.", see: "Both symmetric; red-white-blue reaches L* 100 at the centre, so zero is the brightest thing on the display." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -876,6 +900,15 @@
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
 
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const r = Synthetic.RANGES[S.attr];
+      return { attr: S.attr, cmap: rampKey(), min: r[0], max: r[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

@@ -10,7 +10,7 @@ Oklahoma, with the [AASPI](https://www.ou.edu/mcee/labs/aaspi) consortium.
 Built to the same house template as the other teaching repositories, so
 `assets/style.css`, `assets/count.js`, `assets/popout.js`, `assets/panelout.js`
 and `assets/seismic.js` are the shared files and go in unchanged. See
-`ADD-COUNTING.md`, `ADD-POPOUT.md` and `ADD-PANELOUT.md`.
+`ADD-COUNTING.md`, `ADD-POPOUT.md`, `ADD-PANELOUT.md` and `ADD-GUIDE.md`.
 
 ## Modules
 
@@ -24,9 +24,9 @@ and `assets/seismic.js` are the shared files and go in unchanged. See
 | 05 | Color vision deficiency | built |
 | 06 | Dynamic range and clipping | built |
 | 07 | Continuous and discrete color | built |
-| 08 | Corendering two attributes | in preparation |
-| 09 | RGB and CMY blending of three attributes | in preparation |
-| 10 | Building a display | in preparation |
+| 08 | Corendering two attributes | built |
+| 09 | RGB and CMY blending | built |
+| 10 | Building a display | built |
 
 ## Running it
 
@@ -51,6 +51,9 @@ modules/04-sequential-diverging-cyclic.html
 modules/05-color-vision-deficiency.html
 modules/06-dynamic-range-and-clipping.html
 modules/07-continuous-and-discrete.html
+modules/08-corendering.html
+modules/09-rgb-and-cmy-blending.html
+modules/10-building-a-display.html
 assets/style.css        shared house stylesheet
 assets/count.js         shared page-view counting
 assets/popout.js        shared exercise pop-out
@@ -59,8 +62,11 @@ assets/seismic.js       shared math and canvas core
 assets/cmapdata.js      colormap tables, 256 levels each
 assets/colormaps.js     lookup, application to data, L* profiles, CVD simulation
 assets/colormodel.js    the synthetic model these modules run on
-assets/cmplot.js        map, section, color bar and line plotting
+assets/cmplot.js        map, precomputed image, section, color bar and line plotting
 assets/glossary.js      click a marked term, get its definition
+assets/guide.js         the per-step "try this" task list
+assets/nextmod.js       previous and next module navigation
+assets/panelview.js     map / section switch, the vertical section, panel collapse
 ```
 
 Module code is inline at the foot of each module page, as in the other
@@ -99,9 +105,13 @@ frequency, noise level, and pockmark dimming.
 | `meanCurvature` | diverging | symmetric about zero |
 | `thickness`, `twoWayTime` | sequential | model properties, not measurements |
 
-`model.section(line)` returns a vertical section, and
-`model.sectionHorizons(line)` the top and base of the sand along it, so the
-panels can be tied together with guide lines.
+`model.panel(dir, index, attr)` returns a vertical section carrying any of the
+trace attributes, in either direction. An inline — varying line number at a
+fixed CDP — crosses all three faults and several bends of the channel; a
+crossline runs across the channel and shows the sand thinning to its margins.
+It returns the top and base of the sand along the same panel so the displays
+can be tied together with guide lines. `model.section(line)` is the older
+amplitude-only form and is still used by module 00.
 
 Display ranges are fixed constants in `Synthetic.RANGES`. Moving a slider
 changes the picture, not the scale. Module 06 is where the ranges come under the

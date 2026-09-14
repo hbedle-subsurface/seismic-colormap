@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corendering two attributes | How Colormaps Actually Work</title>
+<meta name="description" content="Hue from one attribute, lightness from another, and transparency masking: showing two things in one image without hiding both.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 08 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Corendering two attributes</h1>
+    <p class="sub">Two attributes in one image is the normal case in interpretation, and the usual result
+      is that neither can be read. The three dimensions of module 02 are what makes it work: one attribute
+      takes the hue, another takes the lightness, and a third option uses one attribute to decide where the
+      other is shown at all.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The corendered display <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMain" aria-label="The two attributes corendered"></canvas>
+        <canvas id="cBarA" aria-label="Color bar for the first attribute"></canvas>
+        <canvas id="cBarB" aria-label="Scale for the second attribute"></canvas>
+        <p class="hint-line" id="capMain">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>In color</span><b id="sA">—</b></div>
+          <div class="stat"><span>Carried by</span><b id="sB">—</b></div>
+          <div class="stat"><span>Fully muted</span><b id="sMuted">—</b></div>
+          <div class="stat"><span>Range left to the first attribute where the second is lowest</span><b id="sSpan">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">What is combined, and how <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The two attributes</h2>
+            <div class="ctl">
+              <label for="attrA">Shown in color</label>
+              <select id="attrA">
+                <option value="envelope">Envelope</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="meanCurvature">Mean curvature</option>
+                <option value="phase">Instantaneous phase</option>
+                <option value="amplitude">Amplitude</option>
+                <option value="thickness">Sand thickness (model)</option>
+              </select>
+            </div>
+            <div class="ctl">
+              <label for="cmap">Its colormap</label>
+              <select id="cmap"></select>
+            </div>
+            <div class="ctl">
+              <label for="attrB">Second attribute</label>
+              <select id="attrB">
+                <option value="coherence">Coherence</option>
+                <option value="envelope">Envelope</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="thickness">Sand thickness (model)</option>
+              </select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">The second attribute is not given colors of its
+              own. It is given one of the other dimensions of the display.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>How they are combined</h2>
+            <div class="ctl">
+              <label for="mode">Method</label>
+              <div class="seg" role="group" aria-label="Corendering method" id="mode" style="flex-wrap:wrap">
+                <button type="button" id="mNone" aria-pressed="true">First only</button>
+                <button type="button" id="mLight" aria-pressed="false">Lightness</button>
+                <button type="button" id="mSat" aria-pressed="false">Saturation</button>
+                <button type="button" id="mMask" aria-pressed="false">Transparency</button>
+              </div>
+            </div>
+
+            <div class="ctl" id="ctlStrength">
+              <label for="strength">Strength <span class="val" id="strengthV">80%</span></label>
+              <input type="range" id="strength" min="0" max="100" step="5" value="80">
+            </div>
+
+            <div class="ctl" id="ctlThr" hidden>
+              <label for="thr">Mask threshold <span class="val" id="thrV">35%</span></label>
+              <input type="range" id="thr" min="0" max="90" step="1" value="35">
+            </div>
+            <div class="ctl" id="ctlTaper" hidden>
+              <label for="taper">Taper <span class="val" id="taperV">15%</span></label>
+              <input type="range" id="taper" min="0" max="50" step="1" value="15">
+            </div>
+
+            <div class="ctl">
+              <label for="cvd">Check under color vision deficiency</label>
+              <div class="seg" role="group" aria-label="Simulation" id="cvd">
+                <button type="button" id="vOff" aria-pressed="true">Off</button>
+                <button type="button" id="vDeu" aria-pressed="false">Deutan</button>
+                <button type="button" id="vPro" aria-pressed="false">Protan</button>
+              </div>
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · One image, two attributes</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Lightness from the second</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Showing it only where it means something</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What it costs</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>One image, two attributes</h3>
+    </div>
+    <p class="lede">The obvious way to show two attributes at once is to give each a colormap and lay one
+      over the other at half opacity. It does not work: both colormaps are trying to use the same three
+      dimensions of the display, and the result is a mixture that reports neither.</p>
+
+    <p>What does work follows from module 02. The display has a lightness, a chroma and a hue, and they are
+      separable. Give one attribute the hue and let it keep its colormap. Give the other a dimension the
+      first is not using. The four buttons in the panel are the options.</p>
+
+    <table>
+      <thead><tr><th>Method</th><th>What the second attribute does</th><th>Where it suits</th></tr></thead>
+      <tbody>
+        <tr><td>First only</td><td>Nothing; the reference display</td><td>Always worth looking at first</td></tr>
+        <tr><td>Lightness</td><td>Darkens the image where it is low</td><td>An edge attribute over anything: coherence over amplitude, energy or sweetness</td></tr>
+        <tr><td>Saturation</td><td>Drains the color toward gray where it is low</td><td>Where the first attribute is only meaningful in part of the survey</td></tr>
+        <tr><td>Transparency</td><td>Decides where the first is shown at all</td><td>An attribute with a companion magnitude: azimuth with aberrancy strength, phase with reflection strength</td></tr>
+      </tbody>
+    </table>
+
+    <p>The first attribute keeps its own color bar and remains readable against it. The second does not get
+      a color bar in the usual sense, because it has not been given colors: its scale is the second strip in
+      the panel, which shows what it does to the image rather than what color it is.</p>
+
+    <p>The constraint that decides which method to use is the one from module 02. Lightness carries fine
+      detail, so the attribute with fine detail should be the one taking the lightness. On a
+      coherence-over-envelope display that is coherence, whose content is thin fault traces, while the
+      envelope varies smoothly. Putting them the other way round wastes the dimension that can resolve the
+      faults on an attribute that has no fine structure to show.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>Lightness from the second attribute</h3>
+    </div>
+    <p class="lede">The standard corendered display in seismic interpretation is an amplitude-like
+      attribute in color with a coherence attribute darkening it. The strength slider sets how much of the
+      lightness the second attribute is allowed to take.</p>
+
+    <p>At zero strength the display is the first attribute alone. Raising it, the fault traces and the
+      channel edges appear as dark lineaments cut into the color, and they appear as lineaments rather than
+      as a wash because coherence is low along thin curved features and high everywhere else.</p>
+
+    <p>Two things go wrong at high strength, and both are visible in the readouts.</p>
+
+    <p><b>The first attribute loses its range.</b> Its colors are multiplied down wherever coherence is
+      less than perfect, which on real data is most of the survey. The readout gives the lightness the
+      first attribute still has to work with where the second is at its lowest: Oslo covers L* 2 to 91
+      unmodulated, and at 80% strength that falls to L* 1 to 52 in the worst-affected areas. The color bar
+      stops describing the image, because a value that should be rendered at the light end of the colormap
+      is rendered somewhere below it, by an amount the reader cannot recover.</p>
+
+    <p>The overall image gets darker rather than flatter, which is worth being clear about. Its total
+      lightness range actually widens, because the modulation pushes some cells to black while the
+      unmodulated cells stay where they were. What has been compressed is the range available to the first
+      attribute at any given value of the second, and that compression is invisible in the finished
+      picture.</p>
+
+    <p><b>The colormap's own dark end disappears.</b> A colormap that reaches near-black at one end has
+      nothing left to darken there. Oslo starts at L* 2, so a low envelope in a coherent area and a
+      moderate envelope in an incoherent one are both rendered close to black and cannot be told apart.
+      Viridis and batlow start at L* 16 and 14, which is a little room but not much.</p>
+
+    <div class="legend">
+      <span>That second problem is the argument for corendering with a colormap that stops well short of
+      black. Reserving the bottom of the lightness scale so a second attribute can use it is a real design
+      consideration, and it is one of the reasons a corendered display often wants a different colormap
+      from the single-attribute display of the same data.</span>
+    </div>
+
+    <p>A strength somewhere between 50% and 80% is where most displays of this kind end up, and the right
+      value depends on whether the reader is being asked to read the first attribute's values or only to
+      see where its features are. If the values matter, the strength should be low and the second attribute
+      should probably be a separate display.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Showing it only where it means something</h3>
+    </div>
+    <p class="lede">Some attributes are undefined, unstable or meaningless over part of a survey rather
+      than everywhere. Instantaneous phase is the clearest case: it is a well-determined number where a
+      reflection is strong and close to noise where the trace is weak, and a phase display renders both
+      with equal confidence.</p>
+
+    <p>The transparency method uses the second attribute to decide where the first is shown. Where the
+      second is above the threshold the first appears in full color; where it is below, the display falls
+      back to a neutral gray. The taper sets how abruptly that happens.</p>
+
+    <p>Set the first attribute to phase in RomaO and the second to envelope. The phase structure now
+      appears only along the marker and the channel, where there is a reflection to measure it from, and
+      the weak areas are quiet gray rather than a field of confident color that means nothing.</p>
+
+    <p>This is the arrangement used for aberrancy in Bedle and Moreno-Ward (2025): aberrancy azimuth in a
+      cyclic colormap, masked by aberrancy magnitude, so that the lineation directions are shown only where
+      there is a lineation. It applies to the same pairing generally &mdash; dip azimuth masked by dip
+      magnitude, phase masked by envelope, any angle masked by the strength of the thing whose angle it
+      is.</p>
+
+    <div class="legend">
+      <span>The threshold is a claim about the data and should be treated like the display range in module
+      06: reported, and chosen for a reason. A mask threshold set until the picture looks right is a
+      decision about which parts of the survey the reader gets to see, made without a stated
+      criterion.</span>
+    </div>
+
+    <p>The taper is worth setting to zero once, to see why it is normally not. A hard threshold puts a
+      contour of the second attribute into the image as a visible edge, and that edge is a boundary in the
+      display rather than in the data, in exactly the sense of module 03. A taper of ten or twenty per cent
+      removes it without changing what is being shown.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>What it costs</h3>
+    </div>
+    <p class="lede">A corendered display is a compromise, and it is worth being specific about what has
+      been given up, because the image looks complete either way.</p>
+
+    <p><b>Neither attribute remains quantitative.</b> The first has had its lightness modified by the
+      second, so its color bar no longer describes the image. The second has no color bar at all. A
+      corendered display supports statements about where things are and not about how large they are, and
+      any number taken off one should be taken off a single-attribute display instead.</p>
+
+    <p><b>The cues can collide.</b> Two attributes that vary together produce an image where the
+      contributions cannot be separated. Envelope and sweetness are largely the same information in this
+      model, and corendering them produces a display that looks informative and contains one attribute's
+      worth of content. The check is to switch the method to first only and back.</p>
+
+    <p><b>Color vision deficiency hits corendered displays harder.</b> The simulation buttons are in the
+      panel. A single-attribute display that fails under deutan simulation is missing information; a
+      corendered one is missing information from one layer while the other layer continues to look
+      authoritative, and the result is harder to recognise as broken. Corendering with a colormap whose
+      hue is doing the work, such as a rainbow, produces exactly this.</p>
+
+    <p>Three checks make the compromise safe enough to live with.</p>
+    <ul>
+      <li><b>Look at each attribute alone first.</b> Anything in the corendered display that was not in one
+        of the two single displays is an artefact of the combination.</li>
+      <li><b>Toggle the second attribute off and on.</b> A feature that appears and disappears with it
+        belongs to it; a feature that persists belongs to the first.</li>
+      <li><b>Run the simulation.</b> If the first attribute's contribution disappears under deutan
+        simulation while the second's remains, the display is carrying its primary information in hue.</li>
+    </ul>
+
+    <p>None of this argues against corendering. It is the only practical way to look at an edge attribute
+      and an amplitude attribute together, and interpreters do it constantly for good reason. It argues for
+      treating the combined image as a reconnaissance display and going back to the separate ones before
+      measuring anything.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>Multiattribute display is where most of the practical difficulty in seismic visualization sits, and
+      it is the subject of Marfurt (2015), which remains the reference treatment. The reason it is
+      difficult is that the display has three dimensions and no more, and every attribute added has to be
+      given one of them or squeezed alongside something else.</p>
+
+    <p>The common failure is not a bad combination but an unrecorded one. A corendered figure shows a color
+      bar for one attribute and says nothing about the second: which attribute it was, what range it
+      covered, what it was doing to the image, and what threshold was applied. A reader cannot reconstruct
+      any of that from the picture, and frequently neither can the person who made it, six months later.</p>
+
+    <p>The second failure is treating a corendered display as quantitative. It is the natural thing to do,
+      because one attribute still has its color bar, and that color bar is wrong for the image in front of
+      it as soon as any modulation is applied.</p>
+
+    <p>Both are avoidable by writing down what was combined and how. Two attribute names, two ranges, the
+      method and any threshold: five pieces of information that make the figure reproducible, and which are
+      almost never present.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Put the detail in the right dimension.</b> With envelope in color and coherence on
+          lightness, note how the faults appear. Then swap them: coherence in color, envelope on lightness.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Coherence on the lightness
+            renders the fault traces as thin dark lineaments, because lightness resolves fine detail. With
+            the two swapped, the faults are still present but softer, and the envelope is doing nothing
+            useful with a dimension that could have resolved them. The attribute with the fine structure
+            should have the lightness.</span></details></li>
+
+        <li><b>Lose the dark end.</b> With envelope in Oslo and coherence on lightness, take the strength
+          to 100% and look at the low-envelope areas outside the channel.
+          <details class="reveal"><summary>Hint</summary><span class="ans">They are black, and so are the
+            low-coherence areas, and the two are no longer distinguishable. Oslo runs down to near-black,
+            so there is nothing left for the second attribute to take. A colormap that stops short of black
+            keeps the bottom of the lightness scale available, which is what makes it a better choice for
+            corendering.</span></details></li>
+
+        <li><b>Mask a phase display.</b> Set phase in RomaO with no second attribute, then turn on
+          transparency with envelope as the mask.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Unmasked, the phase display
+            covers the whole survey with equal conviction, including the areas where there is barely a
+            reflection and the phase is measuring noise. Masked, it appears along the marker and the
+            channel and nowhere else. Nothing has been removed from the data; the display has stopped
+            asserting a measurement where there was no signal to
+            measure.</span></details></li>
+
+        <li><b>Put a contour in by accident.</b> With the transparency method running, set the taper to
+          zero and look at the boundary of the masked region.
+          <details class="reveal"><summary>Hint</summary><span class="ans">A hard edge appears, following a
+            contour of the second attribute. It is a boundary in the display, in the module 03 sense, and
+            it is easy to read as a geological edge because it is smooth and continuous. A taper of ten or
+            twenty per cent removes it while showing the same
+            information.</span></details></li>
+
+        <li><b>Corender an attribute with itself.</b> Set both to envelope, or one to envelope and the
+          other to sweetness, and switch the method on and off.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The display changes and gains
+            nothing, because the two attributes carry nearly the same information in this model. A
+            corendered image always looks richer than a single one, and that appearance is no evidence that
+            a second independent thing is being shown.</span></details></li>
+
+        <li><b>Check it under simulation.</b> Put envelope in the rainbow with coherence on lightness, then
+          switch the simulation to deutan.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The coherence layer survives,
+            because it is working in lightness. The envelope layer loses its upper range, because the
+            rainbow carries that in hue. The result still looks like a competent corendered display while
+            one of its two layers has stopped working, which is harder to notice than a single-attribute
+            display failing outright.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Two colormaps laid over each other compete for the same three dimensions. Corendering works by
+        giving each attribute a different dimension.</li>
+      <li>The attribute with the fine detail should take the lightness, because lightness is what resolves
+        fine detail.</li>
+      <li>Modulating lightness eats into the first attribute's range, and its color bar stops describing
+        the image as soon as any modulation is applied.</li>
+      <li>A colormap that reaches black has nothing left to darken. Maps that stop short of black leave the
+        bottom of the lightness scale free for a second attribute.</li>
+      <li>Transparency masking is the right method when the second attribute says where the first is
+        meaningful: azimuth with magnitude, phase with reflection strength. The threshold is a claim about
+        the data and belongs in the caption.</li>
+      <li>A hard mask edge is a contour of the second attribute drawn into the image. A taper removes it.</li>
+      <li>Corendered displays are for reconnaissance. Numbers come off single-attribute displays.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The first attribute is looked up in its colormap in the usual way. The second is normalized to its
+      own range across the survey and then applied, in linear light rather than in the stored sRGB values,
+      so that half-strength modulation removes half the light rather than half the encoded number.</p>
+
+    <p><b>Lightness</b> multiplies each channel by a factor running from one down to one minus the
+      strength as the second attribute falls from its maximum to its minimum.</p>
+
+    <p><b>Saturation</b> moves each color toward the neutral gray of the same luminance, by the same
+      fraction, so the lightness of the image is unchanged and only the chroma falls.</p>
+
+    <p><b>Transparency</b> computes an opacity from the second attribute: zero below the threshold, one
+      above the threshold plus the taper, and a smooth ramp between. The color is then composited over a
+      mid gray at that opacity. A gray background is used rather than white or black so that the muted
+      areas do not read as either a high or a low value of the first attribute.</p>
+
+    <p>The color vision simulation is applied last, to the finished composite, which is the correct order:
+      it is a property of the reader rather than of either attribute, and simulating the layers separately
+      would not reproduce what happens to the combination.</p>
+
+    <p>The muted percentage counts cells whose opacity is below a tenth. The range readout takes the two
+      ends of the colormap, puts them through the same modulation at the second attribute's minimum, and
+      reports the lightness they land at. That is the range the first attribute has left in the
+      worst-affected parts of the survey, which is the quantity that matters and is not the same as the
+      lightness range of the finished image.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+      <li>Qi, X., and K. J. Marfurt, 2018, Volumetric aberrancy to map subtle faults and flexures:
+        Interpretation, 6, T349&ndash;T365, doi:
+        <a href="https://doi.org/10.1190/INT-2017-0114.1">10.1190/INT-2017-0114.1</a>.</li>
+      <li>Taner, M. T., F. Koehler, and R. E. Sheriff, 1979, Complex seismic trace analysis: Geophysics,
+        44, 1041&ndash;1063, doi:
+        <a href="https://doi.org/10.1190/1.1440994">10.1190/1.1440994</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Put envelope in colour with coherence on lightness, then swap the two attributes.", see: "Coherence on the lightness renders the faults as thin dark lineaments. The other way round wastes the dimension that could resolve them." },
+      { do: "Try saturation instead of lightness with the same pair.", see: "The image keeps its brightness and loses its colour where coherence is low, which is a weaker but quieter cue." }
+  ]},
+  p2: { items: [
+      { do: "Take the strength to 100% with Oslo and look at the low-envelope areas outside the channel.", see: "They are black, and so are the low-coherence areas: two different things rendered identically." },
+      { do: "Read the range left to the first attribute at 0%, 50% and 80% strength.", see: "L* 2 to 91 becomes L* 1 to 52. The colour bar has stopped describing the image." }
+  ]},
+  p3: { items: [
+      { do: "Set phase in RomaO with the method on First only, then switch to Transparency with envelope as the mask.", see: "Unmasked, the display is equally confident where it is measuring noise. Masked, it speaks only where there is a reflection." },
+      { do: "Set the taper to zero.", see: "A contour of the second attribute appears as a hard edge: a module 03 false boundary, arriving through the mask." },
+      { do: "Move the threshold and watch the muted percentage.", see: "The threshold decides which parts of the survey the reader gets to see, so it belongs in the caption." }
+  ]},
+  p4: { items: [
+      { do: "Set both attributes to things that measure much the same thing and switch the method on and off.", see: "The display changes and gains nothing. A corendered image always looks richer than a single one." },
+      { do: "Put envelope in the rainbow with coherence on lightness, then switch the simulation to deutan.", see: "The coherence layer keeps working and the envelope layer does not, while the image still looks competent." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attrA: 'envelope', attrB: 'coherence', cmap: 'oslo',
+                mode: 'none', strength: 80, thr: 35, taper: 15, cvd: 'off' };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+  const GRAY = [138, 142, 146];            // what a muted cell falls back to
+
+  function norm(attr) {
+    const v = model.slice(attr);
+    const r = Synthetic.RANGES[attr];
+    const out = new Float32Array(v.length);
+    const span = (r[1] - r[0]) || 1;
+    for (let i = 0; i < v.length; i++) {
+      let t = (v[i] - r[0]) / span;
+      out[i] = t < 0 ? 0 : t > 1 ? 1 : t;
+    }
+    return out;
+  }
+
+  /* ---- the composite ----------------------------------------------------- */
+
+  const lin = Colormaps.srgbToLinear;
+  const srgb = Colormaps.linearToSrgb;
+
+  function composite() {
+    const n = model.nx * model.ny;
+    const a = Colormaps.lut(S.cmap), levels = a.length / 3;
+    const va = model.slice(S.attrA);
+    const ra = Synthetic.RANGES[S.attrA];
+    const cyc = !!Synthetic.CYCLIC[S.attrA];
+    const nb = norm(S.attrB);
+    const out = new Uint8ClampedArray(4 * n);
+    const st = S.strength / 100, thr = S.thr / 100, tap = S.taper / 100;
+    let muted = 0;
+    const lmin = 0, lmax = 0;
+
+    for (let i = 0; i < n; i++) {
+      let t = (va[i] - ra[0]) / ((ra[1] - ra[0]) || 1);
+      if (cyc) t = t - Math.floor(t); else t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const j = Math.round(t * (levels - 1)) * 3;
+      let r = a[j], g = a[j + 1], b = a[j + 2];
+
+      if (S.mode === 'lightness') {
+        const f = 1 - st * (1 - nb[i]);
+        r = srgb(lin(r) * f); g = srgb(lin(g) * f); b = srgb(lin(b) * f);
+      } else if (S.mode === 'saturation') {
+        const f = st * (1 - nb[i]);                 // how far toward grey
+        const Y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        r = srgb(lin(r) * (1 - f) + Y * f);
+        g = srgb(lin(g) * (1 - f) + Y * f);
+        b = srgb(lin(b) * (1 - f) + Y * f);
+      } else if (S.mode === 'mask') {
+        let alpha;
+        if (tap < 0.005) alpha = nb[i] >= thr ? 1 : 0;
+        else alpha = Math.max(0, Math.min(1, (nb[i] - thr) / tap));
+        alpha = 1 - st * (1 - alpha);               // strength limits the muting
+        if (alpha < 0.1) muted++;
+        r = r * alpha + GRAY[0] * (1 - alpha);
+        g = g * alpha + GRAY[1] * (1 - alpha);
+        b = b * alpha + GRAY[2] * (1 - alpha);
+      }
+
+      if (S.cvd !== 'off') {
+        const c = Colormaps.simulate([r, g, b], S.cvd, 1);
+        r = c[0]; g = c[1]; b = c[2];
+      }
+
+      const k = 4 * i;
+      out[k] = r; out[k + 1] = g; out[k + 2] = b; out[k + 3] = 255;
+    }
+    /* How much lightness the first attribute still has to work with in the
+       worst-modulated parts of the survey: the colormap's own two ends, put
+       through the same modulation at the second attribute's minimum. */
+    let worstLo = null, worstHi = null;
+    if (S.mode === 'lightness' || S.mode === 'saturation') {
+      const ends = [[a[0], a[1], a[2]],
+                    [a[3 * (levels - 1)], a[3 * levels - 2], a[3 * levels - 1]]];
+      const f = S.mode === 'lightness' ? 1 - st : 1;
+      const Ls = ends.map(function (c) {
+        if (S.mode === 'lightness') {
+          return Colormaps.rgbToLab(srgb(lin(c[0]) * f), srgb(lin(c[1]) * f),
+                                    srgb(lin(c[2]) * f))[0];
+        }
+        return Colormaps.rgbToLab(c[0], c[1], c[2])[0];
+      });
+      worstLo = Math.min(Ls[0], Ls[1]);
+      worstHi = Math.max(Ls[0], Ls[1]);
+    }
+    return { rgba: out, muted: muted, n: n, worstLo: worstLo, worstHi: worstHi,
+             lmin: lmin, lmax: lmax };
+  }
+
+  /* ---- the second attribute's strip -------------------------------------- */
+
+  /* Not a colour bar: the second attribute has no colours of its own. This
+     shows what it does to a mid-range colour of the first. */
+  function drawStripB() {
+    const cv = $('cBarB');
+    const w = Math.max(240, cv.parentNode.clientWidth || 0);
+    if (w < 200) return;
+    const h = 52;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 54, ww = w - x0 - 14, bh = 16;
+    const a = Colormaps.lut(S.cmap), levels = a.length / 3;
+    const j = Math.round(0.6 * (levels - 1)) * 3;
+    const base = [a[j], a[j + 1], a[j + 2]];
+    const st = S.strength / 100, thr = S.thr / 100, tap = S.taper / 100;
+
+    for (let i = 0; i < ww; i++) {
+      const u = i / (ww - 1);
+      let r = base[0], g = base[1], b = base[2];
+      if (S.mode === 'lightness') {
+        const f = 1 - st * (1 - u);
+        r = srgb(lin(r) * f); g = srgb(lin(g) * f); b = srgb(lin(b) * f);
+      } else if (S.mode === 'saturation') {
+        const f = st * (1 - u);
+        const Y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        r = srgb(lin(r) * (1 - f) + Y * f);
+        g = srgb(lin(g) * (1 - f) + Y * f);
+        b = srgb(lin(b) * (1 - f) + Y * f);
+      } else if (S.mode === 'mask') {
+        let alpha = tap < 0.005 ? (u >= thr ? 1 : 0)
+                                : Math.max(0, Math.min(1, (u - thr) / tap));
+        alpha = 1 - st * (1 - alpha);
+        r = r * alpha + GRAY[0] * (1 - alpha);
+        g = g * alpha + GRAY[1] * (1 - alpha);
+        b = b * alpha + GRAY[2] * (1 - alpha);
+      }
+      if (S.cvd !== 'off') {
+        const c = Colormaps.simulate([r, g, b], S.cvd, 1);
+        r = c[0]; g = c[1]; b = c[2];
+      }
+      ctx.fillStyle = 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';
+      ctx.fillRect(x0 + i, 6, 1.2, bh);
+    }
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, 6.5, ww, bh);
+
+    const rb = Synthetic.RANGES[S.attrB];
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('second', x0 - 6, 6 + bh / 2);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(rb[0].toPrecision(2), x0, 6 + bh + 4);
+    ctx.textAlign = 'right';
+    ctx.fillText(rb[1].toPrecision(2), x0 + ww, 6 + bh + 4);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#16191C';
+    ctx.fillText(Synthetic.LABEL[S.attrB] + ' \u2014 what it does to one colour of the first',
+                 x0, 6 + bh + 19);
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function drawAll() {
+    const c = composite();
+    const ra = Synthetic.RANGES[S.attrA];
+    CMPLOT.image($('cMain'), c.rgba, {
+      nx: model.nx, ny: model.ny, height: 268,
+      title: Synthetic.LABEL[S.attrA] +
+             (S.mode === 'none' ? '' : ' with ' + Synthetic.LABEL[S.attrB].toLowerCase())
+    });
+    CMPLOT.colorbar($('cBarA'), {
+      cmap: S.cmap, min: ra[0], max: ra[1],
+      cvd: S.cvd === 'off' ? undefined : S.cvd,
+      label: Synthetic.LABEL[S.attrA] +
+             (S.mode === 'none' ? '' : ' \u2014 no longer describes the image')
+    });
+    drawStripB();
+
+    $('sA').textContent = Synthetic.LABEL[S.attrA];
+    $('sB').textContent = S.mode === 'none' ? 'nothing'
+      : S.mode === 'lightness' ? 'the lightness'
+      : S.mode === 'saturation' ? 'the chroma' : 'the opacity';
+    $('sMuted').textContent = S.mode === 'mask'
+      ? (100 * c.muted / c.n).toFixed(1) + '% of the survey' : '\u2014';
+    const full = Colormaps.lightness(S.cmap);
+    let fl = 100, fh = 0;
+    for (let i = 0; i < full.length; i++) { fl = Math.min(fl, full[i]); fh = Math.max(fh, full[i]); }
+    $('sSpan').textContent = (c.worstLo === null)
+      ? (S.mode === 'mask' ? 'nothing: those cells show grey' : 'the whole map, L* ' +
+         fl.toFixed(0) + ' to ' + fh.toFixed(0))
+      : 'L* ' + c.worstLo.toFixed(0) + ' to ' + c.worstHi.toFixed(0) +
+        ', against ' + fl.toFixed(0) + ' to ' + fh.toFixed(0) + ' unmodulated';
+
+    $('capMain').textContent = S.mode === 'none'
+      ? 'One attribute, for reference. Everything the corendered display adds should be checked against this.'
+      : S.mode === 'mask'
+        ? 'Full colour where the second attribute is above the threshold, mid grey below it.'
+        : Colormaps.meta[S.cmap].name + ', with the second attribute taking ' +
+          (S.mode === 'lightness' ? 'the lightness.' : 'the chroma.');
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function bind(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = function () { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', function () { S[key] = parseFloat(el.value); show(); redraw(); });
+    show();
+  }
+  bind('strength', 'strength', (v) => v.toFixed(0) + '%');
+  bind('thr', 'thr', (v) => v.toFixed(0) + '%');
+  bind('taper', 'taper', (v) => v.toFixed(0) + '%');
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['mNone', 'none'], ['mLight', 'lightness'],
+           ['mSat', 'saturation'], ['mMask', 'mask']], function (v) {
+    S.mode = v;
+    $('ctlThr').hidden = (v !== 'mask');
+    $('ctlTaper').hidden = (v !== 'mask');
+    $('ctlStrength').hidden = (v === 'none');
+    drawAll();
+  });
+  segment([['vOff', 'off'], ['vDeu', 'deutan'], ['vPro', 'protan']], function (v) {
+    S.cvd = v; drawAll();
+  });
+
+  $('attrA').addEventListener('change', function () { S.attrA = $('attrA').value; redraw(); });
+  $('attrB').addEventListener('change', function () { S.attrB = $('attrB').value; redraw(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach(function (cls) {
+      Object.keys(ERA).forEach(function (era) {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach(function (k) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', function () { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('attrA').value = S.attrA; $('attrB').value = S.attrB; $('cmap').value = S.cmap;
+    $('strength').value = S.strength; $('strengthV').textContent = S.strength + '%';
+    $('thr').value = S.thr; $('thrV').textContent = S.thr + '%';
+    $('taper').value = S.taper; $('taperV').textContent = S.taper + '%';
+    [['mNone', 'none'], ['mLight', 'lightness'], ['mSat', 'saturation'], ['mMask', 'mask']]
+      .forEach((b) => $(b[0]).setAttribute('aria-pressed', String(b[1] === S.mode)));
+    [['vOff', 'off'], ['vDeu', 'deutan'], ['vPro', 'protan']]
+      .forEach((b) => $(b[0]).setAttribute('aria-pressed', String(b[1] === S.cvd)));
+    $('ctlThr').hidden = true; $('ctlTaper').hidden = true; $('ctlStrength').hidden = true;
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+  /* what each step opens on, the first time it is opened */
+  const START = {
+    p1: { mode: 'none', attrA: 'envelope', attrB: 'coherence', cmap: 'oslo' },
+    p2: { mode: 'lightness', attrA: 'envelope', attrB: 'coherence', cmap: 'oslo' },
+    p3: { mode: 'mask', attrA: 'phase', attrB: 'envelope', cmap: 'romaO' },
+    p4: { mode: 'lightness', attrA: 'envelope', attrB: 'coherence', cmap: 'jet' }
+  };
+  const seen = {};
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    if (START[id] && !seen[id]) {
+      Object.assign(S, START[id]);
+      $('attrA').value = S.attrA; $('attrB').value = S.attrB; $('cmap').value = S.cmap;
+      [['mNone', 'none'], ['mLight', 'lightness'], ['mSat', 'saturation'], ['mMask', 'mask']]
+        .forEach((b) => $(b[0]).setAttribute('aria-pressed', String(b[1] === S.mode)));
+      $('ctlThr').hidden = (S.mode !== 'mask');
+      $('ctlTaper').hidden = (S.mode !== 'mask');
+      $('ctlStrength').hidden = (S.mode === 'none');
+    }
+    seen[id] = true;
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  seen.p1 = true;
+  $('ctlStrength').hidden = true;
+  showTab('p1');
+  /* No section here: this display is built from two attributes at once and the
+     section would need both. The Hide button is still worth having. */
+  PANELVIEW.init({ model: model });
+
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

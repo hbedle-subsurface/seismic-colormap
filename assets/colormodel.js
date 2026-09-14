@@ -44,7 +44,9 @@ const Synthetic = (function () {
   const LABEL = {
     amplitude: "Amplitude", envelope: "Envelope", phase: "Instantaneous phase (\u00b0)",
     frequency: "Instantaneous frequency (Hz)", sweetness: "Sweetness",
-    coherence: "Coherence (energy-ratio style)", curvature: "Most-positive curvature",
+    coherence: "Coherence (energy-ratio style)",
+    curvature: "Most-positive curvature (deeper marker)",
+    meanCurvature: "Mean curvature (deeper marker)",
     thickness: "Channel sand thickness (m)", twoWayTime: "Two-way time to marker (ms)"
   };
 
@@ -498,6 +500,84 @@ const Synthetic = (function () {
       return { nTrace: NY, nt: nt, t0: t0, dt: DT, data: data, line: x };
     }
 
+    /* ---- attribute panels on a vertical section ------------------------ */
+
+    /* A section in either direction, carrying any of the trace attributes
+       rather than amplitude alone. An inline (varying line number at a fixed
+       CDP) crosses all three faults and several channel bends; a crossline
+       (varying CDP at a fixed line) runs across the channel and shows the sand
+       thinning to its margins. */
+    function panel(dir, index, attr, tMin, tMax) {
+      const inline = dir !== 'crossline';
+      const nTrace = inline ? NX : NY;
+      const idx = Math.max(0, Math.min((inline ? NY : NX) - 1, Math.round(index)));
+      const at = function (i) { return inline ? (idx * NX + i) : (i * NX + idx); };
+      const t0 = tMin === undefined ? 980 : tMin;
+      const t1 = tMax === undefined ? 1260 : tMax;
+      const nt = Math.round((t1 - t0) / DT) + 1;
+      const out = new Float32Array(nTrace * nt);
+      const c = [0, 0], cp = [0, 0], cm = [0, 0];
+
+      if (attr === 'coherence') {
+        const nw = 5, dtw = 3;
+        const buf = new Float64Array(3 * nw);
+        for (let i = 0; i < nTrace; i++) {
+          for (let it = 0; it < nt; it++) {
+            const t = t0 + it * DT;
+            let m = 0;
+            for (let d = -1; d <= 1; d++) {
+              const j = Math.min(nTrace - 1, Math.max(0, i + d));
+              for (let w = 0; w < nw; w++) {
+                analyticNoisy(at(j), t + (w - (nw - 1) / 2) * dtw, c);
+                buf[m * nw + w] = c[0];
+              }
+              m++;
+            }
+            let num = 0, den = 0;
+            for (let w = 0; w < nw; w++) {
+              let s2 = 0, ss = 0;
+              for (let q = 0; q < 3; q++) { const v = buf[q * nw + w]; s2 += v; ss += v * v; }
+              num += s2 * s2; den += 3 * ss;
+            }
+            out[it * nTrace + i] = den > 1e-12 ? num / den : 1;
+          }
+        }
+      } else {
+        for (let i = 0; i < nTrace; i++) {
+          const k = at(i);
+          for (let it = 0; it < nt; it++) {
+            const t = t0 + it * DT;
+            analyticNoisy(k, t, c);
+            let v;
+            if (attr === 'envelope') v = Math.sqrt(c[0] * c[0] + c[1] * c[1]);
+            else if (attr === 'phase') v = Math.atan2(c[1], c[0]) * 180 / Math.PI;
+            else if (attr === 'frequency' || attr === 'sweetness') {
+              analyticNoisy(k, t + 1, cp);
+              analyticNoisy(k, t - 1, cm);
+              let dp = Math.atan2(cp[1], cp[0]) - Math.atan2(cm[1], cm[0]);
+              while (dp > Math.PI) dp -= 2 * Math.PI;
+              while (dp < -Math.PI) dp += 2 * Math.PI;
+              const f = Math.abs(dp / (2 * Math.PI) / 0.002);
+              v = attr === 'frequency' ? Math.min(f, 120)
+                : Math.sqrt(c[0] * c[0] + c[1] * c[1]) / Math.sqrt(Math.max(f, 4));
+            } else v = c[0];                       // amplitude
+            out[it * nTrace + i] = v;
+          }
+        }
+      }
+
+      /* the two sand horizons along the same panel, for guide lines */
+      const top = new Float32Array(nTrace), base = new Float32Array(nTrace);
+      const thk = new Float32Array(nTrace);
+      for (let i = 0; i < nTrace; i++) {
+        const k = at(i);
+        top[i] = tTop[k]; base[i] = tBase[k]; thk[i] = thick[k];
+      }
+      return { nTrace: nTrace, nt: nt, t0: t0, dt: DT, data: out,
+               dir: inline ? 'inline' : 'crossline', index: idx,
+               top: top, base: base, thickness: thk, attr: attr };
+    }
+
     /* Times of the top and base of the sand along that same section, so the
        panels can be tied together with guide lines. */
     function sectionHorizons(lineIndex) {
@@ -515,7 +595,7 @@ const Synthetic = (function () {
       tTop: tTop, tBase: tBase, thickness: thick,
       rc1: rc1, rc2: rc2,
       slice: slice, section: section, sectionHorizons: sectionHorizons,
-      pickedHorizon: pickedHorizon,
+      pickedHorizon: pickedHorizon, panel: panel,
       analytic: analyticNoisy,
       channelCenter: channelCenter
     };

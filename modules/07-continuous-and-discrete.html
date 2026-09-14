@@ -448,7 +448,31 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Bring the levels down from continuous and note where steps first appear and where they take over.", see: "Usually around 32 and 16. Below 8 the display has become a map of which bin each sample fell in." },
+      { do: "Read the width of one bin at 8 levels on envelope.", see: "Wider than the difference between the channel margin and the background, which is why the margin turns into an edge." }
+  ]},
+  p2: { items: [
+      { do: "Put the attribute on two-way time at 8 levels, then back to continuous.", see: "Contours against shape. Neither is a substitute for the other." },
+      { do: "Put it on coherence at 8 levels and look at where an edge falls on the fault flanks.", see: "Useful if the edge is at a value that means something, and a contour through nothing if not." }
+  ]},
+  p3: { items: [
+      { do: "Put sweetness on 8 equal-value levels and read the largest and smallest bin shares. Then switch to equal population.", see: "74% in one bin and 0.4% in the emptiest, against an eighth in each." },
+      { do: "Try the same on two-way time.", see: "Already 22% and 2.5%: a smooth surface does not need the fix." },
+      { do: "Put mean curvature in balance at 8 levels and switch the binning.", see: "With equal population the neutral colour leaves zero, which is the module 04 problem arriving by another route." }
+  ]},
+  p4: { items: [
+      { do: "Move the classes slider from 3 to 8 and watch which features separate.", see: "Channel and background at three; the margin at around five; beyond six the extra classes subdivide the background." },
+      { do: "Compare the two displays, then imagine the class numbers shuffled.", see: "The categorical one would look different and say the same thing. The sequential one would say something different." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -798,6 +822,15 @@
 
   seen.p1 = true;
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const s = sorted(S.attr);
+      return { attr: S.attr, cmap: S.cmap, min: s[0], max: s[s.length - 1],
+               nLevels: nLevels() };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>

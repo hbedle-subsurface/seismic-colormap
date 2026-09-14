@@ -108,6 +108,58 @@ const CMPLOT = (function () {
   }
 
   /* ---------------------------------------------------------------------
+     PRECOMPUTED IMAGE
+     For displays whose colours are worked out by the caller rather than by a
+     colormap lookup: corendered pairs, three-channel blends, anything where
+     two attributes have already been combined into one RGB value per cell.
+     rgb is a Uint8ClampedArray of 4*nx*ny in RGBA order, row 0 at the bottom.
+     --------------------------------------------------------------------- */
+
+  function image(canvas, rgba, o) {
+    const p = setup(canvas, o.height || 300);
+    if (!p) return null;
+    const ctx = p.ctx, rect = p.rect;
+
+    const off = document.createElement('canvas');
+    off.width = o.nx; off.height = o.ny;
+    const octx = off.getContext('2d');
+    const img = octx.createImageData(o.nx, o.ny);
+    img.data.set(rgba);
+    octx.putImageData(img, 0, 0);
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(rect.x, rect.y, rect.w, rect.h); ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.translate(rect.x, rect.y + rect.h);
+    ctx.scale(1, -1);
+    ctx.drawImage(off, 0, 0, rect.w, rect.h);
+    ctx.restore();
+
+    SEIS.frame(ctx, rect);
+    const lineLo = o.lineMin === undefined ? 1000 : o.lineMin;
+    const cdpLo = o.cdpMin === undefined ? 3600 : o.cdpMin;
+    SEIS.axisBottom(ctx, rect, lineLo, lineLo + 10 * (o.nx - 1),
+                    o.xLabel || 'Line no.', function (v) { return v.toFixed(0); },
+                    { ticks: 5 });
+    SEIS.axisLeft(ctx, rect, cdpLo, cdpLo + 10 * (o.ny - 1),
+                  o.yLabel || 'CDP no.', function (v) { return v.toFixed(0); },
+                  { ticks: 5, flip: true });
+    title(ctx, rect, o.title);
+
+    const toPix = function (x, y) {
+      return [rect.x + rect.w * x / (o.nx - 1),
+              rect.y + rect.h - rect.h * y / (o.ny - 1)];
+    };
+    if (o.overlay) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(rect.x, rect.y, rect.w, rect.h); ctx.clip();
+      o.overlay(ctx, rect, toPix);
+      ctx.restore();
+    }
+    return { ctx: ctx, rect: rect, toPix: toPix };
+  }
+
+  /* ---------------------------------------------------------------------
      VERTICAL SECTION
      sec: {nTrace, nt, t0, dt, data} with data[it*nTrace + itr].
      Time increases downward.
@@ -301,6 +353,6 @@ const CMPLOT = (function () {
     return lines(canvas, [{ x: x, y: y, color: o.color || SLATE, width: 1.4 }], opts);
   }
 
-  return { map: map, section: section, colorbar: colorbar, lines: lines,
+  return { map: map, image: image, section: section, colorbar: colorbar, lines: lines,
            histogram: histogram, colors: { ink: INK, slate: SLATE, red: RED } };
 })();

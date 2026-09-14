@@ -447,7 +447,31 @@
 <script src="../assets/colormaps.js"></script>
 <script src="../assets/colormodel.js"></script>
 <script src="../assets/cmplot.js"></script>
+<script src="../assets/panelview.js"></script>
 <script src="../assets/glossary.js"></script>
+<script>
+const GUIDE = {
+  p1: { items: [
+      { do: "Set the rainbow with 16 steps and count the blocks by eye without reading the numbers. Then do the same in Oslo.", see: "The rainbow undercounts by three or four; Oslo gives the right answer." },
+      { do: "Read the fastest / slowest ratio for the rainbow, then for RomaO.", see: "22 against 1.2, on data whose steps are identical throughout." }
+  ]},
+  p2: { items: [
+      { do: "Put the rainbow on the smooth field, note where a band edge falls, then raise the bottom of the range to 20%.", see: "Every edge slides. The channel and the faults in the seismic map do not." },
+      { do: "Switch to the sixteen-step rainbow.", see: "Sixteen flat bands with hard edges, all at values fixed by the table." },
+      { do: "Switch to viridis or Oslo.", see: "The field looks like what it is: smooth, with no edges anywhere." }
+  ]},
+  p3: { items: [
+      { do: "Click the bar for balance and note where it sits in the chart.", see: "Well down it, because a diverging map is slow at its neutral point by design. The number is not a fault." },
+      { do: "Find the repeating spectrum.", see: "It measures better than balance and is close to unusable, because the metric only asks about neighbouring values." }
+  ]},
+  p4: { items: [
+      { do: "Read the two sets of numbers, then look at the two images.", see: "The hue ramp scores better on every figure and shows nothing." },
+      { do: "Set the attribute to coherence and compare the two again.", see: "Uniformity is about spacing; resolving power is about lightness. A map needs both." }
+  ]}
+};
+</script>
+<script src="../assets/guide.js"></script>
+<script src="../assets/nextmod.js"></script>
 <script>
 (function () {
   'use strict';
@@ -861,6 +885,15 @@
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
 
   showTab('p1');
+  PANELVIEW.init({
+    model: model,
+    state: function () {
+      const rg = range();
+      return { attr: S.attr, cmap: S.cmap, min: rg[0], max: rg[1],
+               cyclic: !!Synthetic.CYCLIC[S.attr] };
+    }
+  });
+
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();
 </script>
