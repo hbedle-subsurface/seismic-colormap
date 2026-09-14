@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why the colormap matters | How Colormaps Actually Work</title>
+<meta name="description" content="The synthetic model behind the colormap modules, and the same attribute shown through two colormaps at once.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 00 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Why the colormap matters</h1>
+    <p class="sub">Every seismic display passes the data through a colormap on its way to the screen.
+      This module introduces the synthetic model that the rest of the set runs on, shows the seismic made
+      from it, and then puts one attribute through two colormaps at the same value range, so that any
+      difference between the two pictures comes from the color and nothing else.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The display <span>&mdash; both panels hold identical numbers</span></p>
+        <canvas id="cMapA" aria-label="Map view of the selected attribute, left colormap"></canvas>
+        <canvas id="cBarA" aria-label="Color bar for the upper map"></canvas>
+        <p class="hint-line" id="capA">&nbsp;</p>
+
+        <div id="slotB">
+          <canvas id="cMapB" aria-label="Map view of the same attribute, second colormap"></canvas>
+          <canvas id="cBarB" aria-label="Color bar for the lower map"></canvas>
+          <p class="hint-line" id="capB">&nbsp;</p>
+        </div>
+
+        <div id="slotSect">
+          <canvas id="cSect" aria-label="Vertical seismic section through the channel"></canvas>
+          <p class="hint-line" id="capSect">&nbsp;</p>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">The model and the display <span>&mdash; panels update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The earth model</h2>
+            <div class="ctl">
+              <label for="thick">Sand thickness <span class="val" id="thickV">22 m</span></label>
+              <input type="range" id="thick" min="0" max="40" step="1" value="22">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The maximum thickness along the channel
+              axis. The sand pinches out to zero at both margins, so every section across it is a wedge.</p>
+
+            <div class="ctl">
+              <label for="imped">Sand impedance <span class="val" id="impedV">5.6</span></label>
+              <input type="range" id="imped" min="4.5" max="8.5" step="0.1" value="5.6">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The overburden shale is 6.5. Below that the
+              top of the sand is a trough; above it the loop reverses.</p>
+
+            <div class="ctl">
+              <label for="freq">Peak frequency <span class="val" id="freqV">30 Hz</span></label>
+              <input type="range" id="freq" min="10" max="60" step="1" value="30">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">Ricker wavelet. Lowering it lengthens the
+              wavelet and merges the top and base of the sand into one loop.</p>
+
+            <div class="ctl">
+              <label for="noise">Noise <span class="val" id="noiseV">6%</span></label>
+              <input type="range" id="noise" min="0" max="0.5" step="0.01" value="0.06">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">Band-limited, correlated over a few traces, as
+              a fraction of a strong reflection.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The display</h2>
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="thickness">Sand thickness (model)</option>
+                <option value="twoWayTime">Two-way time to marker (model)</option>
+                <option value="amplitude">Amplitude</option>
+                <option value="envelope">Envelope</option>
+                <option value="phase">Instantaneous phase</option>
+                <option value="frequency">Instantaneous frequency</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="coherence">Coherence</option>
+                <option value="curvature">Most-positive curvature</option>
+                <option value="meanCurvature">Mean curvature</option>
+              </select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The first two are model properties and are
+              not available from real seismic data. They are here so the attributes can be checked
+              against them.</p>
+
+            <div class="ctl">
+              <label for="cmapA">Colormap, upper panel</label>
+              <select id="cmapA"></select>
+            </div>
+            <div class="ctl">
+              <label for="cmapB">Colormap, lower panel</label>
+              <select id="cmapB"></select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 12px">The value range is fixed and identical in
+              both panels, so it is never the reason the two differ.</p>
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.
+    The panel above stays put, so the sliders are always reachable.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · The model</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · From model to seismic</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Two colormaps, one data set</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What a colormap can hide</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>The earth model behind every module</h3>
+    </div>
+    <p class="lede">A shale section containing one sinuous channel sand. The sand is thickest along the
+      channel axis and pinches out at both margins. Three normal faults offset the whole section, a swarm
+      of small polygonal faults sits in one part of the survey, and a field of pockmarks dimples the marker
+      surface and dims the reflection beneath each one.</p>
+
+    <div class="ctl" style="margin-top:14px;max-width:520px">
+      <label for="lineNo">Section line number <span class="val" id="lineNoV">2000</span></label>
+      <input type="range" id="lineNo" min="0" max="199" step="1" value="100">
+    </div>
+    <p class="hint-line" style="margin:-8px 0 14px">The red line on the map marks where the section is
+      taken. Where it crosses the channel axis the sand lens is at its thickest; near a margin the top and
+      base <span class="term" data-term="reflection-coefficient">reflections</span> are close together in
+      time.</p>
+
+    <table>
+      <thead><tr><th>Element</th><th>What it is in the model</th><th>What it produces in the seismic</th></tr></thead>
+      <tbody>
+        <tr><td>Channel sand</td><td>A lens up to 40 m thick, pinching out at both margins</td><td>Top and base reflections that converge and interfere toward the margins</td></tr>
+        <tr><td>Three normal faults</td><td>Offsets of 11&ndash;20 ms on the marker</td><td>Waveform discontinuities from trace to trace</td></tr>
+        <tr><td>Polygonal fault swarm</td><td>Many offsets of 1&ndash;4 ms in one part of the survey</td><td>Small waveform changes near the limit of detection</td></tr>
+        <tr><td>Pockmarks</td><td>Circular depressions a few ms deep, with reduced reflection strength</td><td>Low-amplitude circular features on the marker</td></tr>
+        <tr><td>Deeper reflector</td><td>118 ms below the marker, carrying the structure without the pockmarks</td><td>An isolated event, and the surface the curvature attributes are picked from</td></tr>
+      </tbody>
+    </table>
+
+    <div class="legend">
+      <span>Two of the attributes in the menu &mdash; sand thickness and two-way time to the marker &mdash;
+      are properties of the model rather than measurements. Neither could be obtained from real seismic
+      data. They are included so that every later display can be checked against the thing it is trying
+      to image.</span>
+    </div>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>From reflectivity to a trace</h3>
+    </div>
+    <p class="lede">Each interface has a
+      <span class="term" data-term="reflection-coefficient">reflection coefficient</span> set by the
+      contrast in <span class="term" data-term="impedance">acoustic impedance</span> across it. The trace
+      is that reflectivity series convolved with a
+      <span class="term" data-term="ricker">Ricker wavelet</span>. Every attribute in the panel above is
+      computed from the analytic form of that trace, so
+      <span class="term" data-term="envelope">envelope</span>,
+      <span class="term" data-term="instantaneous-phase">instantaneous phase</span> and instantaneous
+      frequency all come from the same synthetic seismic the section displays.</p>
+
+    <div class="ctl" style="margin-top:14px;max-width:520px">
+      <label for="cdpNo">CDP number for the trace <span class="val" id="cdpNoV">4200</span></label>
+      <input type="range" id="cdpNo" min="0" max="159" step="1" value="60">
+    </div>
+    <p class="hint-line" style="margin:-8px 0 14px">The trace is taken at this CDP on the section line
+      chosen in step 1.</p>
+
+    <p class="sublabel"><b>1</b> The wavelet at the current peak frequency</p>
+    <canvas id="cWav" aria-label="Ricker wavelet at the selected peak frequency"></canvas>
+
+    <p class="sublabel" style="margin-top:16px"><b>2</b> The trace it produces, with the reflection
+      coefficients drawn as spikes</p>
+    <canvas id="cTrace" aria-label="Synthetic trace with reflection coefficient spikes"></canvas>
+
+    <p class="hint-line" style="margin:8px 0 14px">Red spikes mark the reflection coefficients at the top
+      and base of the sand. Where they are closer together than the wavelet is long, the two reflections
+      interfere and the trace no longer resolves them.</p>
+
+    <p>Lowering the peak frequency lengthens the wavelet, and the two reflections merge into a single loop
+      once the bed is thinner than the <span class="term" data-term="tuning">tuning thickness</span>.
+      Raising the sand impedance above the shale value reverses the polarity of the top reflection. Neither
+      of these has anything to do with color, and both will be read through a colormap in every display
+      that follows.</p>
+
+    <p>The attribute maps are extracted along the top of the sand, following the structure rather than at a
+      constant time, which makes them a
+      <span class="term" data-term="horizon-slice">horizon slice</span> rather than a
+      <span class="term" data-term="time-slice">time slice</span>.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>The same numbers through two colormaps</h3>
+    </div>
+    <p class="lede">The two maps in the panel hold identical data. The only difference between them is the
+      colormap; the value range is the same in both and is held fixed. Any difference in what the two
+      images communicate therefore comes from the color alone.</p>
+
+    <p class="sublabel" style="margin-top:16px"><b>1</b> Pairs worth comparing</p>
+    <div class="seg" role="group" aria-label="Colormap pairs" style="flex-wrap:wrap">
+      <button type="button" data-pair="jet,oslo">Rainbow / Oslo</button>
+      <button type="button" data-pair="jet,viridis">Rainbow / Viridis</button>
+      <button type="button" data-pair="gray,oslo">Grayscale / Oslo</button>
+      <button type="button" data-pair="jet,roma">Rainbow / Roma</button>
+      <button type="button" data-pair="seismic,balance">Red-white-blue / balance</button>
+      <button type="button" data-pair="hsv,romaO">Cyclic rainbow / RomaO</button>
+    </div>
+    <p class="hint-line" style="margin:6px 0 16px">Or choose any two from the menus in the panel.
+      <button class="btn ghost small" id="swapBtn" type="button" style="margin-left:8px">Swap the two</button></p>
+
+    <p class="sublabel" style="margin-top:16px"><b>2</b> The values along one CDP line, and the same values
+      as color</p>
+    <div class="ctl" style="max-width:520px">
+      <label for="profLine">Profile along CDP <span class="val" id="profLineV">4380</span></label>
+      <input type="range" id="profLine" min="0" max="159" step="1" value="78">
+    </div>
+    <canvas id="cProf" aria-label="Attribute values along one CDP line with two color strips beneath"></canvas>
+    <p class="hint-line" style="margin:8px 0 14px">The curve and the two strips carry the same numbers.
+      The red line on both maps marks this CDP.</p>
+
+    <p>Where the curve changes smoothly and a strip changes abruptly, the boundary in the image belongs to
+      the colormap. Where the curve has a step and a strip barely changes, the colormap is spending little
+      of its color range on that part of the data. This is what
+      <span class="term" data-term="perceptual-uniformity">perceptual uniformity</span> describes, and
+      module 03 measures it.</p>
+
+    <p>The line under each map records the class of the colormap, whether it is perceptually uniform, and
+      whether it stays legible under <span class="term" data-term="cvd">color vision deficiency</span>.
+      Where the class does not match the attribute, it says so.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Features at the edge of visibility</h3>
+    </div>
+    <p class="lede">The dashed rectangle on both maps encloses the pockmark field. Each pockmark reduces
+      the reflection strength by a set fraction, and that fraction is under slider control here. It sets
+      how far the pockmark anomalies stand above the values around them.</p>
+
+    <div class="ctl" style="margin-top:14px;max-width:520px">
+      <label for="pockDim">Pockmark dimming <span class="val" id="pockDimV">45%</span></label>
+      <input type="range" id="pockDim" min="0.05" max="0.6" step="0.01" value="0.45">
+    </div>
+    <p class="hint-line" style="margin:-8px 0 16px">Envelope or sweetness show these most clearly.</p>
+
+    <p>As the dimming is reduced, the pockmarks stop being visible at different settings in the two panels.
+      The anomaly is present in the data at every setting; the value at which it stops being visible is a
+      property of the display. The same comparison runs with the noise slider instead, which raises the
+      background variation rather than lowering the anomaly.</p>
+
+    <p>The polygonal fault swarm is the other test case. Its offsets are one to four milliseconds, a small
+      fraction of the range spanned by the three main faults. On
+      <span class="term" data-term="curvature">curvature</span> and
+      <span class="term" data-term="coherence">coherence</span> those small offsets occupy a narrow band
+      near the middle of the color range, so whether they are visible depends on how the colormap behaves
+      in its middle rather than at its ends.</p>
+
+    <div class="legend">
+      <span>Mean curvature with no noise is the clearest view of the swarm: the faults appear as paired
+      positive and negative lineaments. Raising the noise moves the horizon pick from trace to trace, and
+      the swarm disappears into the texture that produces, while the three main faults stay put.</span>
+    </div>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>An interpretation is made from what is visible on a screen. Two interpreters working the same volume
+      with different color settings are not looking at the same thing, and neither of them has any
+      indication of that from the display.</p>
+
+    <p>Three consequences follow, and the modules that come after this one take them in turn.</p>
+
+    <p><b>A detection limit is a property of a display, not of a data set.</b> The noise level at which the
+      pockmarks stop being visible in step 4 differs between the two panels, often by a factor of two. A
+      statement that an attribute can or cannot resolve a feature is incomplete without the colormap and
+      the value range that went with it.</p>
+
+    <p><b>Boundaries can be manufactured.</b> A colormap that is not perceptually uniform changes color
+      quickly at some values and slowly at others. The quick changes read as edges. They fall at values
+      fixed by the color table, which means they appear in the same place on every display made with that
+      table, across every survey, which is exactly what makes them convincing.</p>
+
+    <p><b>Not everyone sees the same image.</b> Color vision deficiencies affect roughly 4%&ndash;8% of men
+      and up to about 2% of women (Birch, 2012). A display that carries its information in a red-green
+      distinction withholds that information from those interpreters, and does so silently.</p>
+
+    <p>None of this is an argument that rainbow displays are always wrong or that scientific colormaps are
+      always right. It is an argument that the colormap is part of the measurement and should be recorded
+      and chosen like one.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Find what each colormap favors.</b> Set the attribute to envelope, the upper colormap to
+          rainbow and the lower to Oslo. Find one feature easier to locate in the rainbow display, and one
+          easier to locate in Oslo.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The channel axis holds the
+            highest envelope values and is easy to pick out in the rainbow map, because the top of that
+            colormap turns red against a green and yellow background. The channel margins, where the
+            envelope changes gradually as the bed thins, are easier to follow in Oslo: its lightness
+            changes steadily through that part of the range, while the rainbow holds nearly constant
+            lightness across its green and yellow section.</span></details></li>
+
+        <li><b>Watch the middle of the range.</b> Set the attribute to coherence with both colormaps on
+          grayscale and note which faults are visible. Change the upper colormap to rainbow and compare the
+          polygonal fault swarm.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The polygonal faults produce
+            coherence values just below one, close to the background. Grayscale renders that as a small
+            step in brightness, which the eye detects readily because spatial detail is carried mainly by
+            luminance. The rainbow puts a hue change in the middle of its range, which draws attention to
+            one fixed value rather than to the discontinuities, and the small offsets become harder to
+            trace.</span></details></li>
+
+        <li><b>Break a cyclic attribute.</b> Set the attribute to instantaneous phase with the cyclic
+          rainbow above and RomaO below. Look at the boundary between the deep blue and the deep red in
+          each.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Phase wraps from +180° to
+            −180°, and those two values are adjacent in the data. A cyclic colormap returns to the same
+            color at both ends, so the wrap produces no edge. The cyclic rainbow is also cyclic in hue, but
+            its lightness swings strongly between hues, so bright bands appear at particular phase values
+            and read as structure that is not in the data.</span></details></li>
+
+        <li><b>Measure a detection limit twice.</b> Set the noise to zero and the pockmark dimming to 10%.
+          Raise the noise until the pockmarks are no longer visible in the upper panel, then look at the
+          lower panel at that same noise level.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The noise level at which the
+            pockmarks disappear differs between the two displays, often by a factor of two or more. What is
+            being measured is not a property of the data but of the combination of data, colormap and value
+            range. Reporting a detection limit therefore requires stating the display settings as
+            well.</span></details></li>
+
+        <li><b>Reverse the polarity.</b> Set the sand impedance to 7.5, above the shale value of 6.5, and
+          watch the amplitude map and the trace in step 2.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The top of the sand becomes a
+            positive reflection coefficient and the base becomes negative, reversing the loop. On an
+            amplitude map with a diverging colormap the channel moves from one arm of the colormap to the
+            other. On the envelope, which discards the sign, the channel looks much as it did
+            before.</span></details></li>
+
+        <li><b>Compare the two curvature attributes.</b> With the noise at zero, look at most-positive
+          curvature and then mean curvature, both in balance.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Most-positive curvature is
+            bounded below by the mean curvature, so on a noisy surface its values sit mostly above zero and
+            the neutral point of a diverging colormap no longer falls in the middle of the data. Mean
+            curvature is symmetric about zero and shows the faults as paired positive and negative
+            lineaments. The colormap is the same in both; what differs is whether the attribute's own
+            distribution is centered on the colormap's neutral point.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <h3>Key points</h3>
+    <ul>
+      <li>A display is the data, the value range and the colormap together. Two of the three can be held
+        fixed while the third is changed, and that is how every comparison in this module set is made.</li>
+      <li>The eye resolves fine spatial detail mainly through changes in lightness. A colormap whose
+        lightness is flat over part of its range shows little detail in that part of the data, whatever its
+        hues are doing.</li>
+      <li>A colormap that is not perceptually uniform places boundaries in the image at positions set by
+        the color table rather than by the data.</li>
+      <li>The level at which a feature stops being visible depends on the display as well as on the data,
+        so a detection limit quoted without the display settings is incomplete.</li>
+      <li>The attributes used here fall into three classes: those running from low to high with no natural
+        center, those with a meaningful zero and a sign, and those that wrap. Module 04 works through the
+        colormap class that belongs to each.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The model is a 200 × 160 map of a shale section containing one sinuous channel sand, built in
+      <span class="k">assets/colormodel.js</span>. Outside the channel the marker is a single interface,
+      shale over a levee unit. Inside it, the upper part of that unit is sand, so the marker becomes a pair
+      of reflections whose separation is set by the sand thickness. A deeper reflector 118 ms below carries
+      the structure without the pockmarks.</p>
+
+    <p>Reflectivity is convolved with a Ricker wavelet. Rather than building a full volume and transforming
+      it, the analytic trace is evaluated directly at whatever time is asked for, using a tabulated wavelet
+      and its quadrature. Amplitude is the real part, <span class="term" data-term="envelope">envelope</span>
+      the magnitude, <span class="term" data-term="instantaneous-phase">phase</span> the angle, and
+      instantaneous frequency the rate of change of phase.
+      <span class="term" data-term="coherence">Coherence</span> is
+      <span class="term" data-term="semblance">semblance</span> over a 3 × 3 trace window and a seven-sample
+      vertical window, computed without dip steering, so a fault offset shows as a waveform mismatch.
+      Curvature is computed from a horizon picked as the strongest envelope within ±10 ms of the deeper
+      reflector, refined by a parabola, which is why noise and bandwidth move it.</p>
+
+    <p>Noise is three band-limited components with independent, spatially correlated phases, scaled as a
+      fraction of a strong reflection. Correlating it over a few traces is what makes it behave like
+      seismic noise rather than like speckle.</p>
+
+    <p>Display ranges are fixed constants in <span class="k">Synthetic.RANGES</span>. Moving a slider
+      therefore changes the picture and not the scale, which matters because an axis that rescales under
+      the data is not noticed while a bar or a curve that moves is. Module 06 is where the ranges come
+      under the student's control.</p>
+
+    <h3>Colormap sources</h3>
+    <p>The tables are the published definitions, sampled at 256 levels, not approximations.</p>
+    <ul>
+      <li>Crameri, F., 2018, Scientific colour maps, doi:
+        <a href="https://doi.org/10.5281/zenodo.1243862">10.5281/zenodo.1243862</a> &mdash; Oslo, Roma,
+        RomaO, Lajolla, Batlow, Vik.</li>
+      <li>Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco, 2016, True colors
+        of oceanography: Oceanography, 29, 9&ndash;13, doi:
+        <a href="https://doi.org/10.5670/oceanog.2016.66">10.5670/oceanog.2016.66</a> &mdash; balance.</li>
+      <li>Smith, N., and S. van der Walt, 2015, MPL color maps,
+        <a href="https://bids.github.io/colormap">bids.github.io/colormap</a> &mdash; Viridis.</li>
+      <li>Rainbow (jet), turbo, red-white-blue, the cyclic HSV map and the categorical set are from
+        matplotlib, for comparison.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+      <li>Birch, J., 2012, Worldwide prevalence of red-green color deficiency: Journal of the Optical
+        Society of America A, 29, 313&ndash;320, doi:
+        <a href="https://doi.org/10.1364/JOSAA.29.000313">10.1364/JOSAA.29.000313</a>.</li>
+      <li>Borland, D., and R. M. Taylor, 2007, Rainbow color map (still) considered harmful: IEEE Computer
+        Graphics and Applications, 27, 14&ndash;17, doi:
+        <a href="https://doi.org/10.1109/MCG.2007.323435">10.1109/MCG.2007.323435</a>.</li>
+      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+        <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
+      <li>Taner, M. T., F. Koehler, and R. E. Sheriff, 1979, Complex seismic trace analysis: Geophysics,
+        44, 1041&ndash;1063, doi:
+        <a href="https://doi.org/10.1190/1.1440994">10.1190/1.1440994</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license. If you use it in a course or a talk, a credit line
+        and a link back are all that is asked.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = {
+    thick: 22, imped: 5.6, freq: 30, noise: 0.06, pockDim: 0.45,
+    attr: 'thickness', cmapA: 'jet', cmapB: 'oslo',
+    line: 100, cdp: 60, profLine: 78
+  };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  let model = null;
+  const seen = {};
+
+  function rebuild() {
+    model = Synthetic.build({
+      thickness: S.thick, sandImpedance: S.imped, frequency: S.freq,
+      noise: S.noise, pockDim: S.pockDim
+    });
+  }
+
+  /* ---- colormap menus -------------------------------------------------- */
+
+  function fillMenu(sel, value) {
+    const groups = { sequential: 'Sequential', diverging: 'Diverging',
+                     cyclic: 'Cyclic', categorical: 'Categorical' };
+    Object.keys(groups).forEach((cls) => {
+      const g = document.createElement('optgroup');
+      g.label = groups[cls];
+      Colormaps.list(cls).forEach((k) => {
+        const o = document.createElement('option');
+        o.value = k; o.textContent = Colormaps.meta[k].name;
+        g.appendChild(o);
+      });
+      sel.appendChild(g);
+    });
+    sel.value = value;
+  }
+
+  function caption(key, attr) {
+    const m = Colormaps.meta[key];
+    const want = Synthetic.CLASS[attr];
+    const cls = m.cls.charAt(0).toUpperCase() + m.cls.slice(1);
+    return m.name + ' \u2014 ' + cls +
+      (m.cls === want ? '' : ' (this attribute calls for a ' + want + ' colormap)') +
+      '. Perceptually uniform: ' + (m.uniform ? 'yes' : 'no') +
+      '. CVD accessible: ' + (m.cvdSafe ? 'yes' : 'no') + '.';
+  }
+
+  /* ---- overlays -------------------------------------------------------- */
+
+  function pockBox(ctx, rect, toPix) {
+    const a = toPix(18, 74), b = toPix(94, 158);
+    SEIS.dashedLine(ctx, a[0], a[1], b[0], a[1], '#16191C', [5, 4], 1.4);
+    SEIS.dashedLine(ctx, b[0], a[1], b[0], b[1], '#16191C', [5, 4], 1.4);
+    SEIS.dashedLine(ctx, b[0], b[1], a[0], b[1], '#16191C', [5, 4], 1.4);
+    SEIS.dashedLine(ctx, a[0], b[1], a[0], a[1], '#16191C', [5, 4], 1.4);
+  }
+
+  function lineMark(ctx, rect, toPix) {
+    const a = toPix(S.line, 0), b = toPix(S.line, model.ny - 1);
+    ctx.save();
+    ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ctx.restore();
+  }
+
+  function profMark(ctx, rect, toPix) {
+    const a = toPix(0, S.profLine), b = toPix(model.nx - 1, S.profLine);
+    ctx.save();
+    ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---- panel ----------------------------------------------------------- */
+
+  function drawMap(mapId, barId, capId, cmap, overlay) {
+    const r = Synthetic.RANGES[S.attr];
+    CMPLOT.map($(mapId), model.slice(S.attr), {
+      nx: model.nx, ny: model.ny, cmap: cmap, min: r[0], max: r[1],
+      cyclic: !!Synthetic.CYCLIC[S.attr], height: 268,
+      title: Synthetic.LABEL[S.attr], overlay: overlay
+    });
+    CMPLOT.colorbar($(barId), { cmap: cmap, min: r[0], max: r[1],
+                                label: Synthetic.LABEL[S.attr] });
+    $(capId).textContent = caption(cmap, S.attr);
+  }
+
+  function drawSection() {
+    const sec = model.section(S.line);
+    const hz = model.sectionHorizons(S.line);
+    const r = Synthetic.RANGES.amplitude;
+    CMPLOT.section($('cSect'), sec, {
+      cmap: S.cmapA, min: r[0], max: r[1], height: 250,
+      title: 'Seismic amplitude, line ' + (1000 + 10 * sec.line),
+      overlay: function (ctx, rect, toPix) {
+        ctx.save();
+        ctx.lineWidth = 1.4; ctx.strokeStyle = '#841617';
+        ctx.beginPath();
+        for (let y = 0; y < model.ny; y++) {
+          const p = toPix(y, hz.top[y]);
+          if (y === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.stroke();
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        for (let y = 0; y < model.ny; y++) {
+          const p = toPix(y, hz.base[y]);
+          if (y === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+    $('capSect').textContent =
+      'Solid line: top of the sand. Dashed line: base of the sand. ' +
+      'The attribute maps are extracted along the solid line.';
+  }
+
+  /* ---- step figures ---------------------------------------------------- */
+
+  function drawWavelet() {
+    const wl = model.wavelet;
+    const x = [], y = [];
+    for (let i = 0; i < wl.w.length; i += 2) {
+      const t = (i - wl.nHalf) * wl.dt;
+      if (t < -80 || t > 80) continue;
+      x.push(t); y.push(wl.w[i]);
+    }
+    CMPLOT.lines($('cWav'), [{ x: x, y: y, color: '#841617', width: 1.8 }], {
+      xMin: -80, xMax: 80, yMin: -0.6, yMax: 1.05, height: 190,
+      xLabel: 'Time (ms)', yLabel: 'Amplitude',
+      title: 'Ricker wavelet, peak frequency ' + S.freq.toFixed(0) + ' Hz'
+    });
+  }
+
+  function drawTrace() {
+    const k = S.cdp * model.nx + S.line;
+    const t0 = 980, t1 = 1230, n = 501;
+    const x = [], y = [], c = [0, 0];
+    for (let i = 0; i < n; i++) {
+      const t = t0 + (t1 - t0) * i / (n - 1);
+      model.analytic(k, t, c);
+      x.push(t); y.push(c[0]);
+    }
+    const r = Synthetic.RANGES.amplitude;
+    const res = CMPLOT.lines($('cTrace'), [{ x: x, y: y, color: '#16191C', width: 1.6 }], {
+      xMin: t0, xMax: t1, yMin: r[0], yMax: r[1], height: 200,
+      xLabel: 'Two-way time (ms)', yLabel: 'Amplitude',
+      xFmt: function (v) { return v.toFixed(0); },
+      title: 'Trace at CDP ' + (3600 + 10 * S.cdp) + ', sand thickness ' +
+             model.thickness[k].toFixed(1) + ' m'
+    });
+    if (!res) return;
+    const ctx = res.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#841617'; ctx.lineWidth = 2;
+    [[model.tTop[k], model.rc1[k]], [model.tBase[k], model.rc2[k]]].forEach((q) => {
+      if (Math.abs(q[1]) < 1e-4) return;
+      const px = res.X(q[0]);
+      ctx.beginPath();
+      ctx.moveTo(px, res.Y(0));
+      ctx.lineTo(px, res.Y(q[1]));
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function drawProfile() {
+    const r = Synthetic.RANGES[S.attr];
+    const vals = model.slice(S.attr);
+    const x = [], y = [];
+    for (let i = 0; i < model.nx; i++) {
+      x.push(i); y.push(vals[S.profLine * model.nx + i]);
+    }
+    const res = CMPLOT.lines($('cProf'), [{ x: x, y: y, color: '#16191C', width: 1.4 }], {
+      xMin: 0, xMax: model.nx - 1, yMin: r[0], yMax: r[1], height: 240,
+      yLabel: Synthetic.LABEL[S.attr],
+      xFmt: function (v) { return (1000 + 10 * v).toFixed(0); },
+      title: 'Values along CDP ' + (3600 + 10 * S.profLine)
+    });
+    if (!res) return;
+    const ctx = res.ctx, rect = res.rect, h = 9;
+    ctx.save();
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [S.cmapA, S.cmapB].forEach((cm, row) => {
+      const yTop = rect.y + rect.h + 18 + row * (h + 3);
+      ctx.fillText(row === 0 ? 'upper' : 'lower', rect.x - 6, yTop + h / 2);
+      for (let i = 0; i < model.nx; i++) {
+        let t = (vals[S.profLine * model.nx + i] - r[0]) / (r[1] - r[0]);
+        if (Synthetic.CYCLIC[S.attr]) t = t - Math.floor(t);
+        else t = Math.max(0, Math.min(1, t));
+        const c = Colormaps.sample(cm, t);
+        ctx.fillStyle = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+        ctx.fillRect(rect.x + rect.w * i / model.nx, yTop,
+                     rect.w / model.nx + 0.8, h);
+      }
+    });
+    ctx.restore();
+  }
+
+  /* ---- what the panel shows on each step -------------------------------- */
+
+  function slot(kind) {
+    $('slotSect').hidden = kind !== 'section';
+    $('slotB').hidden = kind !== 'mapB';
+  }
+
+  function drawAll() {
+    if (!model) rebuild();
+
+    if (S.tab === 'p1' || S.tab === 'p2') {
+      slot('section');
+      drawMap('cMapA', 'cBarA', 'capA', S.cmapA, lineMark);
+      drawSection();
+      if (S.tab === 'p2') { drawWavelet(); drawTrace(); }
+    } else if (S.tab === 'p3') {
+      slot('mapB');
+      drawMap('cMapA', 'cBarA', 'capA', S.cmapA, profMark);
+      drawMap('cMapB', 'cBarB', 'capB', S.cmapB, profMark);
+      drawProfile();
+    } else if (S.tab === 'p4') {
+      slot('mapB');
+      drawMap('cMapA', 'cBarA', 'capA', S.cmapA, pockBox);
+      drawMap('cMapB', 'cBarB', 'capB', S.cmapB, pockBox);
+    } else {
+      slot('mapB');
+    }
+  }
+
+  /* Slider drags fire faster than the model can be rebuilt, so the work is
+     collapsed onto the next animation frame. */
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+  const remodel = throttle(() => { rebuild(); drawAll(); });
+
+  /* ---- controls --------------------------------------------------------- */
+
+  function range(id, key, fmt, heavy) {
+    const el = $(id), out = $(id + 'V');
+    if (!el) return;
+    const show = () => { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', () => {
+      S[key] = parseFloat(el.value);
+      show();
+      (heavy ? remodel : redraw)();
+    });
+    show();
+  }
+
+  range('thick', 'thick', (v) => v.toFixed(0) + ' m', true);
+  range('imped', 'imped', (v) => v.toFixed(1), true);
+  range('freq', 'freq', (v) => v.toFixed(0) + ' Hz', true);
+  range('noise', 'noise', (v) => (100 * v).toFixed(0) + '%', true);
+  range('pockDim', 'pockDim', (v) => (100 * v).toFixed(0) + '%', true);
+  range('lineNo', 'line', (v) => String(1000 + 10 * v), false);
+  range('cdpNo', 'cdp', (v) => String(3600 + 10 * v), false);
+  range('profLine', 'profLine', (v) => String(3600 + 10 * v), false);
+
+  fillMenu($('cmapA'), S.cmapA);
+  fillMenu($('cmapB'), S.cmapB);
+  $('attr').addEventListener('change', () => { S.attr = $('attr').value; redraw(); });
+  $('cmapA').addEventListener('change', () => { S.cmapA = $('cmapA').value; redraw(); });
+  $('cmapB').addEventListener('change', () => { S.cmapB = $('cmapB').value; redraw(); });
+
+  document.querySelectorAll('[data-pair]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const p = b.dataset.pair.split(',');
+      S.cmapA = p[0]; S.cmapB = p[1];
+      $('cmapA').value = p[0]; $('cmapB').value = p[1];
+      document.querySelectorAll('[data-pair]').forEach((o) => {
+        o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+      });
+      redraw();
+    });
+  });
+
+  $('swapBtn').addEventListener('click', () => {
+    const a = S.cmapA; S.cmapA = S.cmapB; S.cmapB = a;
+    $('cmapA').value = S.cmapA; $('cmapB').value = S.cmapB;
+    redraw();
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    Object.assign(S, DEF);
+    [['thick', 'thick'], ['imped', 'imped'], ['freq', 'freq'], ['noise', 'noise'],
+     ['pockDim', 'pockDim'], ['lineNo', 'line'], ['cdpNo', 'cdp'],
+     ['profLine', 'profLine']].forEach(([id, key]) => {
+      const el = $(id);
+      if (el) { el.value = S[key]; el.dispatchEvent(new Event('input')); }
+    });
+    $('attr').value = S.attr; $('cmapA').value = S.cmapA; $('cmapB').value = S.cmapB;
+    rebuild(); drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+  /* The attribute each step opens on, the first time it is opened. After that
+     the student's own choice stands. */
+  const START = { p1: 'thickness', p2: 'amplitude', p3: 'envelope', p4: 'envelope' };
+
+  function showTab(id) {
+    PANES.forEach((q) => { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !(id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    S.tab = id;
+    if (START[id] && !seen[id]) { S.attr = START[id]; $('attr').value = S.attr; }
+    seen[id] = true;
+    drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.addEventListener('click', () => showTab(b.dataset.tab));
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach((a) => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  seen.p1 = true;
+  rebuild();
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

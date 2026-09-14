@@ -1,0 +1,143 @@
+# How Colormaps Actually Work
+
+Interactive teaching modules on color, color bars and the display of seismic
+attributes. Served at
+<https://hbedle-subsurface.github.io/seismic-colormap>.
+
+Heather Bedle and April Moreno-Ward, School of Geosciences, University of
+Oklahoma, with the [AASPI](https://www.ou.edu/mcee/labs/aaspi) consortium.
+
+Built to the same house template as the other teaching repositories, so
+`assets/style.css`, `assets/count.js`, `assets/popout.js`, `assets/panelout.js`
+and `assets/seismic.js` are the shared files and go in unchanged. See
+`ADD-COUNTING.md`, `ADD-POPOUT.md` and `ADD-PANELOUT.md`.
+
+## Modules
+
+| | Module | Status |
+|---|---|---|
+| 00 | Why the colormap matters | built |
+| 01 | How a color is made: RGB and CMY | in preparation |
+| 02 | Hue, lightness and saturation | in preparation |
+| 03 | Perceptual uniformity | in preparation |
+| 04 | Sequential, diverging, cyclic | in preparation |
+| 05 | Color vision deficiency | in preparation |
+| 06 | Dynamic range and clipping | in preparation |
+| 07 | Continuous and discrete color | in preparation |
+| 08 | Corendering two attributes | in preparation |
+| 09 | RGB and CMY blending of three attributes | in preparation |
+| 10 | Building a display | in preparation |
+
+## Running it
+
+Static HTML, CSS and JavaScript. No build step and no dependencies. Open
+`index.html`, or serve the folder:
+
+```
+python3 -m http.server 8000
+```
+
+GitHub Pages serves it from the repository root.
+
+## Files
+
+```
+index.html
+modules/00-why-the-colormap-matters.html
+assets/style.css        shared house stylesheet
+assets/count.js         shared page-view counting
+assets/popout.js        shared exercise pop-out
+assets/panelout.js      shared control-panel pop-out
+assets/seismic.js       shared math and canvas core
+assets/cmapdata.js      colormap tables, 256 levels each
+assets/colormaps.js     lookup, application to data, L* profiles, CVD simulation
+assets/colormodel.js    the synthetic model these modules run on
+assets/cmplot.js        map, section, color bar and line plotting
+assets/glossary.js      click a marked term, get its definition
+```
+
+Module code is inline at the foot of each module page, as in the other
+repositories.
+
+## The synthetic model
+
+`assets/colormodel.js` builds a 200 × 160 map of a shale section containing one
+sinuous channel sand. The sand pinches out at both channel margins, so a
+profile across it is a wedge in both directions. Three normal faults offset the
+section, a swarm of small polygonal faults sits in one part of the survey, and a
+field of pockmarks dimples the marker and dims the reflection beneath each one.
+A deeper reflector 118 ms below carries the structure without the pockmarks, and
+is the surface the curvature attributes are picked from.
+
+Reflectivity is convolved with a Ricker wavelet. Rather than building a volume
+and transforming it, the analytic trace is evaluated directly at whatever time
+is asked for, from a tabulated wavelet and its quadrature, so amplitude,
+envelope, instantaneous phase and instantaneous frequency all come from the same
+synthetic seismic the section displays.
+
+Under slider control: maximum sand thickness, sand acoustic impedance, peak
+frequency, noise level, and pockmark dimming.
+
+`model.slice(name)` returns a `Float32Array` of `nx * ny`:
+
+| Name | Class | Notes |
+|---|---|---|
+| `amplitude` | diverging | along the marker |
+| `envelope` | sequential | |
+| `phase` | cyclic | wraps at ±180° |
+| `frequency` | sequential | |
+| `sweetness` | sequential | envelope / sqrt(frequency) |
+| `coherence` | sequential | 3 × 3 semblance, no dip steering, so faults show |
+| `curvature` | diverging | most-positive, from a picked horizon |
+| `meanCurvature` | diverging | symmetric about zero |
+| `thickness`, `twoWayTime` | sequential | model properties, not measurements |
+
+`model.section(line)` returns a vertical section, and
+`model.sectionHorizons(line)` the top and base of the sand along it, so the
+panels can be tied together with guide lines.
+
+Display ranges are fixed constants in `Synthetic.RANGES`. Moving a slider
+changes the picture, not the scale. Module 06 is where the ranges come under the
+student's control.
+
+## Colormaps
+
+The tables in `assets/cmapdata.js` are the published definitions, sampled at 256
+levels, not approximations built from a handful of anchor colors.
+
+- Crameri, F., 2018, *Scientific colour maps*,
+  doi:[10.5281/zenodo.1243862](https://doi.org/10.5281/zenodo.1243862) —
+  Oslo, Roma, RomaO, Lajolla, Batlow, Vik
+- Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco,
+  2016, True colors of oceanography: *Oceanography*, 29, 9–13,
+  doi:[10.5670/oceanog.2016.66](https://doi.org/10.5670/oceanog.2016.66) —
+  balance
+- Smith, N., and S. van der Walt, 2015, MPL color maps,
+  <https://bids.github.io/colormap> — Viridis
+
+Rainbow (jet), turbo, red-white-blue, cyclic HSV and a ten-color categorical set
+come from matplotlib, for comparison.
+
+`assets/seismic.js` carries its own small `COLORMAPS` and `SEQMAPS` for the
+displays in the other repositories. They are left alone; the modules here use
+`Colormaps` from `assets/colormaps.js`, which is the one with the full tables.
+
+Color vision deficiency simulation uses the matrices of Machado, G. M.,
+M. M. Oliveira, and L. A. F. Fernandes, 2009, A physiologically-based model for
+simulation of color vision deficiency: *IEEE Transactions on Visualization and
+Computer Graphics*, 15, 1291–1298. Intermediate severities are interpolated
+toward the identity matrix.
+
+## Companion paper
+
+Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and
+interpretation of seismic attributes using scientific colormaps:
+*Interpretation*, 13, B25–B37,
+doi:[10.1190/INT-2025-0003.1](https://doi.org/10.1190/INT-2025-0003.1).
+
+An SSRN working paper describing this module set will accompany it.
+
+## License
+
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). See `LICENSE`,
+which also lists the licenses of the included colormap tables.

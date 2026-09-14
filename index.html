@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Colormaps Actually Work</title>
+<meta name="description" content="Interactive teaching modules on color, color bars and the display of seismic attributes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="#modules">Modules</a>
+      <a href="#about">About</a>
+      <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a>
+    </nav>
+  </header>
+
+  <!-- ================================ HERO ================================ -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">AASPI &nbsp;·&nbsp; University of Oklahoma</p>
+        <h1 class="title">An attribute volume is a set of numbers. What you interpret is <em>a picture of
+          it</em>.</h1>
+        <p class="lede">Between the two sits a colormap and a value range. They decide which parts of the
+          data separate into visible features and which are compressed into colors the eye cannot tell
+          apart. Change either one and the same volume yields a different map, with nothing on the display
+          to say so.</p>
+        <p class="lede">These modules open that up. Build a channel, break it with faults, add noise, then
+          put the result through two colormaps at once at a value range you control, and watch which
+          features survive. There is nothing to install.</p>
+        <p class="lede"><b>What you need first.</b> They are written for undergraduate geology and
+          geophysics students. You should know what a seismic trace is and what a reflector is. No color
+          science is assumed; that is what module 01 is for.</p>
+        <p class="hero-cta"><a class="btn" href="modules/00-why-the-colormap-matters.html">Start with
+          module 00 &rarr;</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== MODULES =============================== -->
+  <section id="modules" class="modules">
+    <div class="sec-head">
+      <h2>Modules</h2>
+      <p class="lede">In order. Each one runs on the same synthetic model, so the channel, the faults and
+        the pockmarks are the same features throughout and only the display changes.</p>
+    </div>
+
+    <div class="card-grid">
+
+      <a class="card" href="modules/00-why-the-colormap-matters.html">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><defs><linearGradient id="g0a" x1="0" x2="1"><stop offset="0" stop-color="#00008f"/><stop offset=".3" stop-color="#00d4ff"/><stop offset=".55" stop-color="#7cff79"/><stop offset=".78" stop-color="#ff9b00"/><stop offset="1" stop-color="#7f0000"/></linearGradient><linearGradient id="g0b" x1="0" x2="1"><stop offset="0" stop-color="#010102"/><stop offset=".35" stop-color="#12405e"/><stop offset=".7" stop-color="#5b9fc8"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs><rect x="18" y="26" width="164" height="20" fill="url(#g0a)"/><rect x="18" y="58" width="164" height="20" fill="url(#g0b)"/><rect x="18" y="26" width="164" height="20" fill="none" stroke="#16191C" stroke-width="1.2"/><rect x="18" y="58" width="164" height="20" fill="none" stroke="#16191C" stroke-width="1.2"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">00</div>
+          <h3>Why the colormap matters</h3>
+          <p>The synthetic model behind every module, the seismic made from it, and one attribute put
+            through two colormaps at the same fixed range.</p>
+          <div class="q">Is that feature in the data, or in the color table?</div>
+        </div>
+        <span class="flag next">Start here</span>
+      </a>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><circle cx="82" cy="46" r="26" fill="#e33" opacity=".62"/><circle cx="102" cy="46" r="26" fill="#3c3" opacity=".62"/><circle cx="92" cy="64" r="26" fill="#36c" opacity=".62"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">01</div>
+          <h3>How a color is made: RGB and CMY</h3>
+          <p>Additive mixing on a screen, subtractive mixing on paper, and where the two disagree.</p>
+          <div class="q">Why did that figure print differently?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><defs><linearGradient id="g2a" x1="0" x2="1"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient><linearGradient id="g2b" x1="0" x2="1"><stop offset="0" stop-color="#a05a5a"/><stop offset=".5" stop-color="#5aa05a"/><stop offset="1" stop-color="#5a5aa0"/></linearGradient></defs><rect x="18" y="28" width="164" height="18" fill="url(#g2a)"/><rect x="18" y="58" width="164" height="18" fill="url(#g2b)"/><text x="18" y="22" font-family="IBM Plex Mono, monospace" font-size="9" fill="#5C6670">lightness</text><text x="18" y="92" font-family="IBM Plex Mono, monospace" font-size="9" fill="#5C6670">hue only</text></svg></div>
+        <div class="card-body">
+          <div class="card-no">02</div>
+          <h3>Hue, lightness and saturation</h3>
+          <p>Which of the three carries fine spatial detail, which carries category, and why edges follow
+            brightness.</p>
+          <div class="q">Why does grayscale still win for edges?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><polyline points="18,74 40,70 62,44 84,42 106,66 128,38 150,34 182,30" fill="none" stroke="#841617" stroke-width="2.2"/><line x1="18" y1="86" x2="182" y2="86" stroke="#C9CDD2" stroke-width="1.2"/><line x1="18" y1="52" x2="182" y2="52" stroke="#C9CDD2" stroke-width="1" stroke-dasharray="4 3"/><text x="18" y="24" font-family="IBM Plex Mono, monospace" font-size="9" fill="#5C6670">L* along the map</text></svg></div>
+        <div class="card-body">
+          <div class="card-no">03</div>
+          <h3>Perceptual uniformity</h3>
+          <p>Lightness profiles, local color difference, and the boundaries a rainbow puts into an image
+            at values the data knows nothing about.</p>
+          <div class="q">Where did that edge come from?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><defs><linearGradient id="g4a" x1="0" x2="1"><stop offset="0" stop-color="#010102"/><stop offset="1" stop-color="#fff"/></linearGradient><linearGradient id="g4b" x1="0" x2="1"><stop offset="0" stop-color="#0d2f66"/><stop offset=".5" stop-color="#e9e6e2"/><stop offset="1" stop-color="#6b1414"/></linearGradient><linearGradient id="g4c" x1="0" x2="1"><stop offset="0" stop-color="#733a63"/><stop offset=".25" stop-color="#3f7fa6"/><stop offset=".5" stop-color="#c6b17a"/><stop offset=".75" stop-color="#9e4a3c"/><stop offset="1" stop-color="#733a63"/></linearGradient></defs><rect x="18" y="20" width="164" height="16" fill="url(#g4a)"/><rect x="18" y="44" width="164" height="16" fill="url(#g4b)"/><rect x="18" y="68" width="164" height="16" fill="url(#g4c)"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">04</div>
+          <h3>Sequential, diverging, cyclic</h3>
+          <p>Matching the colormap class to the mathematics of the attribute, and what each mismatch looks
+            like on the same data.</p>
+          <div class="q">Which class does this attribute need?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><circle cx="72" cy="52" r="26" fill="#c0392b"/><circle cx="128" cy="52" r="26" fill="#27a05a"/><circle cx="72" cy="52" r="26" fill="none" stroke="#16191C" stroke-width="1.2"/><circle cx="128" cy="52" r="26" fill="none" stroke="#16191C" stroke-width="1.2"/><path d="M100 16 L100 88" stroke="#5C6670" stroke-width="1" stroke-dasharray="4 3"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">05</div>
+          <h3>Color vision deficiency</h3>
+          <p>Protan, deutan and tritan simulation applied live to any display in this site, with a
+            severity control.</p>
+          <div class="q">Who cannot see what I just mapped?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><path d="M18 84 L38 82 L58 62 L78 34 L98 30 L118 54 L138 74 L158 82 L182 84" fill="#E3E6E8" stroke="#5C6670" stroke-width="1.4"/><line x1="62" y1="16" x2="62" y2="90" stroke="#841617" stroke-width="2"/><line x1="132" y1="16" x2="132" y2="90" stroke="#841617" stroke-width="2"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">06</div>
+          <h3>Dynamic range and clipping</h3>
+          <p>Histograms with draggable limits, percentile clips, gamma, symmetric ranges, and what a few
+            outliers do to an entire display.</p>
+          <div class="q">Where should the ends of the color bar go?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><defs><linearGradient id="g7a" x1="0" x2="1"><stop offset="0" stop-color="#2b1a4a"/><stop offset=".5" stop-color="#2e8b74"/><stop offset="1" stop-color="#f0e442"/></linearGradient></defs><rect x="18" y="26" width="164" height="18" fill="url(#g7a)"/><g><rect x="18" y="58" width="32.8" height="18" fill="#2b1a4a"/><rect x="50.8" y="58" width="32.8" height="18" fill="#33456a"/><rect x="83.6" y="58" width="32.8" height="18" fill="#2e8b74"/><rect x="116.4" y="58" width="32.8" height="18" fill="#89c25c"/><rect x="149.2" y="58" width="32.8" height="18" fill="#f0e442"/></g></svg></div>
+        <div class="card-body">
+          <div class="card-no">07</div>
+          <h3>Continuous and discrete color</h3>
+          <p>Quantizing a colormap down to a handful of levels, and where stepped color is the right
+            choice.</p>
+          <div class="q">How many colors does this display need?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><defs><linearGradient id="g8a" x1="0" x2="1"><stop offset="0" stop-color="#0d2f66"/><stop offset=".5" stop-color="#efece7"/><stop offset="1" stop-color="#6b1414"/></linearGradient></defs><rect x="18" y="22" width="164" height="60" fill="url(#g8a)"/><path d="M32 82 C60 58 78 70 96 44 C114 20 140 34 168 22" fill="none" stroke="#16191C" stroke-width="3" opacity=".75"/><path d="M40 26 C68 40 92 30 118 56 C140 78 156 70 176 78" fill="none" stroke="#16191C" stroke-width="2" opacity=".55"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">08</div>
+          <h3>Corendering two attributes</h3>
+          <p>Hue from one attribute, lightness from another, and a magnitude attribute used as a
+            transparency mask.</p>
+          <div class="q">Can I show two things without hiding both?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#111"/><circle cx="82" cy="44" r="28" fill="#f00" opacity=".72"/><circle cx="118" cy="44" r="28" fill="#0f0" opacity=".72"/><circle cx="100" cy="70" r="28" fill="#00f" opacity=".72"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">09</div>
+          <h3>RGB and CMY blending</h3>
+          <p>Three attributes into three channels, each with its own range and gain, and the CMY version
+            for print.</p>
+          <div class="q">What is that blend actually showing?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+      <div class="card">
+        <div class="thumb"><svg viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><rect width="200" height="104" fill="#F6F4EE"/><rect x="18" y="18" width="76" height="68" fill="#fff" stroke="#C9CDD2" stroke-width="1.4"/><rect x="106" y="18" width="76" height="30" fill="#fff" stroke="#C9CDD2" stroke-width="1.4"/><rect x="106" y="56" width="76" height="30" fill="#fff" stroke="#C9CDD2" stroke-width="1.4"/><line x1="112" y1="26" x2="176" y2="26" stroke="#841617" stroke-width="2.4"/><line x1="112" y1="34" x2="158" y2="34" stroke="#C9CDD2" stroke-width="2.4"/><line x1="112" y1="64" x2="176" y2="64" stroke="#841617" stroke-width="2.4"/><line x1="112" y1="72" x2="146" y2="72" stroke="#C9CDD2" stroke-width="2.4"/></svg></div>
+        <div class="card-body">
+          <div class="card-no">10</div>
+          <h3>Building a display</h3>
+          <p>Every control in one place on one data set, and a record of the settings that produced the
+            figure.</p>
+          <div class="q">What do I write down beside the figure?</div>
+        </div>
+        <span class="flag">In preparation</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =============================== ABOUT ================================ -->
+  <section id="about" class="about">
+    <div class="about-copy">
+      <h2>About</h2>
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the Attribute Assisted Seismic Processing and Interpretation
+        (<a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a>) consortium.</p>
+
+      <p>Companion to <em>How Geometric Attributes Actually Work</em>, which covers what the attributes
+        measure. This set covers what happens to them on the way to the screen. It follows Bedle and
+        Moreno-Ward (2025), <em>Techniques for improved visualization and interpretation of seismic
+        attributes using scientific colormaps</em>, Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>, which works the same
+        material on 3D seismic data from the Great South Basin, New Zealand.</p>
+
+      <p>The colormaps here are the published definitions rather than approximations: Crameri (2018) for
+        Oslo, Roma, RomaO, Lajolla, Batlow and Vik; Thyng et al. (2016) for balance; Smith and van der Walt
+        (2015) for Viridis. Rainbow, turbo, red-white-blue and a cyclic HSV map are included for
+        comparison, because a comparison needs something to compare against.</p>
+
+      <p>Everything runs in the browser. No installation and no account. Nothing you do inside a module
+        &mdash; no slider, no click, no trace you generate &mdash; is transmitted anywhere. The module code
+        makes no network requests of its own.</p>
+
+      <p>The one request each page does make is a page-view count, which records that the page was opened
+        and nothing else. No cookie is set and no identifier is stored, and nothing about what you did on
+        the page is sent. We keep that count for two reasons &mdash; so the modules people actually use are
+        the ones that get improved, and so we can show the university that you all are using these, which
+        is how they keep getting built.</p>
+
+      <p>Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Free to use,
+        adapt and share, including in teaching, provided the source is credited and any adaptation is
+        released under the same license. If you use it in a course or a talk, a credit line and a link back
+        are all that is asked.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Heather Bedle and April Moreno-Ward, School of Geosciences, University of Oklahoma.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Other module sets:
+        <a href="https://hbedle-subsurface.github.io/seismic_resolution">seismic resolution</a> &middot;
+        <a href="https://hbedle-subsurface.github.io/single-trace">single-trace attributes</a> &middot;
+        <a href="https://hbedle-subsurface.github.io/geometric-attributes">geometric attributes</a> &middot;
+        <a href="https://hbedle-subsurface.github.io/avo-basics">AVO</a></p>
+    </div>
+  </footer>
+</div>
+
+<script src="assets/count.js"></script>
+</body>
+</html>

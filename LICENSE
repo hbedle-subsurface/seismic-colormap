@@ -1,0 +1,32 @@
+Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+
+Copyright (c) 2026 Heather Bedle, University of Oklahoma
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided that you give appropriate credit and that any adapted
+material is distributed under this same license.
+
+Full license text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by-sa/4.0/
+
+Suggested attribution:
+
+  Bedle, H., How Colormaps Actually Work: interactive teaching modules on
+  color and the display of seismic attributes, University of Oklahoma,
+  https://hbedle-subsurface.github.io/seismic-colormap, CC BY-SA 4.0.
+
+----------------------------------------------------------------------------
+Third-party colormap data included in js/cmapdata.js
+
+  Crameri, F., 2018, Scientific colour maps, doi:10.5281/zenodo.1243862.
+  Released under the MIT license. (Oslo, Roma, RomaO, Lajolla, Batlow, Vik)
+
+  Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and
+  S. F. DiMarco, 2016, True colors of oceanography: Oceanography, 29, 9-13.
+  cmocean is released under the MIT license. (balance)
+
+  Viridis, by Nathaniel Smith and Stefan van der Walt, released under
+  CC0 1.0. (viridis)
+
+  jet, turbo, seismic, hsv and tab10 are from matplotlib, released under the
+  matplotlib license (BSD-compatible).
