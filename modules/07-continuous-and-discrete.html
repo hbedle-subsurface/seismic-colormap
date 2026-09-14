@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuous and discrete color | How Colormaps Actually Work</title>
+<meta name="description" content="Quantizing a colormap, choosing where the bin edges go, and why classification output needs categorical color.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 07 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Continuous and discrete color</h1>
+    <p class="sub">Module 03 treated banding as a fault, because the bands came from a colormap that
+      nobody chose to put there. Bands deliberately placed at known values are a different object. They
+      turn a display that can only be compared into one that can be read, at the price of everything
+      inside each band. This module is about when that trade is worth making, and about the output that
+      has no continuous values to begin with.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The display <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMap" aria-label="Map view of the attribute at the current number of levels"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+        <canvas id="cHist" aria-label="Histogram with the bin edges marked"></canvas>
+        <p class="hint-line" id="capHist">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>Levels in use</span><b id="sLevels">—</b></div>
+          <div class="stat"><span>Width of one bin</span><b id="sWidth">—</b></div>
+          <div class="stat"><span>Largest bin holds</span><b id="sBiggest">—</b></div>
+          <div class="stat"><span>Smallest bin holds</span><b id="sSmallest">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">How many, and where <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The levels</h2>
+            <div class="ctl">
+              <label for="levels">Number of levels <span class="val" id="levelsV">continuous</span></label>
+              <input type="range" id="levels" min="2" max="33" step="1" value="33">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The top of the slider is the full 256-level
+              table, which is continuous for any practical purpose.</p>
+
+            <div class="ctl">
+              <label for="bin">Where the edges go</label>
+              <div class="seg" role="group" aria-label="Binning" id="bin">
+                <button type="button" id="bEq" aria-pressed="true">Equal value</button>
+                <button type="button" id="bPop" aria-pressed="false">Equal population</button>
+              </div>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">Equal value divides the range into bins of the
+              same width. Equal population divides the survey into bins holding the same number of
+              samples.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The data</h2>
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="coherence">Coherence</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="thickness">Sand thickness (model)</option>
+                <option value="twoWayTime">Two-way time to marker (model)</option>
+                <option value="meanCurvature">Mean curvature</option>
+              </select>
+            </div>
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+
+            <div class="ctl" id="ctlClasses" hidden>
+              <label for="classes">Number of classes <span class="val" id="classesV">5</span></label>
+              <input type="range" id="classes" min="3" max="8" step="1" value="5">
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Taking the levels away</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · What steps are for</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Where the edges go</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Output with no order</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Taking the levels away</h3>
+    </div>
+    <p class="lede">The slider reduces the colormap from its full 256 levels down to two. Nothing else
+      changes: the attribute, the range and the colors along the map are all as they were.</p>
+
+    <p>Coming down from 256, the first thing to notice is how far it can go before anything is visible. At
+      64 levels the display is indistinguishable from continuous. At 32 the smoothest gradients begin to
+      show faint steps. At 16 the bands are plain, and below 8 the display has become a map of which bin
+      each sample fell in.</p>
+
+    <p>What is being lost is variation within each band. Two samples in the same bin are rendered
+      identically however far apart they are inside it, and the width of one bin, in the attribute's own
+      units, is in the readout. At 8 levels on envelope that width is larger than the difference between
+      the channel margin and the background, which is why the margin turns from a gradient into an edge.</p>
+
+    <div class="legend">
+      <span>These bands are the same object as the false boundaries in module 03, produced deliberately
+      rather than by accident. The difference is that their positions are known, stated on the color bar,
+      and the same for every reader. A boundary a reader can see the reason for is a different thing from
+      one that looks like geology.</span>
+    </div>
+
+    <p>The histogram in the panel marks the bin edges, which is where the steps in the image come from. On
+      an attribute whose distribution is lopsided, most of the samples end up in one or two bins and the
+      rest are nearly empty, and that is the subject of step 3.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>What steps are for</h3>
+    </div>
+    <p class="lede">A continuous display supports comparison. It is easy to see that one part of a map is
+      higher than another, and close to impossible to say by how much, or to read a value off it and get
+      the same answer as a colleague.</p>
+
+    <p>A stepped display trades that around. Each color names a range of values rather than a value, and
+      that name is stated on the color bar, so two readers examining the same feature will place it in the
+      same bin. Nothing inside the bin can be recovered, and nothing inside the bin has to be argued
+      about.</p>
+
+    <p>Three situations where the trade is usually worth making.</p>
+
+    <p><b>A threshold that means something.</b> Coherence below some value is where an interpreter starts
+      picking faults. Setting the levels so that a bin edge falls at that value makes the display show
+      directly where the criterion is met, instead of showing a gradient and leaving the threshold to the
+      eye. The same argument applies to any attribute with a cutoff attached to it.</p>
+
+    <p><b>Reading numbers off a map.</b> A thickness map that will be used to estimate a volume, or a
+      time-structure map that will be used to pick a contour, is being read rather than compared. Steps at
+      stated intervals are the map-making convention for exactly this reason, and a contoured map is the
+      limiting case of a stepped one.</p>
+
+    <p><b>Counting.</b> Three or four bands can be counted across an image and their widths compared; a
+      continuous gradient cannot. Where the question is how far an anomaly extends rather than how strong
+      it is, a small number of levels answers it better.</p>
+
+    <p>Against those, the case for keeping a display continuous is that the reader is looking for features
+      rather than values, which is most of interpretation, and that any bin edge is a boundary drawn
+      through data that has nothing at that value. Two-way time to the marker is the attribute in the menu
+      where the comparison is clearest, because it is a smooth structural surface: continuous shows the
+      shape, stepped shows the contours, and neither is a substitute for the other.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Where the edges go</h3>
+    </div>
+    <p class="lede">Choosing how many bins is the smaller decision. Choosing where their edges fall is the
+      larger one, and it has the same character as the range choice in module 06: there is no neutral
+      option, including the default.</p>
+
+    <p><b>Equal value</b> divides the range into bins of the same width. It is the option almost every
+      piece of software offers first, and it is right when the bin edges are supposed to be round numbers
+      the reader can use. It has a specific failure: on a lopsided attribute nearly all the samples land in
+      one or two bins and the other colors are spent on data that barely exists. The readout gives the
+      share of the survey in the largest and smallest bins, and at eight equal-value levels the numbers on
+      this model are stark. Envelope puts 68% of the survey in one bin and 0.6% in the emptiest. Sweetness
+      puts 74% in one bin. Coherence puts 88% in one bin and 0.04% in the emptiest, which is to say that
+      seven of its eight colors are describing a fortieth of the data between them.</p>
+
+    <p>Two-way time to the marker is the exception and shows what the option is good at: 22% in the largest
+      bin and 2.5% in the smallest. A smooth structural surface spreads itself fairly evenly across its own
+      range, which is why contour intervals of equal value have been the convention for structure maps for
+      as long as there have been structure maps.</p>
+
+    <p><b>Equal population</b> divides the survey so that each bin holds the same number of samples. Every
+      color then does the same amount of work, and the display separates the bulk of the data rather than
+      the tails. Its cost is that the bin edges are no longer round numbers and no longer evenly spaced, so
+      the color bar must be labelled with the actual values or it will be misread. A reader who assumes
+      the bins are evenly spaced will conclude that the attribute varies more smoothly than it does.</p>
+
+    <p>The choice follows from what the display is for. Equal value keeps the arithmetic honest and is
+      right when the numbers are going to be used. Equal population keeps the picture informative and is
+      right when the question is where things are.</p>
+
+    <div class="legend">
+      <span>This is the same decision as the percentile clip in module 06, taken inside the range rather
+      than at its ends. A percentile clip sets the two outermost edges from the distribution; equal
+      population sets all of them that way.</span>
+    </div>
+
+    <p>One combination is worth avoiding. Equal population with a diverging colormap moves the neutral
+      color off the attribute's zero, for the reason set out in module 04: the middle of the display is now
+      the median of the data rather than zero, and unless the attribute happens to be symmetric those are
+      different values.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Output with no order</h3>
+    </div>
+    <p class="lede">Everything so far has quantized a continuous attribute, so the bins retain an order
+      even after the values inside them are discarded. Classification output does not work that way. The
+      classes produced by an unsupervised method are labels, and the numbers attached to them are
+      arbitrary: class 3 is not between class 2 and class 4 in any sense.</p>
+
+    <p>The two maps below are a classification of this survey into the number of classes selected in the
+      panel, produced by k-means on envelope and coherence together. The left one uses a sequential
+      colormap and the right one a categorical set.</p>
+
+    <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+      <div>
+        <canvas id="cClsSeq" aria-label="The classification in a sequential colormap"></canvas>
+        <p class="hint-line" id="capClsSeq">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cClsCat" aria-label="The classification in a categorical colormap"></canvas>
+        <p class="hint-line" id="capClsCat">&nbsp;</p>
+      </div>
+    </div>
+
+    <p style="margin-top:16px">The sequential version asserts something false. It says that the classes run
+      from low to high, that two classes rendered in similar tones are similar to each other, and that the
+      dark end and the light end are opposite extremes of something. None of that is in the output. The
+      labels could be permuted without changing the classification in any way, and the sequential display
+      would then tell a completely different story about the same result.</p>
+
+    <p>The categorical version makes no claim beyond difference. Its colors are chosen to be distinguishable
+      from each other and to sit at similar lightness, so no class looks more important than any other.
+      That is the whole requirement, and it is why hue &mdash; which module 02 found to be poor at carrying
+      order and detail &mdash; is exactly right here.</p>
+
+    <p>Two practical points follow.</p>
+
+    <p><b>The permutation test.</b> If relabelling the classes would change what the display appears to say,
+      the display is asserting an order that the method did not produce. This is worth running mentally on
+      any classification figure.</p>
+
+    <p><b>Some classification output does have an order.</b> A self-organising map lays its classes out on a
+      grid so that neighbours are similar, and a colormap that follows that grid is carrying real
+      information rather than inventing it. The distinction is whether the ordering came from the method or
+      from the display, and it has to be checked rather than assumed.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>Stepped displays are unusual in seismic attribute work and common in the disciplines that read maps
+      for numbers. Part of that is convention and part of it is that most attribute interpretation is a
+      search for features rather than a measurement of values, where continuous color is the better tool.</p>
+
+    <p>The cases that go wrong are the ones in between. An attribute with a threshold attached to it, a
+      thickness map about to be turned into a volume, a probability cube where the question is which parts
+      exceed a cutoff: all of these are being read rather than compared, and a continuous display makes
+      that reading unreliable in a way nobody notices, because a reader will always produce an answer.</p>
+
+    <p>The classification case is more serious, because it is an assertion rather than an imprecision. A
+      sequential colormap applied to facies output tells the reader that the classes are ordered. Readers
+      believe it, because that is what a sequential colormap means everywhere else, and they will describe
+      the result in terms of a trend that does not exist. Permuting the labels and redrawing the figure is
+      a ten-second check that settles it.</p>
+
+    <p>Where a stepped display is used, the color bar has to carry the actual bin edges. A stepped bar with
+      evenly spaced labels over unevenly spaced bins is worse than no bar at all, because it is specific
+      and wrong.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Find where banding starts.</b> With envelope in Oslo, bring the levels down from continuous
+          and note the first setting where the steps are visible, then the first where they are
+          distracting.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Visibility usually begins
+            somewhere around 32 levels and the display becomes a set of bands by 16. The exact point
+            depends on the smoothness of the attribute and on the screen, and it is worth noticing that
+            this is the same threshold that decides whether a badly designed 256-level colormap looks
+            banded: what matters is the size of the step in appearance, not the number of
+            entries.</span></details></li>
+
+        <li><b>Put an edge on a threshold.</b> Put the attribute on coherence at eight levels and look at
+          where the bin edges fall relative to the fault traces.
+          <details class="reveal"><summary>Hint</summary><span class="ans">One of the edges falls partway
+            down the flank of each fault, and the fault then reads as a band of fixed width rather than as
+            a gradient. Whether that is useful depends on whether the edge is at a value that means
+            something. If it is, the display is showing where the criterion is met; if not, it is drawing a
+            contour through nothing.</span></details></li>
+
+        <li><b>Watch a lopsided attribute waste its colors.</b> Put the attribute on sweetness at eight
+          equal-value levels and read the largest and smallest bin shares.
+          <details class="reveal"><summary>Hint</summary><span class="ans">One bin holds most of the
+            survey and several hold almost none, because sweetness has a long tail toward high values.
+            Switching to equal population evens them out and the display separates the bulk of the data,
+            at the cost of bin edges that are no longer round numbers and no longer evenly
+            spaced.</span></details></li>
+
+        <li><b>Break a diverging map with equal population.</b> Put mean curvature in balance at eight
+          levels and switch between the two binning modes.
+          <details class="reveal"><summary>Hint</summary><span class="ans">With equal population the
+            neutral colour sits at the median of the data rather than at zero, so the boundary between the
+            two arms of the colormap is no longer the boundary between anticlinal and synclinal. This is
+            the module 04 problem arriving through a different door.</span></details></li>
+
+        <li><b>Permute the classes.</b> On step 4, compare the two classification displays, then imagine
+          the class numbers being shuffled.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The categorical version would
+            look different and say the same thing. The sequential version would look different and say
+            something different, because it reads the label numbers as magnitudes. Since the labels are
+            arbitrary, any story the sequential display tells about a trend is a story about the
+            numbering.</span></details></li>
+
+        <li><b>Change the number of classes.</b> On step 4, move the classes slider and watch which
+          features survive.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The channel and the background
+            separate at three classes. The channel margin appears as its own class somewhere around five,
+            and beyond six the additional classes mostly subdivide the background. The number of classes is
+            a modelling choice, and the display cannot tell the reader which of the classes are real
+            distinctions.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Reducing a colormap to a small number of levels discards variation inside each bin and produces
+        bands. The bands are the same object as the false boundaries of module 03, with the difference that
+        their positions are chosen, stated and the same for every reader.</li>
+      <li>Continuous color supports comparison. Stepped color supports reading a value and agreeing about
+        it. Most attribute interpretation wants the first, and anything with a threshold or a number
+        attached wants the second.</li>
+      <li>Equal-value bins keep the arithmetic simple and waste colors on a lopsided attribute.
+        Equal-population bins spend every color usefully and require the bar to be labelled with the real
+        edges.</li>
+      <li>Equal-population binning moves the neutral point of a diverging colormap off zero, for the same
+        reason an asymmetric range does.</li>
+      <li>Classification output has no order. A sequential colormap applied to it asserts one, and
+        permuting the labels would change what the figure appears to say.</li>
+      <li>Categorical color is distinct hues at similar lightness, which claims difference and nothing
+        else.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>Levels are applied by rounding the normalized value to the nearest of the chosen number of steps
+      before the colormap is looked up, which is the same operation the color bar shows. The top of the
+      slider leaves the full 256-level table in place.</p>
+
+    <p>Equal-population binning is done by replacing each value with its rank in the sorted data before
+      quantizing, so the bins hold equal counts by construction. The color bar is then labelled with the
+      actual values at the bin edges, which are recovered from the same sorted array. Displaying an
+      equal-population map against evenly spaced labels would misstate the attribute, so the labels move
+      instead of the colors.</p>
+
+    <p>The classification in step 4 is k-means on two attributes, envelope and coherence, each standardised
+      to zero mean and unit standard deviation so that neither dominates through its units. Initial centres
+      are placed at evenly spaced quantiles of the first attribute and the algorithm is run to convergence
+      or twenty iterations, from a fixed starting point so the result does not change between visits. The
+      class labels are then in whatever order the initialisation produced, which is exactly the point being
+      made: they carry no meaning.</p>
+
+    <p>This is a deliberately plain method, chosen because it is easy to state. Self-organising maps and
+      generative topographic mapping, which are the usual tools for this in seismic work, differ in one
+      respect that matters here: they place their classes on a grid so that neighbouring classes are
+      similar, so a colormap that follows the grid carries real information. k-means produces no such
+      structure.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Brewer, C. A., 1994, Color use guidelines for mapping and visualization: Modern Cartography
+        Series, 2, 123&ndash;148, doi:
+        <a href="https://doi.org/10.1016/B978-0-08-042415-6.50014-4">10.1016/B978-0-08-042415-6.50014-4</a>.</li>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+      <li>Roden, R., T. Smith, and D. Sacrey, 2015, Geologic pattern recognition from seismic attributes:
+        principal component analysis and self-organizing maps: Interpretation, 3, SAE59&ndash;SAE83, doi:
+        <a href="https://doi.org/10.1190/INT-2015-0037.1">10.1190/INT-2015-0037.1</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attr: 'envelope', cmap: 'oslo', levels: 33, bin: 'equal',
+                classes: 5 };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+
+  /* levels: 33 on the slider means the full table */
+  function nLevels() { return S.levels >= 33 ? 0 : S.levels; }
+
+  /* ---- the data ---------------------------------------------------------- */
+
+  const sortCache = {};
+  function sorted(attr) {
+    if (!sortCache[attr]) {
+      const s = Float32Array.from(model.slice(attr));
+      s.sort();
+      sortCache[attr] = s;
+    }
+    return sortCache[attr];
+  }
+
+  /* Equal-population binning is done by replacing each value with its rank, so
+     the bins hold equal counts by construction. */
+  const rankCache = {};
+  function ranked(attr) {
+    if (!rankCache[attr]) {
+      const v = model.slice(attr), s = sorted(attr), n = s.length;
+      const out = new Float32Array(v.length);
+      for (let i = 0; i < v.length; i++) {
+        let lo = 0, hi = n - 1;
+        const x = v[i];
+        while (lo < hi) { const m = (lo + hi) >> 1; if (s[m] < x) lo = m + 1; else hi = m; }
+        out[i] = lo / (n - 1);
+      }
+      rankCache[attr] = out;
+    }
+    return rankCache[attr];
+  }
+
+  function values() { return S.bin === 'pop' ? ranked(S.attr) : model.slice(S.attr); }
+  function limits() {
+    if (S.bin === 'pop') return [0, 1];
+    const s = sorted(S.attr);
+    return [s[0], s[s.length - 1]];
+  }
+
+  /* The attribute value at each bin edge, for labelling the bar. */
+  function edgeValues() {
+    const k = nLevels();
+    const s = sorted(S.attr);
+    const out = [];
+    const n = k ? k : 0;
+    if (!n) return out;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      if (S.bin === 'pop') out.push(s[Math.round(t * (s.length - 1))]);
+      else out.push(s[0] + (s[s.length - 1] - s[0]) * t);
+    }
+    return out;
+  }
+
+  /* ---- classification ---------------------------------------------------- */
+
+  const clsCache = {};
+  function classify(k) {
+    if (clsCache[k]) return clsCache[k];
+    const a = model.slice('envelope'), b = model.slice('coherence');
+    const n = a.length;
+    const std = function (v) {
+      let s = 0, s2 = 0;
+      for (let i = 0; i < n; i++) { s += v[i]; s2 += v[i] * v[i]; }
+      const m = s / n, sd = Math.sqrt(Math.max(1e-12, s2 / n - m * m));
+      const o = new Float32Array(n);
+      for (let i = 0; i < n; i++) o[i] = (v[i] - m) / sd;
+      return o;
+    };
+    const A = std(a), B = std(b);
+    const sa = Float32Array.from(A); sa.sort();
+    const cx = [], cy = [];
+    for (let j = 0; j < k; j++) {
+      const q = sa[Math.round((j + 0.5) / k * (n - 1))];
+      cx.push(q); cy.push(0);
+    }
+    const lab = new Int32Array(n);
+    for (let it = 0; it < 20; it++) {
+      let moved = 0;
+      for (let i = 0; i < n; i++) {
+        let best = 0, bd = Infinity;
+        for (let j = 0; j < k; j++) {
+          const dx = A[i] - cx[j], dy = B[i] - cy[j];
+          const d = dx * dx + dy * dy;
+          if (d < bd) { bd = d; best = j; }
+        }
+        if (lab[i] !== best) { lab[i] = best; moved++; }
+      }
+      const sx = new Float64Array(k), sy = new Float64Array(k), cnt = new Float64Array(k);
+      for (let i = 0; i < n; i++) { sx[lab[i]] += A[i]; sy[lab[i]] += B[i]; cnt[lab[i]]++; }
+      for (let j = 0; j < k; j++) if (cnt[j]) { cx[j] = sx[j] / cnt[j]; cy[j] = sy[j] / cnt[j]; }
+      if (!moved) break;
+    }
+    const out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = lab[i];
+    clsCache[k] = out;
+    return out;
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function drawMap() {
+    const rg = limits();
+    const k = nLevels();
+    CMPLOT.map($('cMap'), values(), {
+      nx: model.nx, ny: model.ny, cmap: S.cmap, min: rg[0], max: rg[1],
+      nLevels: k, height: 248,
+      title: Synthetic.LABEL[S.attr] + (k ? ' at ' + k + ' levels' : '')
+    });
+
+    /* the bar carries the real values at the edges when they are not evenly
+       spaced, because evenly spaced labels over uneven bins would misstate it */
+    const marks = [];
+    if (k && k <= 10) {
+      const ev = edgeValues();
+      for (let i = 1; i < ev.length - 1; i++) {
+        const t = i / k;
+        marks.push({ value: rg[0] + (rg[1] - rg[0]) * t,
+                     label: (Math.abs(ev[i]) >= 10 ? ev[i].toFixed(0) : ev[i].toPrecision(2)),
+                     color: '#16191C' });
+      }
+    }
+    CMPLOT.colorbar($('cBar'), {
+      cmap: S.cmap, min: rg[0], max: rg[1], nLevels: k,
+      height: marks.length ? 78 : 56,
+      marks: marks.length ? marks : null,
+      label: S.bin === 'pop'
+        ? Synthetic.LABEL[S.attr] + ' \u2014 axis is the rank, labels are the values at the edges'
+        : Synthetic.LABEL[S.attr]
+    });
+
+    $('capMap').textContent = !k
+      ? 'The full 256-level table: continuous for any practical purpose.'
+      : (S.bin === 'pop'
+          ? k + ' bins, each holding the same number of samples. The edges are not evenly spaced in value.'
+          : k + ' bins of equal width in the attribute.');
+  }
+
+  function drawHist() {
+    const s = sorted(S.attr);
+    const raw = model.slice(S.attr);
+    const res = CMPLOT.histogram($('cHist'), raw, {
+      xMin: s[0], xMax: s[s.length - 1], bins: 110, height: 172,
+      xLabel: Synthetic.LABEL[S.attr], yLabel: 'Share of the survey',
+      yFmt: (v) => v.toFixed(1),
+      title: 'Distribution, with the bin edges marked'
+    });
+    if (!res) return;
+    const k = nLevels();
+    if (!k) { $('capHist').textContent = 'No bin edges: the table is continuous.'; return; }
+    const ctx = res.ctx, rect = res.rect;
+    ctx.save();
+    ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.2;
+    edgeValues().forEach(function (x, i, arr) {
+      if (i === 0 || i === arr.length - 1) return;
+      ctx.beginPath();
+      ctx.moveTo(res.X(x), rect.y); ctx.lineTo(res.X(x), rect.y + rect.h);
+      ctx.stroke();
+    });
+    ctx.restore();
+    $('capHist').textContent = S.bin === 'pop'
+      ? 'Edges placed so that each bin holds the same number of samples.'
+      : 'Edges evenly spaced in the attribute, wherever the data happens to be.';
+  }
+
+  function readouts() {
+    const k = nLevels();
+    const s = sorted(S.attr);
+    $('sLevels').textContent = k ? String(k) : '256 (continuous)';
+    if (!k) {
+      $('sWidth').textContent = '\u2014';
+      $('sBiggest').textContent = '\u2014';
+      $('sSmallest').textContent = '\u2014';
+      return;
+    }
+    const ev = edgeValues();
+    if (S.bin === 'pop') {
+      $('sWidth').textContent = 'varies: ' +
+        (ev[1] - ev[0]).toPrecision(2) + ' to ' + (ev[k] - ev[k - 1]).toPrecision(2);
+      $('sBiggest').textContent = (100 / k).toFixed(1) + '%';
+      $('sSmallest').textContent = (100 / k).toFixed(1) + '%';
+      return;
+    }
+    $('sWidth').textContent = ((s[s.length - 1] - s[0]) / k).toPrecision(3);
+    const counts = new Float64Array(k);
+    const v = model.slice(S.attr);
+    const lo = s[0], span = (s[s.length - 1] - lo) || 1;
+    for (let i = 0; i < v.length; i++) {
+      let b = Math.floor((v[i] - lo) / span * k);
+      if (b < 0) b = 0; if (b >= k) b = k - 1;
+      counts[b]++;
+    }
+    let mx = 0, mn = Infinity;
+    for (let i = 0; i < k; i++) { mx = Math.max(mx, counts[i]); mn = Math.min(mn, counts[i]); }
+    $('sBiggest').textContent = (100 * mx / v.length).toFixed(1) + '%';
+    $('sSmallest').textContent = (100 * mn / v.length).toFixed(2) + '%';
+  }
+
+  function drawClasses() {
+    if ($('cClsSeq').hidden) return;
+    const k = S.classes;
+    const cls = classify(k);
+    [['cClsSeq', 'oslo', 'capClsSeq', 'Sequential colormap'],
+     ['cClsCat', 'tab10', 'capClsCat', 'Categorical colormap']].forEach(function (q) {
+      CMPLOT.map($(q[0]), cls, {
+        nx: model.nx, ny: model.ny, cmap: q[1], min: 0, max: k - 1,
+        nLevels: k, height: 244, title: q[3] + ', ' + k + ' classes'
+      });
+      $(q[2]).textContent = q[1] === 'oslo'
+        ? 'Reads as an ordered quantity running from class 0 to class ' + (k - 1) + '. Nothing in the output supports that.'
+        : 'Reads as ' + k + ' different things, which is all the classification produced.';
+    });
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawMap();
+    drawHist();
+    readouts();
+    if (S.tab === 'p4') drawClasses();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  $('levels').addEventListener('input', function () {
+    S.levels = +$('levels').value;
+    $('levelsV').textContent = S.levels >= 33 ? 'continuous' : String(S.levels);
+    redraw();
+  });
+  $('classes').addEventListener('input', function () {
+    S.classes = +$('classes').value;
+    $('classesV').textContent = String(S.classes);
+    redraw();
+  });
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['bEq', 'equal'], ['bPop', 'pop']], function (v) { S.bin = v; drawAll(); });
+
+  $('attr').addEventListener('change', function () { S.attr = $('attr').value; drawAll(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach(function (cls) {
+      Object.keys(ERA).forEach(function (era) {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach(function (k) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', function () { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('attr').value = S.attr; $('cmap').value = S.cmap;
+    $('levels').value = S.levels; $('levelsV').textContent = 'continuous';
+    $('classes').value = S.classes; $('classesV').textContent = String(S.classes);
+    $('bEq').setAttribute('aria-pressed', 'true');
+    $('bPop').setAttribute('aria-pressed', 'false');
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+  const START = { p1: 33, p2: 8, p3: 8, p4: 8 };
+  const seen = {};
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    $('ctlClasses').hidden = (id !== 'p4');
+    if (START[id] && !seen[id]) {
+      S.levels = START[id];
+      $('levels').value = S.levels;
+      $('levelsV').textContent = S.levels >= 33 ? 'continuous' : String(S.levels);
+    }
+    seen[id] = true;
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  seen.p1 = true;
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

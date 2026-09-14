@@ -171,7 +171,8 @@ const CMPLOT = (function () {
     const ctx = p.ctx;
     const barH = o.barHeight || 16;
     const x0 = PAD.l, w = p.w - PAD.l - PAD.r;
-    const rect = { x: x0, y: 6, w: w, h: barH };
+    /* leave headroom above the bar when pointers are being drawn onto it */
+    const rect = { x: x0, y: o.marks ? 22 : 6, w: w, h: barH };
 
     const n = Math.max(2, Math.round(w));
     const vals = new Float32Array(n);
@@ -208,6 +209,33 @@ const CMPLOT = (function () {
       ctx.fillText(o.label, rect.x, rect.y + rect.h + 20);
     }
     ctx.restore();
+
+    /* Optional pointers onto the bar: [{value, label, color}]. Used to show
+       where the data's zero falls against the colormap's own centre. */
+    if (o.marks) {
+      ctx.save();
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      o.marks.forEach(function (mk) {
+        if (mk.value < o.min || mk.value > o.max) return;
+        const x = rect.x + rect.w * (mk.value - o.min) / (o.max - o.min);
+        const col = mk.color || RED;
+        ctx.strokeStyle = col; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, rect.y - 5); ctx.lineTo(x, rect.y + rect.h + 3);
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(x, rect.y - 5); ctx.lineTo(x - 4, rect.y - 11);
+        ctx.lineTo(x + 4, rect.y - 11); ctx.closePath(); ctx.fill();
+        if (mk.label) {
+          ctx.textAlign = mk.align || 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(mk.label, x + (mk.align === 'left' ? 5 : mk.align === 'right' ? -5 : 0),
+                       rect.y - 12);
+        }
+      });
+      ctx.restore();
+    }
     return rect;
   }
 

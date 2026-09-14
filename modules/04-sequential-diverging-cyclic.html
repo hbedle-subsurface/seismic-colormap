@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sequential, diverging, cyclic | How Colormaps Actually Work</title>
+<meta name="description" content="Matching the class of colormap to the mathematics of the attribute, and what each mismatch costs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 04 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Sequential, diverging, cyclic</h1>
+    <p class="sub">Which class of colormap an attribute needs is decided by the attribute, not by taste.
+      Two questions settle it: does the attribute have a zero whose sign means something, and does it wrap
+      around. The answers give three classes, and using the wrong one loses information in a way that is
+      specific and predictable rather than merely unattractive.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The attribute and its distribution <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMap" aria-label="Map view of the selected attribute"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+        <canvas id="cHist" aria-label="Histogram of the attribute over the survey"></canvas>
+        <p class="hint-line" id="capHist">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>Class the attribute needs</span><b id="sNeed">—</b></div>
+          <div class="stat"><span>Class of the colormap</span><b id="sHave">—</b></div>
+          <div class="stat"><span>Display range</span><b id="sRange">—</b></div>
+          <div class="stat"><span>Where the colormap's centre falls</span><b id="sCentre">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">What is shown, and how <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The attribute</h2>
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <optgroup label="No natural zero, does not wrap">
+                  <option value="envelope">Envelope</option>
+                  <option value="sweetness">Sweetness</option>
+                  <option value="coherence">Coherence</option>
+                  <option value="frequency">Instantaneous frequency</option>
+                  <option value="thickness">Sand thickness (model)</option>
+                </optgroup>
+                <optgroup label="Zero with a meaningful sign">
+                  <option value="amplitude">Amplitude</option>
+                  <option value="meanCurvature">Mean curvature</option>
+                  <option value="curvature">Most-positive curvature</option>
+                </optgroup>
+                <optgroup label="Wraps around">
+                  <option value="phase">Instantaneous phase</option>
+                </optgroup>
+              </select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The grouping in this menu is the answer, not
+              the question. The histogram below the map is where it can be read off.</p>
+
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">Any map can be applied to any attribute. The
+              readout says whether the two classes agree.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The range</h2>
+            <div class="ctl">
+              <label for="rlo">Bottom of the range <span class="val" id="rloV">0%</span></label>
+              <input type="range" id="rlo" min="0" max="45" step="1" value="0">
+            </div>
+            <div class="ctl">
+              <label for="rhi">Top of the range <span class="val" id="rhiV">100%</span></label>
+              <input type="range" id="rhi" min="55" max="100" step="1" value="100">
+            </div>
+
+            <div class="ctl" id="ctlSym">
+              <label for="sym">Keep the range symmetric about zero</label>
+              <div class="seg" role="group" aria-label="Symmetric range" id="sym">
+                <button type="button" id="symOff" aria-pressed="true">Off</button>
+                <button type="button" id="symOn" aria-pressed="false">On</button>
+              </div>
+            </div>
+
+            <div class="ctl" id="ctlWrap" hidden>
+              <label for="wrap">Rotate the wrap point <span class="val" id="wrapV">0°</span></label>
+              <input type="range" id="wrap" min="0" max="359" step="1" value="0">
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Reading the class off the data</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · The three mismatches</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Where the neutral point lands</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · The wrap</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Reading the class off the attribute</h3>
+    </div>
+    <p class="lede">Two questions decide which class an attribute needs, and both are answered by what the
+      attribute measures rather than by what its display looks like.</p>
+
+    <p><b>Does zero mean anything, and does the sign?</b> Amplitude has a zero: it separates a peak from a
+      trough, and the difference between +0.05 and −0.05 is a difference in polarity, not a difference in
+      size. Curvature has a zero: it separates anticlinal from synclinal bending. Envelope does not. It is
+      a magnitude, it cannot be negative, and its smallest value is simply its smallest value.</p>
+
+    <p><b>Does it wrap?</b> Instantaneous phase runs to +180° and continues at −180°, and those two values
+      are adjacent measurements of almost the same thing. Dip azimuth and aberrancy azimuth do the same at
+      360°. Nothing else in the list wraps.</p>
+
+    <p>The histogram under the map is where this can be checked rather than assumed. A sequential attribute
+      piles up somewhere in its range and tails off, with no particular significance to any interior value.
+      An attribute with a meaningful zero is roughly symmetric about it, and the marked line falls in the
+      middle of the mass rather than off to one side. A wrapping attribute is close to flat across its whole
+      range, with as much data near the two ends as anywhere else, which is the signature of a quantity
+      whose ends are joined.</p>
+
+    <div class="legend">
+      <span>Most-positive curvature is worth a second look here. It has a meaningful zero, so it belongs in
+      the diverging group, but its histogram is not symmetric about it: the quantity is bounded below by
+      the mean curvature and its values sit mostly above zero. The class is right and the range will need
+      attention, which is step 3.</span>
+    </div>
+
+    <p>Three classes follow. <span class="term" data-term="sequential">Sequential</span> maps run from dark
+      to light with no interior landmark. <span class="term" data-term="diverging">Diverging</span> maps
+      have two arms either side of a neutral centre.
+      <span class="term" data-term="cyclic">Cyclic</span> maps return to the same color at both ends.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>The three mismatches</h3>
+    </div>
+    <p class="lede">The same attribute is below in one map of each class, at the same range. Changing the
+      attribute in the panel changes all three together, so each mismatch can be produced deliberately.</p>
+
+    <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+      <div>
+        <canvas id="cSeq" aria-label="The attribute in a sequential colormap"></canvas>
+        <p class="hint-line" id="capSeq">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cDiv" aria-label="The attribute in a diverging colormap"></canvas>
+        <p class="hint-line" id="capDiv">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cCyc" aria-label="The attribute in a cyclic colormap"></canvas>
+        <p class="hint-line" id="capCyc">&nbsp;</p>
+      </div>
+    </div>
+
+    <p style="margin-top:16px"><b>A diverging attribute in a sequential map.</b> Put mean curvature in Oslo.
+      The anticlinal and synclinal sides of every fault are no longer separated by anything: they are just
+      two different brightnesses, and which one is which has to be recovered from the color bar. The
+      paired lineaments that make a fault recognisable on a curvature display become a single smeared
+      band. Nothing has been hidden exactly, but the structure the attribute was computed to show has been
+      taken apart.</p>
+
+    <p><b>A cyclic attribute in a sequential or diverging map.</b> Put instantaneous phase in Oslo or in
+      balance. A hard edge appears wherever the phase passes through ±180°, running across the image in
+      lines that follow no geology. Those lines are the two ends of the colormap meeting at values that
+      are adjacent in the data. Step 4 takes this apart.</p>
+
+    <p><b>A sequential attribute in a diverging map.</b> Put envelope in balance. A false centre appears
+      partway up the range: the display now asserts that some particular envelope value is a dividing line
+      with two sides, and that value is wherever the middle of the display range happens to fall. Moving
+      the range sliders moves it, which is the same test as module 03.</p>
+
+    <p>The cyclic map applied to a non-cyclic attribute is the subtlest of the three. It does not produce a
+      hard edge, and the display often looks perfectly reasonable. What it does is render the highest and
+      lowest values in the same color, so a bright anomaly and a dead zone become indistinguishable.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Where the neutral point lands</h3>
+    </div>
+    <p class="lede">Choosing a diverging map is only half of it. A diverging map has its neutral color at
+      the middle of whatever range it is stretched across, and there is nothing to make that middle
+      coincide with the attribute's own zero. If the range is not symmetric, it does not.</p>
+
+    <p>The arrow above the color bar marks where zero in the data falls. With the range symmetric it sits
+      at the centre of the map, on the neutral color. Move either range slider with the symmetric lock off
+      and it slides away, and the display quietly starts reporting a polarity that is not there: values
+      that are positive appear on the negative arm, or the other way round.</p>
+
+    <div class="legend">
+      <span>Set the attribute to mean curvature, switch the symmetric lock off, and raise the bottom of the
+      range to about 30%. The neutral color now sits on a positive curvature value. Every anticline weaker
+      than that threshold is rendered in the synclinal arm of the colormap and reads as a syncline. The
+      attribute volume has not changed and the color bar is labelled correctly throughout.</span>
+    </div>
+
+    <p>Most-positive curvature makes this awkward in a way worth understanding rather than working around.
+      Its values sit mostly above zero, so a range symmetric about zero spends half its colors on data that
+      is nearly absent, and the display looks washed out on one side. The temptation is to set the range to
+      the data's own minimum and maximum, which puts the neutral point somewhere in the positive values.
+      Both options are defensible and neither is automatic. What is not defensible is doing the second one
+      without noticing.</p>
+
+    <p>Mean curvature does not have this problem: it is symmetric about zero by construction, and the two
+      arms of the colormap carry roughly equal amounts of data. Where both are available, the symmetric one
+      is the easier display to set up honestly.</p>
+
+    <p>The same issue arises for amplitude whenever an automatic range is computed from a window that
+      happens to contain more peak than trough, which is common near a strong reflector. The symmetric lock
+      is the fix, and it costs nothing on an attribute that is genuinely balanced.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>The wrap</h3>
+    </div>
+    <p class="lede">Instantaneous phase is reported between −180° and +180°. Those two limits are the same
+      measurement: a phase of +179° and one of −179° are two degrees apart, not 358. The place where the
+      reported number jumps is a convention of the reporting, and nothing happens there in the data.</p>
+
+    <p>The rotation slider in the panel shifts where that convention puts its jump, by adding a constant to
+      the phase and wrapping it back into the range. This changes no relationship in the data at all: every
+      pair of samples stays the same distance apart.</p>
+
+    <p><b>In a sequential or diverging map</b> the jump is a hard edge in the image, and rotating the wrap
+      drags that edge across the survey. It crosses the channel, runs over the faults, and cuts through the
+      pockmark field, and at every rotation it looks equally like a real boundary. Watching it move is the
+      clearest available demonstration that it is not one.</p>
+
+    <p><b>In a cyclic map</b> nothing happens. The two ends of the colormap are the same color, so the
+      convention's jump produces no visible change, and rotating the wrap leaves the image essentially as
+      it was. What remains is the phase structure itself, which is what the attribute was computed for.</p>
+
+    <p>The same applies to dip azimuth, to aberrancy azimuth, and to any attribute reported as an angle.
+      These are common cases, and the rainbow maps still often used for azimuth are in fact cyclic in hue,
+      which is why they do not produce a seam. What they do instead is swing strongly in lightness between
+      hues, so particular azimuth directions come out brighter than others and appear to be preferentially
+      developed. Bedle and Moreno-Ward (2025) show that effect on aberrancy azimuth in the Great South
+      Basin, where the bias is toward the azimuths rendered in yellow and cyan.</p>
+
+    <div class="legend">
+      <span>A cyclic map that is also perceptually uniform, such as RomaO, gives every azimuth equal visual
+      weight. The lineaments that stand out are then the ones that are actually strongest, rather than the
+      ones whose direction happened to land on a bright part of the color wheel.</span>
+    </div>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>Class mismatches are the easiest of all display errors to avoid, because the correct answer is
+      determined by the attribute and can be worked out once and then written down. They are also common,
+      because software defaults do not know what attribute has been loaded and will apply whatever map was
+      last used.</p>
+
+    <p>Each mismatch has its own failure. A sequential map on a diverging attribute discards the sign,
+      which for curvature means discarding the distinction between an anticline and a syncline. A
+      non-cyclic map on a wrapping attribute invents a boundary that follows a contour of the attribute and
+      can run for kilometres. A diverging map on a sequential attribute asserts a dividing line at a value
+      chosen by the display range.</p>
+
+    <p>The neutral-point problem in step 3 is the one most likely to survive into an interpretation,
+      because nothing about the image announces it. The color bar is correct, the colors are legitimate,
+      and the only symptom is that the boundary between the two arms of the colormap is in the wrong place.
+      A display built with an automatic range on an attribute that is not balanced about zero will do this
+      by default.</p>
+
+    <p>None of this requires the scientific colormaps. A traditional red-white-blue map used on a genuinely
+      diverging attribute with a symmetric range is doing its job. The class has to be right first;
+      uniformity and accessibility are then improvements on top of a correct choice rather than substitutes
+      for one.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Sort them by histogram alone.</b> Step through envelope, mean curvature and phase, looking
+          only at the histogram, and decide which class each needs before reading the menu grouping.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Envelope piles up near the low
+            end and tails off, with no interior landmark: sequential. Mean curvature is symmetric about a
+            marked zero with two tails: diverging. Phase is close to flat from one end of its range to the
+            other, with as much data near the limits as in the middle, which is what a wrapping quantity
+            looks like: cyclic.</span></details></li>
+
+        <li><b>Take the sign away.</b> Put mean curvature in Oslo and then in balance, and look at one of
+          the three main faults.
+          <details class="reveal"><summary>Hint</summary><span class="ans">In balance the fault is a pair
+            of lineaments, one on each arm of the colormap, and which side is up is immediate. In Oslo the
+            pair becomes one band of changing brightness and the sign has to be recovered from the color
+            bar for every feature separately. Nothing is hidden; the structure has been taken
+            apart.</span></details></li>
+
+        <li><b>Produce a seam and then chase it.</b> Put phase in balance, then move the wrap rotation
+          slider through a full turn.
+          <details class="reveal"><summary>Hint</summary><span class="ans">A hard edge sweeps across the
+            survey. It crosses the channel and the faults and looks like a boundary at every position.
+            Nothing in the data has changed: rotating the wrap adds a constant to every sample, so every
+            pair of samples stays the same distance apart. Switching to RomaO makes the edge disappear
+            entirely, and rotating then does nothing visible.</span></details></li>
+
+        <li><b>Move the neutral point.</b> Put mean curvature in balance with the symmetric lock on, note
+          where the arrow above the color bar sits, then switch the lock off and raise the bottom of the
+          range to 30%.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The arrow marking zero slides
+            away from the centre of the colormap, and weak anticlines are now rendered in the synclinal
+            arm. The color bar is still labelled correctly and there is nothing in the image to indicate
+            the problem. This is what an automatic range does to an attribute that is not balanced about
+            zero.</span></details></li>
+
+        <li><b>Invent a boundary in a magnitude.</b> Put envelope in balance and move the range sliders.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The neutral color falls at
+            whatever envelope value sits in the middle of the range, and the display asserts a dividing
+            line there with two sides to it. Moving the range moves the line, which is the module 03 test
+            for a boundary that belongs to the display rather than to the data. Envelope has no dividing
+            line of any kind: it is a magnitude.</span></details></li>
+
+        <li><b>Find the quiet mismatch.</b> Put envelope in RomaO and look at the strongest and the weakest
+          parts of the display.
+          <details class="reveal"><summary>Hint</summary><span class="ans">They are the same color, because
+            the two ends of a cyclic map are joined. No edge appears and the image looks reasonable, which
+            is what makes this the easiest of the mismatches to miss. A bright channel axis and a dead zone
+            outside it cannot be told apart without the color
+            bar.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Two questions fix the class: does zero mean something with a sign, and does the attribute wrap.
+        Magnitudes are sequential, signed quantities are diverging, angles are cyclic.</li>
+      <li>The histogram is where the answer can be checked. A flat distribution across the whole range,
+        with data piled at both ends, is the signature of a wrapping quantity.</li>
+      <li>A sequential map on a diverging attribute discards the sign. A non-cyclic map on a wrapping
+        attribute invents a boundary at the wrap. A diverging map on a magnitude asserts a dividing line
+        that the display range chose.</li>
+      <li>A cyclic map on a non-cyclic attribute produces no edge and no warning, and renders the highest
+        and lowest values in the same color.</li>
+      <li>Choosing a diverging map is only half the work. Its neutral color lands at the middle of the
+        display range, and unless that range is symmetric about zero the neutral point is not on the data's
+        zero.</li>
+      <li>Most-positive curvature has a meaningful zero but an asymmetric distribution, so the symmetric
+        range and the data's own range are both defensible and the choice has to be made deliberately.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The three classes follow the categorisation in Thyng et al. (2016) and Crameri et al. (2020), and
+      the arrangement here follows Bedle and Moreno-Ward (2025), which works the same three classes on
+      coherence, curvature, phase and aberrancy in the Great South Basin.</p>
+
+    <p>Every attribute in the menu is computed from the same synthetic model, described in module 00.
+      Phase and amplitude come from the analytic trace along the marker; mean and most-positive curvature
+      come from a horizon picked off the deeper reflector; coherence is semblance over a 3 × 3 trace window.
+      The grouping in the menu is by class, so that the histogram can be compared against a stated answer.</p>
+
+    <p>The wrap rotation adds a constant to the phase at every sample and wraps the result back into
+      −180° to +180°. This is an exact symmetry of a cyclic quantity: every difference between samples is
+      unchanged, and so is every relationship the attribute was computed to show. Nothing in the data
+      distinguishes one rotation from another, which is what makes it a clean test of the display.</p>
+
+    <p>The arrow above the color bar is drawn at the data value zero, wherever that falls in the current
+      display range. The colormap's own centre is at the midpoint of the range by construction. When the
+      symmetric lock is on, the bottom and top of the range are held at equal distances from zero, so the
+      two coincide.</p>
+
+    <p>The symmetric lock is offered only for attributes whose natural range straddles zero. For an
+      attribute like envelope, which cannot be negative, there is no symmetric range to impose and the
+      control is not shown.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+      <li>Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco, 2016, True colors
+        of oceanography: Oceanography, 29, 9&ndash;13, doi:
+        <a href="https://doi.org/10.5670/oceanog.2016.66">10.5670/oceanog.2016.66</a>.</li>
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+        communication: Nature Communications, 11, 5444, doi:
+        <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
+      <li>Taner, M. T., F. Koehler, and R. E. Sheriff, 1979, Complex seismic trace analysis: Geophysics,
+        44, 1041&ndash;1063, doi:
+        <a href="https://doi.org/10.1190/1.1440994">10.1190/1.1440994</a>.</li>
+      <li>Qi, X., and K. J. Marfurt, 2018, Volumetric aberrancy to map subtle faults and flexures:
+        Interpretation, 6, T349&ndash;T365, doi:
+        <a href="https://doi.org/10.1190/INT-2017-0114.1">10.1190/INT-2017-0114.1</a>.</li>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attr: 'envelope', cmap: 'oslo', rlo: 0, rhi: 100, sym: false, wrap: 0 };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+
+  /* one scientific representative of each class, for the comparison in step 2 */
+  const REP = { sequential: 'oslo', diverging: 'balance', cyclic: 'romaO' };
+
+  /* Attributes whose natural range straddles zero: only these can be held
+     symmetric, and only these get a zero marker. */
+  function straddlesZero(attr) {
+    const r = Synthetic.RANGES[attr];
+    return r[0] < 0 && r[1] > 0;
+  }
+
+  function values() {
+    const v = model.slice(S.attr);
+    if (S.attr !== 'phase' || S.wrap === 0) return v;
+    const out = new Float32Array(v.length);
+    for (let i = 0; i < v.length; i++) {
+      let p = v[i] + S.wrap;
+      p = ((p + 180) % 360 + 360) % 360 - 180;
+      out[i] = p;
+    }
+    return out;
+  }
+
+  function range() {
+    const r = Synthetic.RANGES[S.attr];
+    const span = r[1] - r[0];
+    let lo = r[0] + span * S.rlo / 100;
+    let hi = r[0] + span * S.rhi / 100;
+    if (S.sym && straddlesZero(S.attr)) {
+      const m = Math.max(Math.abs(lo), Math.abs(hi));
+      lo = -m; hi = m;
+    }
+    return [lo, hi];
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function marks(rg) {
+    if (!straddlesZero(S.attr)) return null;
+    return [{ value: 0, label: 'zero in the data', color: '#841617' }];
+  }
+
+  function drawMap() {
+    const rg = range();
+    CMPLOT.map($('cMap'), values(), {
+      nx: model.nx, ny: model.ny, cmap: S.cmap, min: rg[0], max: rg[1],
+      cyclic: !!Synthetic.CYCLIC[S.attr], height: 250,
+      title: Synthetic.LABEL[S.attr]
+    });
+    CMPLOT.colorbar($('cBar'), {
+      cmap: S.cmap, min: rg[0], max: rg[1], height: 72,
+      label: Synthetic.LABEL[S.attr], marks: marks(rg)
+    });
+    $('capMap').textContent = Colormaps.meta[S.cmap].note;
+  }
+
+  function drawHist() {
+    const r = Synthetic.RANGES[S.attr];
+    const res = CMPLOT.histogram($('cHist'), values(), {
+      xMin: r[0], xMax: r[1], bins: 90, height: 168,
+      xLabel: Synthetic.LABEL[S.attr], yLabel: 'Share of the survey',
+      yFmt: (v) => v.toFixed(1),
+      title: 'Distribution over the whole survey'
+    });
+    if (!res) return;
+    const ctx = res.ctx, rect = res.rect;
+    ctx.save();
+    if (straddlesZero(S.attr)) {
+      ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(res.X(0), rect.y); ctx.lineTo(res.X(0), rect.y + rect.h);
+      ctx.stroke();
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#841617'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(' zero', res.X(0), rect.y + 2);
+    }
+    if (Synthetic.CYCLIC[S.attr]) {
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = '#2d5fa8'; ctx.lineWidth = 1.6;
+      [r[0], r[1]].forEach((v) => {
+        ctx.beginPath();
+        ctx.moveTo(res.X(v), rect.y); ctx.lineTo(res.X(v), rect.y + rect.h);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#2d5fa8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('these two edges are the same value', rect.x + rect.w / 2, rect.y + 2);
+    }
+    ctx.restore();
+
+    const want = Synthetic.CLASS[S.attr];
+    $('capHist').textContent = want === 'cyclic'
+      ? 'Flat from end to end, with as much data at the limits as in the middle: a wrapping quantity.'
+      : want === 'diverging'
+        ? 'Straddles a zero whose sign carries meaning.'
+        : 'A magnitude: no interior value has any particular significance.';
+  }
+
+  function readouts() {
+    const rg = range();
+    const want = Synthetic.CLASS[S.attr];
+    const have = Colormaps.meta[S.cmap].cls;
+    $('sNeed').textContent = want;
+    $('sHave').textContent = have + (have === want ? '  \u2014 agrees' : '  \u2014 mismatch');
+    $('sRange').textContent = rg[0].toPrecision(3) + ' to ' + rg[1].toPrecision(3);
+    if (!straddlesZero(S.attr)) {
+      $('sCentre').textContent = 'the attribute has no zero to line up with';
+    } else {
+      const centre = (rg[0] + rg[1]) / 2;
+      const off = Math.abs(centre) / ((rg[1] - rg[0]) / 2) * 100;
+      $('sCentre').textContent = off < 0.5
+        ? 'sitting on zero in the data'
+        : centre.toPrecision(2) + ',  ' + off.toFixed(0) + '% of a half-range off zero';
+    }
+  }
+
+  /* ---- step figures ------------------------------------------------------ */
+
+  function drawThree() {
+    if ($('cSeq').hidden) return;
+    const rg = range();
+    const v = values();
+    [['cSeq', 'sequential', 'capSeq'], ['cDiv', 'diverging', 'capDiv'],
+     ['cCyc', 'cyclic', 'capCyc']].forEach((q) => {
+      const key = REP[q[1]];
+      CMPLOT.map($(q[0]), v, {
+        nx: model.nx, ny: model.ny, cmap: key, min: rg[0], max: rg[1],
+        cyclic: !!Synthetic.CYCLIC[S.attr], height: 236,
+        title: q[1].charAt(0).toUpperCase() + q[1].slice(1) + ': ' + Colormaps.meta[key].name
+      });
+      const want = Synthetic.CLASS[S.attr];
+      $(q[2]).textContent = q[1] === want
+        ? 'The class this attribute needs.'
+        : q[1] === 'sequential' ? 'Sequential: any sign or wrap in the attribute is not represented.'
+        : q[1] === 'diverging' ? 'Diverging: a neutral point is asserted at the middle of the range.'
+        : 'Cyclic: the two ends of the range are rendered in the same color.';
+    });
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawMap();
+    drawHist();
+    readouts();
+    if (S.tab === 'p2') drawThree();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function bindRange(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = () => { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', () => { S[key] = parseFloat(el.value); show(); redraw(); });
+    show();
+  }
+  bindRange('rlo', 'rlo', (v) => v.toFixed(0) + '%');
+  bindRange('rhi', 'rhi', (v) => v.toFixed(0) + '%');
+  bindRange('wrap', 'wrap', (v) => v.toFixed(0) + '\u00b0');
+
+  function syncControls() {
+    $('ctlSym').hidden = !straddlesZero(S.attr);
+    $('ctlWrap').hidden = !Synthetic.CYCLIC[S.attr];
+  }
+
+  $('attr').addEventListener('change', () => {
+    S.attr = $('attr').value;
+    if (!Synthetic.CYCLIC[S.attr]) { S.wrap = 0; $('wrap').value = 0; $('wrapV').textContent = '0\u00b0'; }
+    syncControls();
+    drawAll();
+  });
+
+  function segment(buttons, onPick) {
+    buttons.forEach((b) => {
+      $(b[0]).addEventListener('click', () => {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['symOff', false], ['symOn', true]], (v) => { S.sym = v; drawAll(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach((cls) => {
+      Object.keys(ERA).forEach((era) => {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach((k) => {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', () => { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('resetBtn').addEventListener('click', () => {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('attr').value = S.attr; $('cmap').value = S.cmap;
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi; $('wrap').value = S.wrap;
+    $('rloV').textContent = S.rlo + '%'; $('rhiV').textContent = S.rhi + '%';
+    $('wrapV').textContent = '0\u00b0';
+    $('symOff').setAttribute('aria-pressed', 'true');
+    $('symOn').setAttribute('aria-pressed', 'false');
+    syncControls();
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+  /* what each step opens on, the first time it is opened */
+  const START = { p1: ['envelope', 'oslo'], p2: ['meanCurvature', 'oslo'],
+                  p3: ['meanCurvature', 'balance'], p4: ['phase', 'balance'] };
+  const seen = {};
+
+  function showTab(id) {
+    PANES.forEach((q) => { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    if (START[id] && !seen[id]) {
+      S.attr = START[id][0]; S.cmap = START[id][1];
+      $('attr').value = S.attr; $('cmap').value = S.cmap;
+      if (id === 'p3') {
+        S.sym = true;
+        $('symOn').setAttribute('aria-pressed', 'true');
+        $('symOff').setAttribute('aria-pressed', 'false');
+      }
+    }
+    seen[id] = true;
+    syncControls();
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.addEventListener('click', () => showTab(b.dataset.tab));
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach((a) => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  seen.p1 = true;
+  syncControls();
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

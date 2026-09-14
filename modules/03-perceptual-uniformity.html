@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perceptual uniformity | How Colormaps Actually Work</title>
+<meta name="description" content="Equal steps in the data, unequal steps in appearance: measuring a colormap and finding the boundaries it invents.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 03 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Perceptual uniformity</h1>
+    <p class="sub">A colormap is perceptually uniform when equal steps in the data produce color changes of
+      equal perceived size. Where that fails, some parts of the data range appear to change faster than
+      others, and the fast parts read as boundaries. Those boundaries sit at values fixed by the color
+      table, so they appear on every image ever made with it, in the same place, which is what makes them
+      convincing.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The colormap, measured <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cStrip" aria-label="The selected colormap as a strip"></canvas>
+        <canvas id="cGrad" aria-label="Local color difference along the colormap"></canvas>
+        <canvas id="cMap" aria-label="Map view of the seismic attribute in the selected colormap"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>Fastest / slowest</span><b id="sRatio">—</b></div>
+          <div class="stat"><span>Local difference range</span><b id="sSpread">—</b></div>
+          <div class="stat"><span>Lightness runs one way</span><b id="sMono">—</b></div>
+          <div class="stat"><span>L* covered</span><b id="sL">—</b></div>
+          <div class="stat wide"><span>Worst stretch under simulated color vision deficiency</span><b id="sCvd">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">What is displayed <span>&mdash; and over what range</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The colormap</h2>
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The curve below the strip is the local color
+              difference: how far apart in appearance two neighboring values are, normalized so a perfectly
+              uniform map would sit flat at 1.0 along its whole length.</p>
+
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="coherence">Coherence</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="thickness">Sand thickness (model)</option>
+                <option value="twoWayTime">Two-way time to marker (model)</option>
+                <option value="meanCurvature">Mean curvature</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The display range</h2>
+            <div class="ctl">
+              <label for="rlo">Bottom of the range <span class="val" id="rloV">0%</span></label>
+              <input type="range" id="rlo" min="0" max="45" step="1" value="0">
+            </div>
+            <div class="ctl">
+              <label for="rhi">Top of the range <span class="val" id="rhiV">100%</span></label>
+              <input type="range" id="rhi" min="55" max="100" step="1" value="100">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">As a percentage of the attribute's own range.
+              Moving these changes which data values land on which colors, and nothing else.</p>
+
+            <div class="ctl" id="ctlSteps" hidden>
+              <label for="steps">Number of steps <span class="val" id="stepsV">12</span></label>
+              <input type="range" id="steps" min="4" max="24" step="1" value="12">
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Equal steps, unequal changes</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Boundaries that are not there</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Measuring every map</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What uniformity does not promise</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Equal steps in the data, unequal changes in the color</h3>
+    </div>
+    <p class="lede">The blocks below divide the data range into equal steps. Every neighboring pair differs
+      by exactly the same amount, and the numbers under them say so. What the eye reports is a different
+      matter.</p>
+
+    <canvas id="cWedge" aria-label="Equal steps through the data range, shown as adjacent blocks of color"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Each block is one step. The number of steps and the
+      colormap are set in the panel.</p>
+
+    <p>In a uniform map every join looks about as strong as every other, and counting the blocks by eye
+      gives the right answer. In a rainbow some joins are almost invisible while others are hard edges, and
+      counting by eye undercounts in the flat stretches and overcounts where the color turns quickly. The
+      data has equal steps throughout; the display does not.</p>
+
+    <p>The curve under the strip in the panel is the same information as a measurement. At each point along
+      the colormap it gives the distance in
+      <span class="term" data-term="cielab">CIE L*a*b*</span> between one level and the next, normalized so
+      that a perfectly uniform map would sit flat at 1.0. A value of 2 means the color is changing twice as
+      fast there as it does on average; a value of 0.2 means five times slower.</p>
+
+    <p>The ratio between the fastest and the slowest part of the map is in the readout. RomaO and vik
+      measure 1.2, Oslo 1.3, grayscale and roma 1.8, viridis 2.4. The traditional rainbow measures 22, and
+      the sixteen-step version is unbounded, because its flat stretches change by nothing at all.</p>
+
+    <p>The consequence for interpretation is direct. Two features separated by the same difference in an
+      attribute will look obviously different in one part of the range and identical in another, depending
+      on nothing but where they happen to fall.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>Boundaries that are not in the data</h3>
+    </div>
+    <p class="lede">The field below contains no edges. It is a smooth, slowly varying surface: a gentle
+      gradient across the image with one broad rise in it, and nothing discontinuous anywhere. Whatever
+      boundaries appear in it were put there by the colormap.</p>
+
+    <canvas id="cSmooth" aria-label="A smooth synthetic field with no edges in it"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">A smooth field with no discontinuities. The marks above
+      it give the approximate positions at which the local color difference curve peaks, which is where the
+      band edges fall away from the rise in the middle.</p>
+
+    <p>In a uniform map the field looks like what it is. In a rainbow it separates into bands with visible
+      edges between them, which is the effect usually called contouring. The bands are the flat stretches
+      of the color table and the edges are the fast stretches, and their positions can be read off the
+      curve in the panel.</p>
+
+    <p>The test that settles it is in the panel: move the bottom or the top of the display range. Every
+      boundary in the image slides sideways, because the data value that lands on a given part of the color
+      table has changed. A boundary that belongs to the data cannot behave that way. The channel edge and
+      the fault traces in the seismic map stay exactly where they are while the bands migrate across them.</p>
+
+    <div class="legend">
+      <span>This is the most useful field test available and it costs nothing: change the display range and
+      watch what moves. Features that hold still are in the data. Features that slide are in the color
+      table. The same check catches a value range so narrow that the attribute is saturating, which is
+      module 06.</span>
+    </div>
+
+    <p>The seismic map in the panel is the same story on real features. With a rainbow selected, the
+      envelope develops a rim part of the way down the flank of the channel, at the value where the color
+      table turns quickly. It looks like a boundary in the sand body. Moving the display range moves it to
+      a different part of the flank, and switching to a uniform map removes it and leaves the gradual
+      thinning that is actually there.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Every map in the library, measured the same way</h3>
+    </div>
+    <p class="lede">The chart below runs the same measurement over every colormap in this site. The bar
+      shows the range from the slowest to the fastest part of each map, drawn in the map's own colors, with
+      a uniform map appearing as a short bar sitting on 1.0. Clicking a bar selects that map in the panel.</p>
+
+    <canvas id="cRank" aria-label="Local color difference range for every colormap, sorted"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Click any bar to load that colormap into the panel. The
+      dashed line at 1.0 is where a perfectly uniform map would sit.</p>
+
+    <p>The ordering is not a ranking of quality and should not be read as one. A cyclic map and a
+      categorical map are answering different questions, and a diverging map is expected to slow down at
+      its neutral point. What the chart shows is which maps distort the spacing of the data and by how
+      much.</p>
+
+    <p>Four patterns are worth picking out.</p>
+
+    <p><b>The tight end is where the designed maps mostly are.</b> RomaO and vik measure 1.2, cool-warm
+      1.3, Oslo 1.3, roma 1.8, batlow 2.0, viridis 2.4. Grayscale sits among them at 1.8, which is worth
+      noting: it is the oldest display in the library and one of the best spaced, because lightness on its
+      own has nothing to be uneven about.</p>
+
+    <p><b>The rainbows are at the other end.</b> The spectrum maps measure between 6 and 23, and the
+      position of the fast end says where in the range the false edges will fall. The sixteen-step version
+      is the limiting case: its slow end is exactly zero, because sixteen ranges of data values are
+      rendered in a single color each.</p>
+
+    <p><b>A diverging map is slow at its neutral point, by design.</b> Balance measures 4.7, which places
+      it well down the chart, and the slow part is the mid gray at the centre where the map turns around.
+      That is not a defect. A diverging map is meant to compress near zero and spend its color on the
+      departures, and comparing its number against a sequential map's is comparing two different
+      intentions.</p>
+
+    <p><b>The measurement is narrower than it looks.</b> The repeating spectrum measures 3.0, better than
+      balance, while being one of the least usable maps in the library: it runs through the hue circle
+      several times, so two widely separated data values are rendered in the same color. This measurement
+      only asks whether neighboring values are evenly spaced. It does not ask whether distant values are
+      distinguishable, and it does not ask whether any of it can be resolved at all, which is step 4.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>What uniformity does not promise</h3>
+    </div>
+    <p class="lede">Two maps are compared below. Both are close to perfectly uniform by the measurement
+      this module has been using. One of them shows the data and the other shows almost nothing.</p>
+
+    <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+      <div>
+        <canvas id="cCmpA" aria-label="The attribute in grayscale"></canvas>
+        <p class="hint-line" id="capCmpA">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cCmpB" aria-label="The attribute in a ramp that varies only in hue"></canvas>
+        <p class="hint-line" id="capCmpB">&nbsp;</p>
+      </div>
+    </div>
+
+    <p style="margin-top:14px">The map on the right is the constant-lightness hue ramp built in module 02:
+      lightness fixed, hue sweeping half the color circle, chroma at whatever the display can manage. It
+      passes through more total color than grayscale does, and it spaces that color more evenly. By the
+      measurement in this module it is the better of the two.</p>
+
+    <p>It is not a better display, and the reason is that the measurement answers a narrower question than
+      it appears to. Distance in CIE L*a*b* predicts when two patches of color will look different when
+      they are placed side by side and are large enough to fill a decent part of the visual field. It says
+      nothing about how small those patches can become before the difference stops being visible, and that
+      threshold is very different for a difference in hue than for a difference in lightness.</p>
+
+    <p>So the two properties are separate, and both are needed.</p>
+    <ul>
+      <li><b>Uniformity</b> says the map does not distort the spacing of whatever it manages to show. A map
+        that fails it invents boundaries and hides real differences in its flat stretches.</li>
+      <li><b>Resolving power</b> says the map can show fine, low-contrast detail at all. It comes almost
+        entirely from lightness, which is what module 02 measured.</li>
+    </ul>
+
+    <p>The scientific sequential maps are built to have both: lightness climbing steadily from one end to
+      the other, which delivers the resolution, at an even perceptual rate, which delivers the uniformity.
+      Hue and chroma move alongside to make neighboring values easier to name and to provide a second cue
+      for readers whose color vision is atypical, but nothing is being carried by hue that lightness is not
+      already carrying.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>An invented boundary is more dangerous than a hidden feature, because it has the shape of a result.
+      A band edge running across a seismic attribute map follows a contour of the attribute, which means it
+      is smooth, continuous, and frequently parallel to genuine geology. It looks like a fluid contact, a
+      facies boundary or a diagenetic front, and nothing about its appearance distinguishes it from one.</p>
+
+    <p>Published interpretations have been drawn along such edges. The check is cheap and takes seconds:
+      change the display range and see what moves.</p>
+
+    <p>The hidden half of the same problem is quieter. Where a colormap is flat, real differences are
+      rendered in nearly the same color and are simply absent from the display. Nothing appears in their
+      place, so nothing prompts a second look. This is why comparing an attribute against grayscale is
+      worth doing as a matter of routine rather than only when something looks wrong.</p>
+
+    <p>None of this makes a rainbow display worthless. It makes it a display whose boundaries have to be
+      verified before they are interpreted, which is a reasonable thing to ask of any measurement. What it
+      does argue against is choosing a non-uniform map for the initial reconnaissance pass, when the
+      question is what is present rather than how large it is.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Count the steps.</b> On step 1, set the colormap to the rainbow and the number of steps to
+          16, and count the blocks by eye without looking at the numbers. Then do the same in Oslo.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The rainbow undercounts,
+            usually by three or four, because several neighboring pairs are close to indistinguishable
+            while others are hard edges. Oslo gives the right answer or close to it. Every pair in both is
+            the same distance apart in the data.</span></details></li>
+
+        <li><b>Make a boundary move.</b> On step 2, put the rainbow on the smooth field, note where a band
+          edge falls, then raise the bottom of the display range to 20%.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Every edge slides, because the
+            data value that lands on the fast part of the color table has changed. Nothing in the field has
+            changed at all. A boundary that belongs to the data holds still under the same test, which is
+            what makes it a usable field check.</span></details></li>
+
+        <li><b>Find the flat stretch.</b> Select the sixteen-step rainbow and look at the local difference
+          curve, then at the smooth field.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The curve is zero across each
+            tread and spikes at each riser, and the field separates into sixteen flat bands with hard edges
+            between them. Every one of those edges is at a value fixed by the table. This is the same thing
+            the smooth rainbow does, with the rounding taken off.</span></details></li>
+
+        <li><b>Look at a diverging map.</b> Select balance and then red-white-blue, and compare their
+          curves near the middle.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Both slow down at the neutral
+            point, which is expected: the map is turning around there. Red-white-blue also reaches its
+            greatest lightness there, so zero is the brightest value on the display. Balance turns around
+            at a mid gray, which keeps the emphasis on the large departures in both
+            directions.</span></details></li>
+
+        <li><b>Test the limits of the measurement.</b> On step 4, read the two sets of numbers and then
+          look at the two images.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The hue ramp measures as well or
+            better on every uniformity figure and shows almost nothing. Uniformity is about the spacing of
+            what a map shows, not about whether it shows it, and the second property comes from lightness.
+            A colormap needs both, and neither number alone is
+            enough.</span></details></li>
+
+        <li><b>Check a rim.</b> On step 2 with the envelope displayed, find the rim that appears partway
+          down the flank of the channel in a rainbow, then switch to viridis.
+          <details class="reveal"><summary>Hint</summary><span class="ans">It disappears, and what is left
+            is a gradual thinning toward the channel margin, which is what the model contains. Nothing in
+            the sand body changes at the value where the rim appeared; the rim is the position at which the
+            color table turns from green to yellow.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>A colormap is perceptually uniform when equal steps in the data produce color changes of equal
+        perceived size. Where it is not, some parts of the range change several times faster than others.</li>
+      <li>Fast stretches become boundaries in the image, at data values fixed by the color table. They
+        appear in the same relative position on every image made with that map.</li>
+      <li>Flat stretches hide real differences, and leave nothing behind to indicate that they have.</li>
+      <li>Changing the display range separates the two kinds of boundary: what belongs to the data holds
+        still, and what belongs to the colormap slides.</li>
+      <li>The measurement predicts differences between large patches seen side by side. It says nothing
+        about how small a feature can be before the difference stops being visible, so a uniform map can
+        still resolve nothing. Uniformity and resolving power are separate requirements.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The local color difference is computed from the colormap table itself. Each level is converted to
+      CIE L*a*b* under D65 and the Euclidean distance is taken between levels eight apart, then divided by
+      the mean of those distances over the whole map. The result is 1.0 everywhere for a perfectly uniform
+      map, and its departures from 1.0 are what the curve plots.</p>
+
+    <p>The eight-level stride is there because the tables are stored as eight-bit values. Differencing
+      adjacent levels gives a curve dominated by rounding, with spurious zeros wherever two neighboring
+      entries happen to round to the same byte. Eight levels is wide enough to step over that and narrow
+      enough to keep the features that matter, which are tens of levels wide. The sixteen-step rainbow
+      still returns exact zeros, correctly: its flat stretches are sixteen levels long.</p>
+
+    <p>The distance used is CIE76, the plain Euclidean distance in L*a*b*. Later formulae &mdash; CIE94,
+      CIEDE2000 &mdash; correct known errors in it, particularly for saturated colors and for large
+      differences. They would change the numbers here by some tens of percent and would not change which
+      maps are well spaced and which are not. CIE76 is used because it is the measure the published
+      colormap designs were assessed against, so the numbers here are comparable with theirs.</p>
+
+    <p>The color vision figure is the same calculation applied after simulating protanopia, deuteranopia
+      and tritanopia in turn, reporting the worst of the three. A value near zero marks a stretch of the
+      map that becomes a single flat color for some readers. The simulation uses the matrices of Machado,
+      Oliveira and Fernandes (2009), and module 05 takes it up properly.</p>
+
+    <p>The smooth field in step 2 is a linear gradient across the image with one broad Gaussian rise added
+      to it. It is continuous and differentiable everywhere and contains no edges of any kind, so any
+      boundary visible in it has been introduced by the display.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+        <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
+      <li>Rogowitz, B. E., and L. A. Treinish, 1998, Data visualization: the end of the rainbow: IEEE
+        Spectrum, 35, 52&ndash;59, doi:
+        <a href="https://doi.org/10.1109/6.736450">10.1109/6.736450</a>.</li>
+      <li>Borland, D., and R. M. Taylor, 2007, Rainbow color map (still) considered harmful: IEEE Computer
+        Graphics and Applications, 27, 14&ndash;17, doi:
+        <a href="https://doi.org/10.1109/MCG.2007.323435">10.1109/MCG.2007.323435</a>.</li>
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+        communication: Nature Communications, 11, 5444, doi:
+        <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
+      <li>Gołębiowska, I., and A. Çöltekin, 2022, What's wrong with the rainbow? An interdisciplinary
+        review of empirical evidence for and against the rainbow color scheme in visualizations: ISPRS
+        Journal of Photogrammetry and Remote Sensing, 194, 195&ndash;208, doi:
+        <a href="https://doi.org/10.1016/j.isprsjprs.2022.10.002">10.1016/j.isprsjprs.2022.10.002</a>.</li>
+      <li>Bujack, R., T. L. Turton, F. Samsel, C. Ware, D. H. Rogers, and J. Ahrens, 2017, The good, the
+        bad, and the ugly: a theoretical framework for the assessment of continuous colormaps: IEEE
+        Transactions on Visualization and Computer Graphics, 24, 923&ndash;933, doi:
+        <a href="https://doi.org/10.1109/TVCG.2017.2743978">10.1109/TVCG.2017.2743978</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { cmap: 'jet', attr: 'envelope', rlo: 0, rhi: 100, steps: 12 };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+  let rankBars = [];                      // hit boxes for the chart in step 3
+
+  /* The display range, as the fraction of the attribute's own range set by the
+     two sliders. */
+  function range() {
+    const r = Synthetic.RANGES[S.attr];
+    const span = r[1] - r[0];
+    return [r[0] + span * S.rlo / 100, r[0] + span * S.rhi / 100];
+  }
+
+  /* ---- measurement ------------------------------------------------------- */
+
+  function measure(key) {
+    const g = Colormaps.perceptualGradient(key);
+    let gmin = Infinity, gmax = 0;
+    for (let i = 0; i < g.length; i++) { gmin = Math.min(gmin, g[i]); gmax = Math.max(gmax, g[i]); }
+    const L = Colormaps.lightness(key);
+    let lo = 100, hi = 0, up = 0, tot = 0;
+    for (let i = 0; i < L.length; i++) { lo = Math.min(lo, L[i]); hi = Math.max(hi, L[i]); }
+    for (let i = 1; i < L.length; i++) { up += L[i] - L[i - 1]; tot += Math.abs(L[i] - L[i - 1]); }
+    return { g: g, gmin: gmin, gmax: gmax, lmin: lo, lmax: hi,
+             lmono: tot > 0 ? Math.abs(up) / tot : 1 };
+  }
+
+  /* The same spread after simulating each form of color vision deficiency. */
+  function cvdWorst(key) {
+    const a = Colormaps.lut(key), n = a.length / 3, st = 8;
+    let worst = Infinity;
+    ['protan', 'deutan', 'tritan'].forEach((t) => {
+      const sim = [];
+      for (let i = 0; i < n; i++) {
+        sim.push(Colormaps.simulate([a[3 * i], a[3 * i + 1], a[3 * i + 2]], t, 1));
+      }
+      const d = [];
+      let sum = 0;
+      for (let i = 0; i + st < n; i++) {
+        const p = Colormaps.rgbToLab(sim[i][0], sim[i][1], sim[i][2]);
+        const q = Colormaps.rgbToLab(sim[i + st][0], sim[i + st][1], sim[i + st][2]);
+        const dd = Math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1]) +
+                             (q[2] - p[2]) * (q[2] - p[2]));
+        d.push(dd); sum += dd;
+      }
+      const mean = sum / d.length || 1;
+      let mn = Infinity;
+      for (let i = 0; i < d.length; i++) mn = Math.min(mn, d[i] / mean);
+      worst = Math.min(worst, mn);
+    });
+    return worst;
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function drawStrip() {
+    const cv = $('cStrip');
+    const w = Math.max(240, cv.parentNode.clientWidth || 0);
+    if (w < 200) return;
+    const h = 40;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 54, ww = w - x0 - 14, bh = 22;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3;
+    for (let i = 0; i < ww; i++) {
+      const j = Math.round(i / (ww - 1) * (n - 1)) * 3;
+      ctx.fillStyle = 'rgb(' + a[j] + ',' + a[j + 1] + ',' + a[j + 2] + ')';
+      ctx.fillRect(x0 + i, 8, 1.2, bh);
+    }
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, 8.5, ww, bh);
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(Colormaps.meta[S.cmap].name, x0 - 6, 8 + bh / 2);
+  }
+
+  function drawGradient() {
+    const m = measure(S.cmap);
+    const x = [], y = [];
+    for (let i = 0; i < m.g.length; i++) { x.push(i / (m.g.length - 1)); y.push(Math.min(m.g[i], 3)); }
+    CMPLOT.lines($('cGrad'), [
+      { x: [0, 1], y: [1, 1], color: '#C9CDD2', width: 1.4, dash: [5, 4] },
+      { x: x, y: y, color: '#841617', width: 1.8 }
+    ], {
+      xMin: 0, xMax: 1, yMin: 0, yMax: 3, height: 168,
+      xLabel: 'Position along the colormap', yLabel: 'Local color difference',
+      xFmt: (v) => v.toFixed(1), yFmt: (v) => v.toFixed(1),
+      title: 'Uniform would be flat at 1.0'
+    });
+    return m;
+  }
+
+  function drawMap() {
+    const rg = range();
+    CMPLOT.map($('cMap'), model.slice(S.attr), {
+      nx: model.nx, ny: model.ny, cmap: S.cmap, min: rg[0], max: rg[1],
+      cyclic: !!Synthetic.CYCLIC[S.attr], height: 248,
+      title: Synthetic.LABEL[S.attr]
+    });
+    CMPLOT.colorbar($('cBar'), { cmap: S.cmap, min: rg[0], max: rg[1],
+                                 label: Synthetic.LABEL[S.attr] });
+    $('capMap').textContent = Colormaps.meta[S.cmap].note;
+  }
+
+  function readouts(m) {
+    const ratio = m.gmin > 0.001 ? (m.gmax / m.gmin) : Infinity;
+    $('sRatio').textContent = isFinite(ratio) ? ratio.toFixed(1) + '\u00d7'
+                                              : 'unbounded (a flat stretch)';
+    $('sSpread').textContent = m.gmin.toFixed(2) + ' to ' + m.gmax.toFixed(2);
+    $('sMono').textContent = m.lmono.toFixed(2) +
+      (m.lmono > 0.95 ? '  (all one way)' : m.lmono < 0.2 ? '  (returns to where it started)' : '');
+    $('sL').textContent = m.lmin.toFixed(0) + ' to ' + m.lmax.toFixed(0) +
+      '  (span ' + (m.lmax - m.lmin).toFixed(0) + ')';
+    const c = cvdWorst(S.cmap);
+    $('sCvd').textContent = c.toFixed(2) +
+      (c < 0.15 ? '  \u2014 a stretch of this map becomes one flat color' : '');
+  }
+
+  /* ---- step figures ------------------------------------------------------ */
+
+  function drawWedge() {
+    const cv = $('cWedge');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const h = 124;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const n = S.steps, a = Colormaps.lut(S.cmap), levels = a.length / 3;
+    const x0 = 8, ww = w - 16, bw = ww / n;
+    const rg = range();
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const j = Math.round(t * (levels - 1)) * 3;
+      ctx.fillStyle = 'rgb(' + a[j] + ',' + a[j + 1] + ',' + a[j + 2] + ')';
+      ctx.fillRect(x0 + i * bw, 10, bw + 0.5, 62);
+    }
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, 10.5, ww, 62);
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const every = n > 12 ? 2 : 1;
+    for (let i = 0; i < n; i += every) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const v = rg[0] + (rg[1] - rg[0]) * t;
+      ctx.fillText(Math.abs(v) >= 10 ? v.toFixed(0) : v.toFixed(3),
+                   x0 + (i + 0.5) * bw, 78);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillText('every neighbouring pair differs by the same amount', x0, 100);
+  }
+
+  /* A field with no edges anywhere: a linear gradient plus one broad rise. */
+  function smoothField(nx, ny) {
+    const f = new Float32Array(nx * ny);
+    const cx = 0.62 * nx, cy = 0.5 * ny, s = 0.24 * nx;
+    for (let y = 0; y < ny; y++) {
+      for (let x = 0; x < nx; x++) {
+        const dx = x - cx, dy = (y - cy) * 1.4;
+        f[y * nx + x] = 0.12 + 0.66 * (x / (nx - 1)) +
+                        0.22 * Math.exp(-(dx * dx + dy * dy) / (2 * s * s));
+      }
+    }
+    return f;
+  }
+
+  function drawSmooth() {
+    const cv = $('cSmooth');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const h = 232;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+
+    const NX = 420, NY = 190;
+    const f = smoothField(NX, NY);
+    const off = document.createElement('canvas');
+    off.width = NX; off.height = NY;
+    const img = off.getContext('2d').createImageData(NX, NY);
+    Colormaps.apply(f, img, { name: S.cmap, min: S.rlo / 100, max: S.rhi / 100 });
+    off.getContext('2d').putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(off, 0, 26, w, h - 30);
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 26.5, w - 1, h - 30);
+
+    /* marks above the image at the positions where the map turns fastest */
+    const m = measure(S.cmap);
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('peaks in the local colour difference \u2193', 2, 2);
+    for (let i = 1; i < m.g.length - 1; i++) {
+      if (m.g[i] < 1.25 || m.g[i] < m.g[i - 1] || m.g[i] < m.g[i + 1]) continue;
+      const t = i / (m.g.length - 1);
+      /* where that colormap position falls in the field, left to right */
+      const v = (S.rlo + (S.rhi - S.rlo) * t) / 100;
+      const xf = (v - 0.12) / 0.66;
+      if (xf < 0 || xf > 1) continue;
+      const px = xf * w;
+      ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(px, 16); ctx.lineTo(px, 26); ctx.stroke();
+    }
+  }
+
+  function drawRank() {
+    const cv = $('cRank');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const keys = Colormaps.list().filter((k) => Colormaps.meta[k].cls !== 'categorical');
+    const rows = keys.map((k) => {
+      const m = measure(k);
+      return { key: k, lo: m.gmin, hi: m.gmax };
+    }).sort((a, b) => (a.hi - a.lo) - (b.hi - b.lo));
+
+    const rowH = 17, top = 24, h = top + rows.length * rowH + 30;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 150, ww = w - x0 - 16, xMax = 3.2;
+    const X = (v) => x0 + ww * Math.min(v, xMax) / xMax;
+
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.strokeStyle = '#C9CDD2'; ctx.lineWidth = 1;
+    [0, 1, 2, 3].forEach((v) => {
+      ctx.beginPath(); ctx.moveTo(X(v), top - 6); ctx.lineTo(X(v), top + rows.length * rowH); ctx.stroke();
+      ctx.fillStyle = '#5C6670'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(v.toFixed(0), X(v), top - 8);
+    });
+    ctx.save();
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(X(1), top - 6); ctx.lineTo(X(1), top + rows.length * rowH); ctx.stroke();
+    ctx.restore();
+
+    rankBars = [];
+    rows.forEach((r, i) => {
+      const y = top + i * rowH;
+      const a = Colormaps.lut(r.key), n = a.length / 3;
+      const xa = X(r.lo), xb = X(r.hi);
+      for (let px = 0; px < xb - xa; px++) {
+        const j = Math.round(px / Math.max(1, xb - xa - 1) * (n - 1)) * 3;
+        ctx.fillStyle = 'rgb(' + a[j] + ',' + a[j + 1] + ',' + a[j + 2] + ')';
+        ctx.fillRect(xa + px, y + 2, 1.2, rowH - 6);
+      }
+      ctx.strokeStyle = r.key === S.cmap ? '#841617' : 'rgba(22,25,28,.35)';
+      ctx.lineWidth = r.key === S.cmap ? 1.8 : 1;
+      ctx.strokeRect(xa + 0.5, y + 2.5, Math.max(2, xb - xa), rowH - 6);
+      ctx.fillStyle = r.key === S.cmap ? '#841617' : '#16191C';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(Colormaps.meta[r.key].name, x0 - 8, y + rowH / 2);
+      rankBars.push({ key: r.key, y0: y, y1: y + rowH });
+    });
+
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('slowest and fastest part of each map, relative to its own average',
+                 x0 + ww / 2, top + rows.length * rowH + 8);
+  }
+
+  function drawCompare() {
+    if ($('cCmpA').hidden) return;
+    const rg = range();
+    const vals = model.slice(S.attr);
+
+    /* the constant lightness hue ramp from module 02, rebuilt here */
+    const ramp = [];
+    for (let i = 0; i < 256; i++) {
+      ramp.push(Colormaps.lchToRgb(55, 55, (274 + 180 * i / 255) % 360).rgb);
+    }
+    Colormaps.define('m03hue', ramp, { name: 'Hue ramp at constant lightness' });
+
+    [['cCmpA', 'gray', 'capCmpA'], ['cCmpB', 'm03hue', 'capCmpB']].forEach((q) => {
+      CMPLOT.map($(q[0]), vals, {
+        nx: model.nx, ny: model.ny, cmap: q[1], min: rg[0], max: rg[1], height: 250,
+        title: q[1] === 'gray' ? 'Grayscale' : 'Hue only, lightness held at L* 55'
+      });
+      const m = measure(q[1]);
+      const ratio = m.gmin > 0.001 ? (m.gmax / m.gmin).toFixed(1) + '\u00d7' : 'unbounded';
+      $(q[2]).textContent = 'Fastest / slowest ' + ratio +
+        '.  Local difference ' + m.gmin.toFixed(2) + ' to ' + m.gmax.toFixed(2) +
+        '.  L* span ' + (m.lmax - m.lmin).toFixed(0) + '.';
+    });
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawStrip();
+    const m = drawGradient();
+    drawMap();
+    readouts(m);
+    if (S.tab === 'p1') drawWedge();
+    if (S.tab === 'p2') drawSmooth();
+    if (S.tab === 'p3') drawRank();
+    if (S.tab === 'p4') drawCompare();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function range3(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = () => { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', () => { S[key] = parseFloat(el.value); show(); redraw(); });
+    show();
+  }
+  range3('rlo', 'rlo', (v) => v.toFixed(0) + '%');
+  range3('rhi', 'rhi', (v) => v.toFixed(0) + '%');
+  range3('steps', 'steps', (v) => v.toFixed(0));
+
+  $('attr').addEventListener('change', () => { S.attr = $('attr').value; redraw(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach((cls) => {
+      Object.keys(ERA).forEach((era) => {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach((k) => {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', () => { S.cmap = sel.value; redraw(); });
+  })();
+
+  /* clicking a bar in the chart loads that map into the panel */
+  $('cRank').addEventListener('click', (ev) => {
+    const box = $('cRank').getBoundingClientRect();
+    const y = ev.clientY - box.top;
+    for (let i = 0; i < rankBars.length; i++) {
+      if (y >= rankBars[i].y0 && y < rankBars[i].y1) {
+        S.cmap = rankBars[i].key;
+        $('cmap').value = S.cmap;
+        drawAll();
+        return;
+      }
+    }
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('cmap').value = S.cmap; $('attr').value = S.attr;
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi; $('steps').value = S.steps;
+    $('rloV').textContent = S.rlo + '%'; $('rhiV').textContent = S.rhi + '%';
+    $('stepsV').textContent = S.steps;
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+
+  function showTab(id) {
+    PANES.forEach((q) => { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    $('ctlSteps').hidden = (id !== 'p1');
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.addEventListener('click', () => showTab(b.dataset.tab));
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach((a) => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

@@ -17,13 +17,13 @@ and `assets/seismic.js` are the shared files and go in unchanged. See
 | | Module | Status |
 |---|---|---|
 | 00 | Why the colormap matters | built |
-| 01 | How a color is made: RGB and CMY | in preparation |
-| 02 | Hue, lightness and saturation | in preparation |
-| 03 | Perceptual uniformity | in preparation |
-| 04 | Sequential, diverging, cyclic | in preparation |
-| 05 | Color vision deficiency | in preparation |
-| 06 | Dynamic range and clipping | in preparation |
-| 07 | Continuous and discrete color | in preparation |
+| 01 | How a color is made | built |
+| 02 | Hue, lightness and saturation | built |
+| 03 | Perceptual uniformity | built |
+| 04 | Sequential, diverging, cyclic | built |
+| 05 | Color vision deficiency | built |
+| 06 | Dynamic range and clipping | built |
+| 07 | Continuous and discrete color | built |
 | 08 | Corendering two attributes | in preparation |
 | 09 | RGB and CMY blending of three attributes | in preparation |
 | 10 | Building a display | in preparation |
@@ -44,6 +44,13 @@ GitHub Pages serves it from the repository root.
 ```
 index.html
 modules/00-why-the-colormap-matters.html
+modules/01-how-a-color-is-made.html
+modules/02-hue-lightness-saturation.html
+modules/03-perceptual-uniformity.html
+modules/04-sequential-diverging-cyclic.html
+modules/05-color-vision-deficiency.html
+modules/06-dynamic-range-and-clipping.html
+modules/07-continuous-and-discrete.html
 assets/style.css        shared house stylesheet
 assets/count.js         shared page-view counting
 assets/popout.js        shared exercise pop-out
@@ -98,7 +105,8 @@ panels can be tied together with guide lines.
 
 Display ranges are fixed constants in `Synthetic.RANGES`. Moving a slider
 changes the picture, not the scale. Module 06 is where the ranges come under the
-student's control.
+student's control, and it works from the data's own extent and percentiles
+rather than from those constants.
 
 ## Colormaps
 
@@ -115,12 +123,38 @@ levels, not approximations built from a handful of anchor colors.
 - Smith, N., and S. van der Walt, 2015, MPL color maps,
   <https://bids.github.io/colormap> — Viridis
 
-Rainbow (jet), turbo, red-white-blue, cyclic HSV and a ten-color categorical set
-come from matplotlib, for comparison.
+The library also carries the colormaps that have been in long-standing use in
+interpretation, so that a scientific map and the map it is being compared
+against sit in the same menu: rainbow, spectrum, full spectrum, extended
+spectrum, heat, cyan-magenta, turbo, repeating spectrum, blue-green-yellow-
+orange-red, rainbow with a white centre, a sixteen-step rainbow, red-white-blue,
+blue-white-red, red-yellow-blue, red-yellow-green, cool-warm and a cyclic hue
+wheel. They are grouped in the menus under "in common use" and are there to be
+examined rather than recommended. `bgyor`, `rainbowwc` and `legacy16` are
+reconstructions of arrangements in general use, not copies of any particular
+implementation, and no software is named anywhere in the modules.
+
+Four further legacy diverging arrangements are included because module 05 needs
+them: red-white-green, magenta-white-cyan, red-green with no neutral, and
+red-black-blue. The first three collapse under red-green colour vision
+deficiency where red-white-blue does not, which is the point they are there to
+make.
+
+Every colormap record carries two claims about provenance — whether the map was
+designed for perceptual uniformity, and whether it was designed for color vision
+accessibility — and six measured fields computed from the table itself: the L*
+range, whether lightness runs one way from end to end, the spread of local color
+difference, and the worst of that spread under simulated color vision
+deficiency. Module 03 plots them.
 
 `assets/seismic.js` carries its own small `COLORMAPS` and `SEQMAPS` for the
 displays in the other repositories. They are left alone; the modules here use
 `Colormaps` from `assets/colormaps.js`, which is the one with the full tables.
+
+`assets/colormaps.js` also carries CIE L*a*b* in both directions and the
+cylindrical L*C*h form, with gamut mapping that reduces chroma and leaves
+lightness alone. That is what lets module 02 build a hue ramp that is genuinely
+at constant lightness along its whole length.
 
 Color vision deficiency simulation uses the matrices of Machado, G. M.,
 M. M. Oliveira, and L. A. F. Fernandes, 2009, A physiologically-based model for

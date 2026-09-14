@@ -524,18 +524,26 @@
 
   /* ---- colormap menus -------------------------------------------------- */
 
+  /* The menu is grouped by class and then by where the map came from, so a
+     scientific map and the traditional one it is being compared against are
+     never mistaken for each other. */
   function fillMenu(sel, value) {
-    const groups = { sequential: 'Sequential', diverging: 'Diverging',
-                     cyclic: 'Cyclic', categorical: 'Categorical' };
-    Object.keys(groups).forEach((cls) => {
-      const g = document.createElement('optgroup');
-      g.label = groups[cls];
-      Colormaps.list(cls).forEach((k) => {
-        const o = document.createElement('option');
-        o.value = k; o.textContent = Colormaps.meta[k].name;
-        g.appendChild(o);
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach((cls) => {
+      Object.keys(ERA).forEach((era) => {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach((k) => {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
       });
-      sel.appendChild(g);
     });
     sel.value = value;
   }
@@ -546,8 +554,11 @@
     const cls = m.cls.charAt(0).toUpperCase() + m.cls.slice(1);
     return m.name + ' \u2014 ' + cls +
       (m.cls === want ? '' : ' (this attribute calls for a ' + want + ' colormap)') +
-      '. Perceptually uniform: ' + (m.uniform ? 'yes' : 'no') +
-      '. CVD accessible: ' + (m.cvdSafe ? 'yes' : 'no') + '.';
+      '. Designed for perceptual uniformity: ' + (m.uniform ? 'yes' : 'no') +
+      '; for color vision deficiency: ' + (m.cvdSafe ? 'yes' : 'no') +
+      '. Measured: L* ' + m.lmin + '\u2013' + m.lmax +
+      ', lightness runs one way ' + m.lmono +
+      ', local color difference ' + m.gmin + '\u2013' + m.gmax + '.';
   }
 
   /* ---- overlays -------------------------------------------------------- */

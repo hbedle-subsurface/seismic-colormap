@@ -39,6 +39,12 @@ const GLOSSARY = {
   saturation: { term: "Saturation",
     def: "The purity of a color, from gray at zero to a fully vivid color at maximum. In multiattribute displays saturation is sometimes used to carry a second attribute alongside hue." },
 
+  chroma: { term: "Chroma",
+    def: "How far a color sits from gray, measured in CIE L*a*b* as the distance from the neutral axis. Related to saturation but not the same: saturation is usually chroma judged relative to lightness, while chroma is an absolute distance. How much of it a display can produce depends strongly on the lightness and the hue." },
+
+  "contrast-sensitivity": { term: "Contrast sensitivity",
+    def: "How large a difference the visual system needs before it can see a pattern, as a function of how fine that pattern is. Sensitivity is highest at intermediate scales and falls at both coarse and fine ones, and it is far higher for differences in brightness than for differences in color." },
+
   cielab: { term: "CIE L*a*b*",
     def: "A color space defined by the Commission Internationale de l'Éclairage in which the Euclidean distance between two colors approximates their perceived difference. It is the space in which perceptual uniformity is usually measured." },
 
@@ -134,6 +140,30 @@ const GLOSSARY = {
 
   "ers": { term: "Energy-ratio similarity",
     def: "A coherence attribute computed from the ratio of the energy of the coherent part of the data to the total energy within an analysis window." },
+
+  additive: { term: "Additive color",
+    def: "Color made by adding light. Red, green and blue light combine on a screen; all three at full intensity give white, and none at all gives black. Every display in these modules is additive." },
+
+  subtractive: { term: "Subtractive color",
+    def: "Color made by removing light. Cyan, magenta and yellow inks each absorb one band of the light falling on white paper; all three together leave almost nothing, and no ink at all leaves white. Printing is subtractive." },
+
+  channel: { term: "Channel",
+    def: "One of the three numbers that define a color on a screen. A colormap is three functions of a single variable: the red, green and blue channels each plotted against position along the map." },
+
+  gamut: { term: "Gamut",
+    def: "The set of colors a device can actually produce. A screen and a press have different gamuts, so a color chosen on one may have no exact equivalent on the other and is replaced by the nearest one available." },
+
+  key: { term: "Key (the K in CMYK)",
+    def: "Black ink, added to the three colored inks. Where all three would be laid down together, black is printed instead: it is cheaper, drier and darker than the three-ink mixture it replaces." },
+
+  "gray-component-replacement": { term: "Gray component replacement",
+    def: "Replacing the neutral part of a three-ink mixture with black ink. The color printed is intended to be the same; the amount of ink on the paper is less." },
+
+  "ink-limit": { term: "Ink coverage limit",
+    def: "The largest total ink coverage a press and paper will accept, quoted as the sum of the four ink percentages and typically between about 240% and 340%. Colors asking for more are reduced: first by moving neutral coverage into black ink, which does not change the color, and then by scaling the colored inks back, which does." },
+
+  "single-hue-ramp": { term: "Single-hue ramp",
+    def: "A colormap running from black or white to one color, so that lightness increases steadily and the hue stays fixed. The simplest construction that is monotonic in lightness." },
 
   histogram: { term: "Histogram",
     def: "A count of how many samples fall in each interval of the data range. The shape of the histogram determines how much of a display a given color range will actually cover." }

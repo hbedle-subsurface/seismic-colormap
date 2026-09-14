@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color vision deficiency | How Colormaps Actually Work</title>
+<meta name="description" content="Simulating protan, deutan and tritan vision on seismic attribute displays, and choosing colormaps and annotation that survive it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 05 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Color vision deficiency</h1>
+    <p class="sub">Around one man in twelve and one woman in two hundred has some form of color vision
+      deficiency. On a display that carries its information in a red-to-green distinction, that fraction of
+      the room is looking at a different image from everyone else, and nothing on the screen says so. This
+      module simulates the common forms, applies them to the seismic displays built in the earlier modules,
+      and works out which choices survive.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">As displayed, and as seen <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMap" aria-label="The attribute as displayed"></canvas>
+        <canvas id="cBar" aria-label="Color bar as displayed"></canvas>
+        <canvas id="cSim" aria-label="The same display under simulated color vision deficiency"></canvas>
+        <canvas id="cBarSim" aria-label="Color bar under simulation"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>Simulating</span><b id="sType">—</b></div>
+          <div class="stat"><span>Roughly how common</span><b id="sPrev">—</b></div>
+          <div class="stat"><span>Worst stretch as displayed</span><b id="sBefore">—</b></div>
+          <div class="stat"><span>Worst stretch as seen</span><b id="sAfter">—</b></div>
+          <div class="stat wide"><span>Lightness span kept</span><b id="sL">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">What is shown, and to whom <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The simulation</h2>
+            <div class="ctl">
+              <label for="type">Form</label>
+              <div class="seg" role="group" aria-label="Form of color vision deficiency" id="type">
+                <button type="button" id="tDeu" aria-pressed="true">Deutan</button>
+                <button type="button" id="tPro" aria-pressed="false">Protan</button>
+                <button type="button" id="tTri" aria-pressed="false">Tritan</button>
+                <button type="button" id="tAch" aria-pressed="false">No color</button>
+              </div>
+            </div>
+            <div class="ctl">
+              <label for="sev">Severity <span class="val" id="sevV">100%</span></label>
+              <input type="range" id="sev" min="0" max="100" step="5" value="100">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">Full severity is the dichromatic case, where one
+              cone type is absent. Intermediate values stand for the anomalous forms, which are commoner
+              than the complete ones and vary continuously.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The display</h2>
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="coherence">Coherence</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="meanCurvature">Mean curvature</option>
+                <option value="phase">Instantaneous phase</option>
+                <option value="thickness">Sand thickness (model)</option>
+              </select>
+            </div>
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+
+            <div class="ctl" id="ctlOverlay" hidden>
+              <label for="ohue">Annotation hue <span class="val" id="ohueV">30°</span></label>
+              <input type="range" id="ohue" min="0" max="359" step="1" value="30">
+            </div>
+            <div class="ctl" id="ctlOverlayL" hidden>
+              <label for="olight">Annotation lightness <span class="val" id="olightV">50</span></label>
+              <input type="range" id="olight" min="5" max="95" step="1" value="50">
+            </div>
+
+            <div class="ctl" id="ctlGamma" hidden>
+              <label for="gamma">Screen gamma <span class="val" id="gammaV">1.00</span></label>
+              <input type="range" id="gamma" min="0.6" max="2.2" step="0.05" value="1">
+            </div>
+            <div class="ctl" id="ctlAmb" hidden>
+              <label for="amb">Light falling on the screen <span class="val" id="ambV">0%</span></label>
+              <input type="range" id="amb" min="0" max="25" step="1" value="0">
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · What is being simulated</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Which colormaps survive</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · The same data, four ways</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Picks, overlays and legends</button>
+    <button role="tab" data-tab="p5" aria-selected="false">5 · What the simulation leaves out</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>What is being simulated</h3>
+    </div>
+    <p class="lede">Normal color vision uses three cone types, with peak sensitivities in the long, medium
+      and short wavelengths. Color is reconstructed from the differences between their responses. When one
+      type is absent or shifted, some of those differences vanish, and pairs of colors that were distinct
+      become the same.</p>
+
+    <table>
+      <thead><tr><th>Form</th><th>What has changed</th><th>What becomes confusable</th><th>Roughly how common</th></tr></thead>
+      <tbody>
+        <tr><td><span class="term" data-term="deuteranopia">Deutan</span></td><td>Medium-wavelength cones absent or shifted</td><td>Red against green at similar lightness; also some greens against grays</td><td>About 6% of men, 0.4% of women</td></tr>
+        <tr><td><span class="term" data-term="protanopia">Protan</span></td><td>Long-wavelength cones absent or shifted</td><td>The same red-green pairs, and reds additionally appear darker</td><td>About 2% of men, 0.03% of women</td></tr>
+        <tr><td><span class="term" data-term="tritanopia">Tritan</span></td><td>Short-wavelength cones absent or shifted</td><td>Blue against green, and yellow against pink</td><td>Rare, well under 0.1% and not sex-linked</td></tr>
+        <tr><td>No color</td><td>Only one functioning cone type, or none</td><td>All hue information</td><td>Very rare, about 1 in 30,000</td></tr>
+      </tbody>
+    </table>
+
+    <p>The figures vary by population and by how the condition is defined, and the anomalous forms, in
+      which a cone type is shifted rather than missing, are commoner than the complete ones and vary
+      continuously in degree. The severity slider stands for that: at full severity one cone type is gone
+      entirely, and intermediate settings approximate the milder forms.</p>
+
+    <p>The two panels above hold the same display: as it appears on a normal monitor to a viewer with
+      typical color vision, and as it would appear to a viewer with the selected form. Moving the severity
+      slider from zero moves continuously between them.</p>
+
+    <p>What survives the simulation is lightness. Protan vision alters it somewhat, darkening reds, and
+      tritan vision alters it very little, but no form of color vision deficiency removes the ability to
+      tell light from dark. That single fact settles most of what follows.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>Which colormaps survive</h3>
+    </div>
+    <p class="lede">Each colormap is below as a set of four strips: as displayed, and then under each of
+      the three common forms at full severity. A map that keeps its structure across all four rows is
+      carrying its information in something other than the differences that have been removed.</p>
+
+    <canvas id="cStrips" aria-label="The selected colormap as displayed and under three simulations"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Top row as displayed, then deutan, protan and tritan at
+      full severity.</p>
+
+    <p>The chart below runs the measurement from module 03 after simulation, over every map in the library.
+      The bar is the smallest step that survives, measured against the average step of that same map
+      <i>as displayed</i>. A bar near zero means there is a stretch of the colormap which becomes a single
+      flat color, so a range of data values is rendered indistinguishably. Measuring against the displayed
+      average rather than against the simulated one matters: simulation lowers the average as well as the
+      minimum, and a measure normalized by its own average would report that nothing had happened.</p>
+
+    <canvas id="cRank" aria-label="Worst surviving color difference for every colormap, under the selected simulation"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Click any bar to load that colormap into the panel. The
+      simulation used is the one selected in the panel, at full severity.</p>
+
+    <p>Three groups come out of it, and the boundaries between them are not where the usual shorthand
+      about colormaps would put them.</p>
+
+    <p><b>Almost nothing is lost.</b> Under deutan simulation the smallest surviving step is 0.85 for Oslo,
+      0.70 for grayscale, 0.63 for cool-warm and for vik, 0.56 for RomaO and 0.51 for roma. Grayscale is
+      untouched by construction, and the rest carry their data in a lightness ramp with hue added over the
+      top rather than in the hue itself.</p>
+
+    <p><b>Something is lost, and the order survives.</b> Batlow measures 0.38, balance and lajolla 0.30,
+      viridis 0.27. Viridis is worth a note here, because it is often described simply as colorblind-safe.
+      It keeps about 72% of its total color difference under deutan simulation and never goes flat, so the
+      order of values remains readable everywhere. Its smallest surviving step is about a quarter of its
+      average, which means some parts of its range become harder to separate than others. Safe in the sense
+      that matters is not the same as unaffected.</p>
+
+    <p><b>A stretch goes flat.</b> The rainbows measure between 0.02 and 0.10 under deutan, and several of
+      them return exactly zero under protan, which means a range of data values is rendered in one color.
+      The section lost is green through to red, which in a rainbow is the upper part of the range and
+      usually the part holding the anomalies. Red-yellow-green measures 0.11 and is worth singling out,
+      because it is used for risk and probability displays where the entire content of the figure is that
+      the two ends mean opposite things.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>The same data, four ways</h3>
+    </div>
+    <p class="lede">Two colormaps, each shown as displayed and as seen. The attribute, the value range and
+      the data are identical in all four.</p>
+
+    <div class="plots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+      <div>
+        <canvas id="cQ1" aria-label="A traditional colormap, as displayed"></canvas>
+        <p class="hint-line" id="capQ1">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cQ2" aria-label="The same traditional colormap, simulated"></canvas>
+        <p class="hint-line" id="capQ2">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cQ3" aria-label="A colormap designed for accessibility, as displayed"></canvas>
+        <p class="hint-line" id="capQ3">&nbsp;</p>
+      </div>
+      <div>
+        <canvas id="cQ4" aria-label="The same accessible colormap, simulated"></canvas>
+        <p class="hint-line" id="capQ4">&nbsp;</p>
+      </div>
+    </div>
+
+    <p style="margin-top:16px">The first pair is the rainbow. Under deutan simulation its upper range
+      flattens, and the features that were separated by the green-to-red transition are no longer separated
+      by anything. On the envelope display the channel axis and its flanks merge; on coherence the fault
+      traces lose the contrast that made them followable.</p>
+
+    <p>The second pair is Oslo. The two images are not identical — the hue has changed — but every feature
+      visible in the first is visible in the second, and the value order is unchanged. That is the whole
+      of the requirement: nothing has to look the same, and everything has to remain distinguishable.</p>
+
+    <div class="legend">
+      <span>The test that matters is not whether the simulated image looks pleasant. It is whether a
+      feature that can be located in the top pair can still be located in the bottom pair. Run it on the
+      pockmark field and on the polygonal fault swarm, which are the features nearest the limit of
+      detection and therefore the first to be lost.</span>
+    </div>
+
+    <p>The same check applies to a display already chosen for other reasons, and it produces one result
+      that runs against the usual expectation. Take the two arms of a diverging map, a fifth of the way in
+      from each end, and measure how far apart they are. Red-white-blue puts them 160 units apart as
+      displayed, 157 under deutan simulation and 131 under protan: the sign of the attribute stays readable
+      throughout. Red-yellow-green puts them 95 apart as displayed and 18 under deutan, which is close to
+      indistinguishable.</p>
+
+    <p>The reason is that red against blue is a difference along the blue-to-yellow direction, which the
+      red-green deficiencies leave largely intact, while red against green is exactly the difference they
+      remove. The traditional seismic polarity convention survives this test; the traditional risk
+      convention does not. Red-white-blue has other problems &mdash; its white neutral point is the
+      brightest thing in the image, and its spacing measured 7.9 to 1 in module 03 &mdash; but color vision
+      is not among them.</p>
+
+    <p>That result is about the blue arm rather than about red-white-blue in particular, and the
+      neighbouring conventions in the menu show where the line falls. Blue-white-red and red-black-blue
+      both hold up: their arms stay 91 and 87 units apart under protan simulation. Red-white-green drops
+      from 81 to 6 under deutan, magenta-white-cyan from 100 to 18, and red-green with no neutral at all
+      from 85 to 8. Every one of these has been used as a polarity or risk convention. What separates them
+      is not how modern they look but whether one arm is blue.</p>
+
+    <div class="legend">
+      <span>Red-green, at the bottom of that list, is instructive for a second reason: it covers 16 points
+      of lightness in total. Even before any simulation it has almost nothing to carry fine detail with, so
+      it fails the module 02 test as well as this one. A map can fail several ways at once, and the
+      measurements in these modules are not substitutes for each other.</span>
+    </div>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Picks, overlays and legends</h3>
+    </div>
+    <p class="lede">A display is rarely just a colormap. Picked horizons, fault sticks, polygon outlines,
+      well symbols, contour lines and legend keys are all drawn on top of it, and every one of them is a
+      color choice made separately from the colormap and usually without any thought about this.</p>
+
+    <p>The panel now draws an interpretation over the attribute: the two channel margins, picked where the
+      sand thins to two metres. The hue and lightness of those picks are under slider control, and both
+      panels show the result.</p>
+
+    <p>The failure mode is specific. A red pick over a rainbow display is invisible wherever it crosses the
+      red end of the colormap, for everyone. Under deutan simulation it also becomes invisible wherever it
+      crosses the green, which is most of the rest of the image. The pick has not been drawn badly; it has
+      been drawn in a color that the background also contains.</p>
+
+    <p>Two things fix it, and they are independent.</p>
+
+    <p><b>Separate the annotation in lightness, not in hue.</b> A pick at L* 15 over a display whose
+      lightness stays above 40 is visible everywhere, in every form of color vision, whatever hue it is.
+      Moving the lightness slider to either extreme while leaving the hue alone demonstrates this directly.
+      This is also why black and white annotation has survived as a convention for so long.</p>
+
+    <p><b>Give the colormap somewhere to be quiet.</b> A colormap that never reaches very dark or very light
+      leaves both ends of the lightness scale free for annotation. Several of the scientific maps stop short
+      of black and white for exactly this reason.</p>
+
+    <p>Legends and keys have the same problem in a worse form, because a legend is a small patch of color
+      next to a label and small patches are where color discrimination is weakest. A legend that relies on
+      hue alone to distinguish five categories is asking for a judgement that some readers cannot make,
+      about the smallest objects on the page. Adding a pattern, a letter or a distinct lightness to each
+      category removes the dependency at no cost.</p>
+  </section>
+
+  <!-- ============================== STEP FIVE ============================= -->
+  <section class="tabpane" id="p5" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">5</span>What the simulation leaves out</h3>
+    </div>
+    <p class="lede">Everything so far has treated color vision as having four settings: typical, protan,
+      deutan and tritan. It does not. There is a continuous spread of color vision among people who have no
+      deficiency at all and would pass any clinical test, and there is a second source of variation that
+      has nothing to do with eyes.</p>
+
+    <h3 style="margin-top:20px">The observer</h3>
+    <p>At the light levels of a monitor, color discrimination is done by the cones. Rods are essentially
+      saturated above a few candelas per square metre and contribute almost nothing to color at a screen or
+      in a lit room, although they matter a great deal for what can be seen in a dark one. The variation
+      between people is therefore cone variation, and it is larger than most people expect.</p>
+
+    <ul>
+      <li><b>The ratio of long- to medium-wavelength cones</b> varies between individuals with normal color
+        vision from roughly one to one up to sixteen to one. Two people with identical clinical results can
+        have retinas with quite different compositions.</li>
+      <li><b>The long-wavelength photopigment comes in common variants</b> that shift its peak sensitivity
+        by a few nanometres, which moves where in the red-orange range differences are easiest to see.</li>
+      <li><b>Macular pigment absorbs short wavelengths</b> and its density varies several-fold between
+        people, which changes how blues and violets are weighted.</li>
+      <li><b>The lens yellows with age.</b> Short-wavelength transmission falls steadily through adult life,
+        so a colormap's blue end is dimmer and less saturated for a reader of seventy than for one of
+        twenty, without either of them having any way to notice.</li>
+    </ul>
+
+    <p>The consequence for these modules is specific and worth stating plainly. The CIE L*a*b* space, and
+      therefore every uniformity number quoted here, is built on a standard observer: an average of a small
+      group of people measured in the 1920s and 1930s. It predicts what a population does on average. It
+      does not predict what any particular reader sees, and a colormap that measures as perfectly uniform
+      is uniform for an average that no individual is.</p>
+
+    <p>The severity slider is the closest thing here to that variation. Anomalous trichromacy is the common
+      case and it is a continuum, not a category, and moving the slider from zero rather than jumping to
+      100% is a fairer picture of what most affected readers experience.</p>
+
+    <h3 style="margin-top:20px">The screen and the room</h3>
+    <p>The second source of variation acts before any eye is involved, and it is often the larger of the
+      two. The two controls now in the panel set it.</p>
+
+    <p><b>Gamma</b> is the relationship a display assumes between the number in the file and the light it
+      emits. Monitors, projectors and print all differ, and an uncalibrated screen can be some way from
+      what the colormap was designed against. Pushing the gamma above one darkens the middle of the range
+      and compresses the dark end of the map; below one it washes the midtones out.</p>
+
+    <p><b>Light falling on the screen</b> is reflected back off it and adds to everything, which lifts the
+      black point. This is what a projector in a lit lecture room does, and the effect is dramatic: at 15%
+      the bottom quarter of a colormap's lightness range has effectively gone.</p>
+
+    <div class="legend">
+      <span>Raise the ambient light to 15% and watch the lightness span in the readout. Oslo falls from 100
+      points of L* to 54, and its smallest step drops to a tenth of what it was. Grayscale falls from 100
+      to 54 as well and its smallest step goes to zero: the display trusted above all others for edge
+      detection loses its dark end outright in a lit room, because its lowest levels are near-black and
+      near-black is exactly what ambient light destroys. Viridis holds up best of the four, at 0.21, having
+      less of its range invested in the very dark. A colormap chosen on a calibrated monitor is not the
+      colormap the lecture theatre is seeing.</span>
+    </div>
+
+    <p>Neither of these is an argument against measuring. The measurements identify displays that fail for
+      everyone, which is worth knowing and is most of the problem. They are an argument against treating a
+      number as a guarantee, and for the one check that costs nothing: look at the figure on the screen it
+      will actually be shown on, and ask the people in the room whether they can see the feature being
+      pointed at.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>In a room of twenty-four interpreters, one or two are likely to have a red-green deficiency. They
+      have almost certainly not said so, and many are not aware of it, because the condition is congenital
+      and there is nothing to compare against. What they experience is that some displays are harder work
+      than others and that colleagues occasionally point at features they cannot locate.</p>
+
+    <p>The professional consequence is not a matter of comfort. Interpretation is a judgement made from
+      what is visible, and a display that withholds part of its information from some readers produces
+      different interpretations from those readers. Paton (2017) and Nuñez et al. (2018) both make the
+      point that this is a data quality issue rather than an accessibility courtesy.</p>
+
+    <p>The fix costs nothing at the point of use. Choosing a colormap whose lightness runs one way is a
+      choice already recommended for the reasons in modules 02 and 03, and it happens to solve this as
+      well. The cases that need specific attention are the ones where hue is doing real work: categorical
+      facies displays, azimuth displays, and anything corendered, which is module 08.</p>
+
+    <p>Running a simulator over a figure before it is published or presented takes seconds, and it is the
+      only way to find the problem, because the person making the figure is usually not the person who
+      cannot see it.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Lose the channel.</b> Put envelope in the rainbow, set deutan at full severity, and compare
+          the two panels at the channel axis.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The upper range of the rainbow
+            runs green to red at nearly constant lightness, and that is precisely the distinction deutan
+            vision does not make. The axis and its flanks, separated in the display by that transition,
+            merge into one tone. Everything below the green is unaffected, so the lower half of the range
+            still works and the failure is confined to exactly the part holding the
+            anomaly.</span></details></li>
+
+        <li><b>Find the severity where it goes.</b> With the same display, bring the severity up from zero
+          slowly.
+          <details class="reveal"><summary>Hint</summary><span class="ans">There is no sharp threshold. The
+            separation weakens progressively, which matches the anomalous forms being a continuum rather
+            than a switch. A reader with mild deuteranomaly sees a degraded version of the display rather
+            than a broken one, which is harder to notice and easier to work around badly.</span></details></li>
+
+        <li><b>Check a map you expected to fail.</b> Put mean curvature in red-white-blue under deutan, and
+          then in red-yellow-green.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Red-white-blue holds up
+            reasonably: its arms differ in lightness as well as hue, and the white centre is the lightest
+            point, so the sign is still readable. Red-yellow-green collapses, because its two arms sit at
+            almost the same lightness and are separated by hue alone. The traditional seismic convention
+            survives better here than the traditional risk convention does.</span></details></li>
+
+        <li><b>Read the chart.</b> On step 2, switch between deutan and tritan and watch the ordering
+          change.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Maps built around a blue-to-
+            yellow axis do well under deutan and less well under tritan, and the red-green maps do the
+            reverse. Grayscale is unaffected by all three. A map that is safe under one form is not
+            automatically safe under another, which is why the readout reports the worst of the
+            three.</span></details></li>
+
+        <li><b>Hide a pick, then recover it.</b> On step 4, put the display in the rainbow, set the
+          annotation hue to red and the lightness to about 50, and follow the channel margin.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The pick disappears wherever it
+            crosses the part of the colormap nearest its own color, and under simulation it disappears over
+            a much larger area. Dropping the annotation lightness to 10 or raising it to 90 makes it
+            visible along its whole length regardless of hue, because the separation is now in the
+            dimension that survives.</span></details></li>
+
+        <li><b>Try the honest baseline.</b> Set the simulation to no color at all and step through the
+          colormaps.
+          <details class="reveal"><summary>Hint</summary><span class="ans">What is left is the lightness
+            profile from module 02, and the maps that still show the data are exactly the ones whose
+            lightness runs one way from end to end. This is a harsher test than any real form of color
+            vision deficiency, and a display that passes it has nothing left to worry about on this
+            score.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Around one man in twelve and one woman in two hundred has some form of color vision deficiency.
+        Most have an anomalous form, which is a matter of degree rather than a missing dimension.</li>
+      <li>No form removes the ability to tell light from dark. A colormap whose lightness runs steadily
+        from one end to the other survives all of them.</li>
+      <li>The rainbows fail across their green-to-red section, which is the upper part of their range and
+        usually where the anomalies are. Red-yellow-green fails for the same reason, in a setting where the
+        two ends are supposed to mean opposite things.</li>
+      <li>A map safe under one form is not automatically safe under another, so the worst of the three is
+        the number worth quoting.</li>
+      <li>Annotation is a separate choice from the colormap and fails the same way. Separating picks and
+        overlays from the background in lightness rather than in hue works for every reader.</li>
+      <li>Simulating a figure before it is published takes seconds, and it is the only reliable check,
+        because whoever made the figure is usually not the person who cannot read it.</li>
+      <li>Color vision varies continuously among people with no deficiency at all: cone ratios, pigment
+        variants, macular density and lens yellowing with age all differ. Uniformity numbers describe a
+        standard observer who is an average, not an individual.</li>
+      <li>The screen and the room change the display before any eye is involved. Ambient light on a
+        projector lifts the black point and removes the dark end of a colormap outright.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The simulation uses the model of Machado, Oliveira and Fernandes (2009), which represents each form
+      as a 3 × 3 matrix applied in linear light. The matrices here are the published ones at full severity,
+      and intermediate severities are produced by interpolating toward the identity matrix. The published
+      model provides its own tabulated matrices for each severity step; interpolation is an approximation
+      to those, and it is accurate enough for the comparison being made and not accurate enough to quote a
+      threshold from.</p>
+
+    <p>The complete absence of color is simulated by taking the luminance of each color and rendering it as
+      a gray, which is the achromatopsia case. It is far rarer than the other three and is included because
+      it is the strictest possible test of whether a display's information is carried in lightness.</p>
+
+    <p>The measurement in step 2 is the one from module 03 applied after simulation, with one change: the
+      local color differences are divided by the average step of the map <i>as displayed</i> rather than by
+      their own average. Normalizing by their own average would hide the effect, since simulation lowers
+      the average along with the minimum, and a map that had lost a third of its color would report the
+      same number as one that had lost none.</p>
+
+    <p>The retained-color figure is the summed color difference after simulation over the summed difference
+      before it. It can come out a little above 100% for some maps: the simulation is a linear map in cone
+      space, and although it compresses one direction it can slightly stretch others. Oslo reports 103%
+      under deutan for that reason. Nothing has been gained; a direction that was already carrying no
+      information has been scaled.</p>
+
+    <p>A simulation of this kind reproduces which color pairs become confusable. It does not reproduce what
+      a person with the condition actually experiences, which is a lifetime of a different mapping and not
+      a degraded version of someone else's. The purpose here is to find displays that withhold
+      information, and for that the simulation is the right instrument.</p>
+
+    <p>The screen model in step 5 applies, in linear light, an ambient term and a power law:
+      the emitted light becomes the ambient fraction plus the remainder scaled by the colormap value raised
+      to the gamma. The ambient term stands for light in the room reflecting off the panel or the screen,
+      which lifts the black point; the power law stands for a display whose response does not match what
+      the file assumes. Both are first-order models rather than device profiles. They reproduce the
+      direction and roughly the size of the effect, and they are not a substitute for looking at the figure
+      on the equipment it will be shown on.</p>
+
+    <p>The picks drawn in step 4 are contours of the model's sand thickness at two metres, traced column by
+      column. They stand for any annotation drawn over a display: horizon picks, fault sticks, polygon
+      outlines, contours and well symbols all face the same problem.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Machado, G. M., M. M. Oliveira, and L. A. F. Fernandes, 2009, A physiologically-based model for
+        simulation of color vision deficiency: IEEE Transactions on Visualization and Computer Graphics,
+        15, 1291&ndash;1298, doi:
+        <a href="https://doi.org/10.1109/TVCG.2009.113">10.1109/TVCG.2009.113</a>.</li>
+      <li>Birch, J., 2012, Worldwide prevalence of red-green color deficiency: Journal of the Optical
+        Society of America A, 29, 313&ndash;320, doi:
+        <a href="https://doi.org/10.1364/JOSAA.29.000313">10.1364/JOSAA.29.000313</a>.</li>
+      <li>Paton, G., 2017, The effect of colour blindness on seismic interpretation: First Break, 35,
+        31&ndash;38, doi:
+        <a href="https://doi.org/10.3997/1365-2397.2017013">10.3997/1365-2397.2017013</a>.</li>
+      <li>Nuñez, J. R., C. R. Anderton, and R. S. Renslow, 2018, Optimizing colormaps with consideration
+        for color vision deficiency to enable accurate interpretation of scientific data: PLoS ONE, 13,
+        e0199239, doi:
+        <a href="https://doi.org/10.1371/journal.pone.0199239">10.1371/journal.pone.0199239</a>.</li>
+      <li>Crameri, F., G. E. Shephard, and P. J. Heron, 2020, The misuse of colour in science
+        communication: Nature Communications, 11, 5444, doi:
+        <a href="https://doi.org/10.1038/s41467-020-19160-7">10.1038/s41467-020-19160-7</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attr: 'envelope', cmap: 'jet', type: 'deutan', sev: 100,
+                ohue: 30, olight: 50, gamma: 1, amb: 0 };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+  let rankBars = [];
+
+  const PREV = {
+    deutan: 'about 6% of men, 0.4% of women',
+    protan: 'about 2% of men, 0.03% of women',
+    tritan: 'rare, well under 0.1%, not sex-linked',
+    achroma: 'very rare, about 1 in 30,000'
+  };
+  const NAME = { deutan: 'Deutan', protan: 'Protan', tritan: 'Tritan',
+                 achroma: 'No colour vision' };
+
+  function range() { return Synthetic.RANGES[S.attr]; }
+
+  /* The colormap as a particular screen in a particular room actually renders
+     it: a gamma that may not match what the file assumes, plus whatever light
+     is falling on the panel and being reflected back off it. Both act on the
+     colours before any eye is involved. */
+  function displayKey() {
+    if (Math.abs(S.gamma - 1) < 0.01 && S.amb < 0.5) return S.cmap;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3, out = [];
+    const amb = S.amb / 100;
+    for (let i = 0; i < n; i++) {
+      const c = [0, 1, 2].map(function (j) {
+        const l = Colormaps.srgbToLinear(a[3 * i + j]);
+        return Colormaps.linearToSrgb(amb + (1 - amb) * Math.pow(l, S.gamma));
+      });
+      out.push(c);
+    }
+    Colormaps.define('m05disp', out, { name: Colormaps.meta[S.cmap].name + ', as this screen shows it' });
+    delete refCache['m05disp'];      // the table behind this key has just changed
+    return 'm05disp';
+  }
+
+  /* ---- the interpretation drawn over the display ------------------------- */
+
+  /* Channel margins, picked where the sand thins to two metres: one polyline
+     down each flank. Stands in for any annotation drawn over an attribute. */
+  function margins() {
+    const th = model.slice('thickness');
+    const upper = [], lower = [];
+    for (let x = 0; x < model.nx; x++) {
+      let first = -1, last = -1;
+      for (let y = 0; y < model.ny; y++) {
+        if (th[y * model.nx + x] >= 2) { if (first < 0) first = y; last = y; }
+      }
+      if (first >= 0) { lower.push([x, first]); upper.push([x, last]); }
+    }
+    return [lower, upper];
+  }
+  let MARGINS = null;
+
+  function overlay(simulate) {
+    if (S.tab !== 'p4') return null;
+    if (!MARGINS) MARGINS = margins();
+    let col = Colormaps.lchToRgb(S.olight, 60, S.ohue).rgb;
+    if (simulate && S.sev > 0) {
+      col = Colormaps.simulate(col, S.type, S.sev / 100);
+    }
+    const style = 'rgb(' + Math.round(col[0]) + ',' + Math.round(col[1]) +
+                  ',' + Math.round(col[2]) + ')';
+    return function (ctx, rect, toPix) {
+      ctx.save();
+      ctx.strokeStyle = style; ctx.lineWidth = 2;
+      MARGINS.forEach(function (line) {
+        ctx.beginPath();
+        line.forEach(function (p, i) {
+          const q = toPix(p[0], p[1]);
+          if (i === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]);
+        });
+        ctx.stroke();
+      });
+      ctx.restore();
+    };
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function drawPanel() {
+    const r = range();
+    const v = model.slice(S.attr);
+    const key = displayKey();
+    const common = { nx: model.nx, ny: model.ny, min: r[0], max: r[1],
+                     cyclic: !!Synthetic.CYCLIC[S.attr], height: 244 };
+
+    CMPLOT.map($('cMap'), v, Object.assign({}, common, {
+      cmap: key, title: Synthetic.LABEL[S.attr] + ' \u2014 as displayed',
+      overlay: overlay(false)
+    }));
+    CMPLOT.colorbar($('cBar'), { cmap: key, min: r[0], max: r[1] });
+
+    CMPLOT.map($('cSim'), v, Object.assign({}, common, {
+      cmap: key, cvd: S.type, cvdSeverity: S.sev / 100,
+      title: Synthetic.LABEL[S.attr] + ' \u2014 as seen, ' + NAME[S.type].toLowerCase() +
+             ' at ' + S.sev + '%',
+      overlay: overlay(true)
+    }));
+    CMPLOT.colorbar($('cBarSim'), { cmap: key, min: r[0], max: r[1],
+                                    cvd: S.type, cvdSeverity: S.sev / 100,
+                                    label: Synthetic.LABEL[S.attr] });
+    $('capMap').textContent = Colormaps.meta[S.cmap].note;
+  }
+
+  /* Local colour difference along a map, before and after simulation, both
+     divided by the same reference: the mean step of the map as displayed. A
+     self-normalised measure would hide the problem, because simulation lowers
+     the average as well as the minimum. */
+  function steps(key, type, sev) {
+    const a = Colormaps.lut(key), n = a.length / 3, st = 8;
+    const cols = [];
+    for (let i = 0; i < n; i++) {
+      let c = [a[3 * i], a[3 * i + 1], a[3 * i + 2]];
+      if (type) c = Colormaps.simulate(c, type, sev === undefined ? 1 : sev);
+      cols.push(Colormaps.rgbToLab(c[0], c[1], c[2]));
+    }
+    const d = [];
+    let sum = 0;
+    for (let i = 0; i + st < n; i++) {
+      const p = cols[i], q = cols[i + st];
+      const dd = Math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1]) +
+                           (q[2] - p[2]) * (q[2] - p[2]));
+      d.push(dd); sum += dd;
+    }
+    return { d: d, mean: sum / d.length || 1, sum: sum };
+  }
+
+  const refCache = {};
+  function reference(key) {
+    if (!refCache[key]) refCache[key] = steps(key, null);
+    return refCache[key];
+  }
+
+  /* Smallest surviving step, as a fraction of the map's own average step as
+     displayed. 1.0 would be a map that loses nothing anywhere. */
+  function worst(key, type, sev) {
+    const ref = reference(key);
+    const cur = type ? steps(key, type, sev) : ref;
+    let mn = Infinity;
+    for (let i = 0; i < cur.d.length; i++) mn = Math.min(mn, cur.d[i] / ref.mean);
+    return mn;
+  }
+
+  /* How much of the total colour difference along the map survives. */
+  function retained(key, type, sev) {
+    const ref = reference(key);
+    if (!type) return 1;
+    return steps(key, type, sev).sum / (ref.sum || 1);
+  }
+
+  function lightnessSpan(key, type, sev) {
+    const a = Colormaps.lut(key), n = a.length / 3;
+    let lo = 100, hi = 0;
+    for (let i = 0; i < n; i++) {
+      let c = [a[3 * i], a[3 * i + 1], a[3 * i + 2]];
+      if (type) c = Colormaps.simulate(c, type, sev === undefined ? 1 : sev);
+      const L = Colormaps.rgbToLab(c[0], c[1], c[2])[0];
+      lo = Math.min(lo, L); hi = Math.max(hi, L);
+    }
+    return hi - lo;
+  }
+
+  function readouts() {
+    $('sType').textContent = NAME[S.type] + ' at ' + S.sev + '%';
+    $('sPrev').textContent = PREV[S.type];
+    const key = displayKey();
+    const b = worst(key, null);
+    const a = worst(key, S.type, S.sev / 100);
+    $('sBefore').textContent = b.toFixed(2);
+    $('sAfter').textContent = a.toFixed(2) + '  (' +
+      (100 * retained(key, S.type, S.sev / 100)).toFixed(0) + '% of the colour kept)' +
+      (a < 0.15 ? '  \u2014 a stretch goes flat' : '');
+    const l0 = lightnessSpan(key, null);
+    const l1 = lightnessSpan(key, S.type, S.sev / 100);
+    $('sL').textContent = l1.toFixed(0) + ' of ' + l0.toFixed(0) + ' L*  (' +
+      (100 * l1 / (l0 || 1)).toFixed(0) + '% kept)';
+  }
+
+  /* ---- step figures ------------------------------------------------------ */
+
+  function drawStrips() {
+    const cv = $('cStrips');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const rows = [[null, 'as displayed'], ['deutan', 'deutan'],
+                  ['protan', 'protan'], ['tritan', 'tritan']];
+    const bh = 26, gap = 6, x0 = 110;
+    const h = rows.length * (bh + gap) + 10;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const ww = w - x0 - 14;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3;
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    rows.forEach(function (row, r) {
+      const y = 4 + r * (bh + gap);
+      for (let i = 0; i < ww; i++) {
+        const j = Math.round(i / (ww - 1) * (n - 1));
+        let c = [a[3 * j], a[3 * j + 1], a[3 * j + 2]];
+        if (row[0]) c = Colormaps.simulate(c, row[0], 1);
+        ctx.fillStyle = 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) +
+                        ',' + Math.round(c[2]) + ')';
+        ctx.fillRect(x0 + i, y, 1.2, bh);
+      }
+      ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+      ctx.strokeRect(x0 + 0.5, y + 0.5, ww, bh);
+      ctx.fillStyle = row[0] === S.type ? '#841617' : '#5C6670';
+      ctx.fillText(row[1], x0 - 8, y + bh / 2);
+    });
+  }
+
+  function drawRank() {
+    const cv = $('cRank');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const keys = Colormaps.list().filter((k) => Colormaps.meta[k].cls !== 'categorical');
+    const rows = keys.map((k) => ({ key: k, v: worst(k, S.type, 1) }))
+                     .sort((a, b) => b.v - a.v);
+
+    const rowH = 17, top = 24, h = top + rows.length * rowH + 30;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 150, ww = w - x0 - 16, xMax = 1.0;
+    const X = (v) => x0 + ww * Math.min(v, xMax) / xMax;
+
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.strokeStyle = '#C9CDD2'; ctx.lineWidth = 1;
+    [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
+      ctx.beginPath();
+      ctx.moveTo(X(v), top - 6); ctx.lineTo(X(v), top + rows.length * rowH); ctx.stroke();
+      ctx.fillStyle = '#5C6670'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(v.toFixed(2), X(v), top - 8);
+    });
+
+    rankBars = [];
+    rows.forEach(function (r, i) {
+      const y = top + i * rowH;
+      const a = Colormaps.lut(r.key), n = a.length / 3;
+      const xb = X(r.v);
+      for (let px = 0; px < xb - x0; px++) {
+        const j = Math.round(px / Math.max(1, xb - x0 - 1) * (n - 1));
+        const c = Colormaps.simulate([a[3 * j], a[3 * j + 1], a[3 * j + 2]], S.type, 1);
+        ctx.fillStyle = 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) +
+                        ',' + Math.round(c[2]) + ')';
+        ctx.fillRect(x0 + px, y + 2, 1.2, rowH - 6);
+      }
+      ctx.strokeStyle = r.key === S.cmap ? '#841617' : 'rgba(22,25,28,.35)';
+      ctx.lineWidth = r.key === S.cmap ? 1.8 : 1;
+      ctx.strokeRect(x0 + 0.5, y + 2.5, Math.max(2, xb - x0), rowH - 6);
+      ctx.fillStyle = r.key === S.cmap ? '#841617' : '#16191C';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(Colormaps.meta[r.key].name, x0 - 8, y + rowH / 2);
+      rankBars.push({ key: r.key, y0: y, y1: y + rowH });
+    });
+
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('smallest surviving step, against the map\u2019s average step as displayed \u2014 ' +
+                 NAME[S.type].toLowerCase() + ' at full severity',
+                 x0 + ww / 2, top + rows.length * rowH + 8);
+  }
+
+  function drawQuad() {
+    if ($('cQ1').hidden) return;
+    const r = range();
+    const v = model.slice(S.attr);
+    const common = { nx: model.nx, ny: model.ny, min: r[0], max: r[1],
+                     cyclic: !!Synthetic.CYCLIC[S.attr], height: 228 };
+    const pairs = [['cQ1', 'jet', false, 'capQ1'], ['cQ2', 'jet', true, 'capQ2'],
+                   ['cQ3', 'oslo', false, 'capQ3'], ['cQ4', 'oslo', true, 'capQ4']];
+    pairs.forEach(function (q) {
+      CMPLOT.map($(q[0]), v, Object.assign({}, common, {
+        cmap: q[1],
+        cvd: q[2] ? S.type : undefined,
+        cvdSeverity: q[2] ? S.sev / 100 : undefined,
+        title: Colormaps.meta[q[1]].name + (q[2] ? ' \u2014 as seen' : ' \u2014 as displayed')
+      }));
+      const val = q[2] ? worst(q[1], S.type, S.sev / 100) : worst(q[1], null);
+      $(q[3]).textContent = 'Smallest surviving step ' + val.toFixed(2) +
+        '.  Lightness span ' +
+        (q[2] ? lightnessSpan(q[1], S.type, S.sev / 100) : lightnessSpan(q[1], null)).toFixed(0) +
+        ' L*.';
+    });
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawPanel();
+    readouts();
+    if (S.tab === 'p2') { drawStrips(); drawRank(); }
+    if (S.tab === 'p3') drawQuad();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function bindRange(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = () => { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', () => { S[key] = parseFloat(el.value); show(); redraw(); });
+    show();
+  }
+  bindRange('sev', 'sev', (v) => v.toFixed(0) + '%');
+  bindRange('gamma', 'gamma', (v) => v.toFixed(2));
+  bindRange('amb', 'amb', (v) => v.toFixed(0) + '%');
+  bindRange('ohue', 'ohue', (v) => v.toFixed(0) + '\u00b0');
+  bindRange('olight', 'olight', (v) => v.toFixed(0));
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['tDeu', 'deutan'], ['tPro', 'protan'], ['tTri', 'tritan'], ['tAch', 'achroma']],
+          (v) => { S.type = v; drawAll(); });
+
+  $('attr').addEventListener('change', () => { S.attr = $('attr').value; redraw(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach(function (cls) {
+      Object.keys(ERA).forEach(function (era) {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach(function (k) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', () => { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('cRank').addEventListener('click', function (ev) {
+    const box = $('cRank').getBoundingClientRect();
+    const y = ev.clientY - box.top;
+    for (let i = 0; i < rankBars.length; i++) {
+      if (y >= rankBars[i].y0 && y < rankBars[i].y1) {
+        S.cmap = rankBars[i].key;
+        $('cmap').value = S.cmap;
+        drawAll();
+        return;
+      }
+    }
+  });
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('attr').value = S.attr; $('cmap').value = S.cmap;
+    $('sev').value = S.sev; $('sevV').textContent = S.sev + '%';
+    $('ohue').value = S.ohue; $('ohueV').textContent = S.ohue + '\u00b0';
+    $('gamma').value = S.gamma; $('gammaV').textContent = S.gamma.toFixed(2);
+    $('amb').value = S.amb; $('ambV').textContent = S.amb + '%';
+    $('olight').value = S.olight; $('olightV').textContent = S.olight;
+    [['tDeu', 'deutan'], ['tPro', 'protan'], ['tTri', 'tritan'], ['tAch', 'achroma']]
+      .forEach((b) => $(b[0]).setAttribute('aria-pressed', String(b[1] === S.type)));
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'p5', 'pw', 'pe', 'pk', 'pm'];
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4' || id === 'p5');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    $('ctlOverlay').hidden = (id !== 'p4');
+    $('ctlOverlayL').hidden = (id !== 'p4');
+    $('ctlGamma').hidden = (id !== 'p5');
+    $('ctlAmb').hidden = (id !== 'p5');
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', () => showTab(b.dataset.tab));
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

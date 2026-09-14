@@ -38,10 +38,32 @@ const Colormaps = (function () {
     return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
   }
 
-  function list(cls) {
+  /* cls: 'sequential' | 'diverging' | 'cyclic' | 'categorical'
+     era: 'scientific' | 'traditional'
+     Either may be omitted. Tables registered with define() are left out. */
+  function list(cls, era) {
     return Object.keys(CMAP_META).filter(function (k) {
-      return !cls || CMAP_META[k].cls === cls;
+      const m = CMAP_META[k];
+      return !m.hidden && (!cls || m.cls === cls) && (!era || m.era === era);
     });
+  }
+
+  /* Install a table built at run time — a ramp the student made, a print
+     simulation, a clipped copy — so that everything which takes a colormap
+     name can take it too. meta.hidden keeps it out of the menus. */
+  function define(key, rgb, meta) {
+    let hex = '';
+    for (let i = 0; i < rgb.length; i++) {
+      const c = rgb[i];
+      hex += ('00' + Math.round(Math.max(0, Math.min(255, c[0]))).toString(16)).slice(-2)
+           + ('00' + Math.round(Math.max(0, Math.min(255, c[1]))).toString(16)).slice(-2)
+           + ('00' + Math.round(Math.max(0, Math.min(255, c[2]))).toString(16)).slice(-2);
+    }
+    CMAP_DATA[key] = hex;
+    CMAP_META[key] = Object.assign({ name: key, cls: 'sequential',
+                                     era: 'scientific', hidden: true }, meta || {});
+    delete cache[key];
+    return key;
   }
 
   /* ---- data to pixels -------------------------------------------------- */
@@ -119,6 +141,50 @@ const Colormaps = (function () {
     return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
   }
 
+  /* CIE L*a*b* back to sRGB. The result can fall outside the displayable
+     range, which is what lchToRgb uses to find the gamut boundary. */
+  function labToRgb(L, a, b) {
+    const fy = (L + 16) / 116, fx = fy + a / 500, fz = fy - b / 200;
+    const finv = function (t) {
+      const t3 = t * t * t;
+      return t3 > 0.008856 ? t3 : (t - 16 / 116) / 7.787;
+    };
+    const X = finv(fx) * 0.95047, Y = finv(fy), Z = finv(fz) * 1.08883;
+    const lr =  3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z;
+    const lg = -0.9692660 * X + 1.8760108 * Y + 0.0415560 * Z;
+    const lb =  0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z;
+    const inGamut = [lr, lg, lb].every(function (v) { return v >= -0.0005 && v <= 1.0005; });
+    return { rgb: [linearToSrgb(lr), linearToSrgb(lg), linearToSrgb(lb)],
+             inGamut: inGamut };
+  }
+
+  function rgbToLch(r, g, b) {
+    const lab = rgbToLab(r, g, b);
+    const C = Math.sqrt(lab[1] * lab[1] + lab[2] * lab[2]);
+    let h = Math.atan2(lab[2], lab[1]) * 180 / Math.PI;
+    if (h < 0) h += 360;
+    return [lab[0], C, h];
+  }
+
+  /* Lightness, chroma and hue angle to a displayable color. A color outside
+     the display's range is brought back by reducing its chroma and nothing
+     else, so the lightness asked for is the lightness returned. */
+  function lchToRgb(L, C, h) {
+    const rad = h * Math.PI / 180;
+    let lo = 0, hi = C;
+    const at = function (c) { return labToRgb(L, c * Math.cos(rad), c * Math.sin(rad)); };
+    const full = at(C);
+    if (full.inGamut) return { rgb: full.rgb, chroma: C, clipped: false };
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(mid).inGamut) lo = mid; else hi = mid;
+    }
+    return { rgb: at(lo).rgb, chroma: lo, clipped: true };
+  }
+
+  /* Largest chroma available at this lightness and hue. */
+  function maxChroma(L, h) { return lchToRgb(L, 200, h).chroma; }
+
   /* L* along the colormap, one value per level. */
   function lightness(name) {
     const a = lut(name), n = a.length / 3, out = new Float32Array(n);
@@ -194,8 +260,19 @@ const Colormaps = (function () {
     return m ? applyMatrix(m, rgb[0], rgb[1], rgb[2]) : rgb.slice();
   }
 
+  /* sRGB <-> linear light, exported because building a ramp at a fixed
+     lightness needs to scale in linear light rather than in sRGB. */
+  function linearToSrgb(c) {
+    c = Math.max(0, Math.min(1, c));
+    return 255 * (c <= 0.0031308 ? 12.92 * c
+                                 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+  }
+
   return { lut: lut, levels: levels, sample: sample, cssColor: cssColor,
-           list: list, apply: apply, drawBar: drawBar, meta: CMAP_META,
+           list: list, define: define, apply: apply, drawBar: drawBar,
+           meta: CMAP_META, srgbToLinear: srgbToLinear, linearToSrgb: linearToSrgb,
+           labToRgb: labToRgb, rgbToLch: rgbToLch, lchToRgb: lchToRgb,
+           maxChroma: maxChroma,
            rgbToLab: rgbToLab, lightness: lightness,
            perceptualGradient: perceptualGradient,
            simulate: simulate, cvdMatrix: cvdMatrix, applyMatrix: applyMatrix };

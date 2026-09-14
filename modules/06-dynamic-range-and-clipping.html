@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic range and clipping | How Colormaps Actually Work</title>
+<meta name="description" content="Where the ends of the color bar go: histograms, percentile clips, outliers, nonlinear stretch and gain on a seismic section.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 06 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Dynamic range and clipping</h1>
+    <p class="sub">Every module so far has held the value range fixed so that only the colormap was in
+      question. It is released here. Which two numbers the ends of the color bar are set to decides how
+      much of the colormap any part of the data actually reaches, and that choice changes a display at
+      least as much as the choice of colors does.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The display and its histogram <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cMap" aria-label="Map view of the attribute at the current range"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+        <canvas id="cHist" aria-label="Histogram of the attribute with the display limits marked"></canvas>
+        <p class="hint-line" id="capHist">&nbsp;</p>
+
+        <div id="wrapSect" hidden>
+          <canvas id="cSect" aria-label="Vertical seismic section at the current clip level"></canvas>
+          <p class="hint-line" id="capSect">&nbsp;</p>
+        </div>
+
+        <div class="stats">
+          <div class="stat key"><span>Display range</span><b id="sRange">—</b></div>
+          <div class="stat"><span>Clipped at the bottom</span><b id="sLow">—</b></div>
+          <div class="stat"><span>Clipped at the top</span><b id="sHigh">—</b></div>
+          <div class="stat"><span>Percentiles at the two ends</span><b id="sPct">—</b></div>
+          <div class="stat wide"><span>Colors reaching the middle half of the data</span><b id="sMid">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">Where the ends go <span>&mdash; results update as you drag</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The range</h2>
+            <div class="ctl">
+              <label for="rlo">Bottom <span class="val" id="rloV">0%</span></label>
+              <input type="range" id="rlo" min="0" max="50" step="0.5" value="0">
+            </div>
+            <div class="ctl">
+              <label for="rhi">Top <span class="val" id="rhiV">100%</span></label>
+              <input type="range" id="rhi" min="50" max="100" step="0.5" value="100">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 10px">As a percentage of the span the attribute
+              actually covers in this survey.</p>
+
+            <div class="ctl">
+              <label for="presets">Set from the distribution</label>
+              <div class="seg" role="group" aria-label="Range presets" id="presets" style="flex-wrap:wrap">
+                <button type="button" data-preset="full">Everything</button>
+                <button type="button" data-preset="2">2&ndash;98%</button>
+                <button type="button" data-preset="5">5&ndash;95%</button>
+                <button type="button" data-preset="10">10&ndash;90%</button>
+                <button type="button" data-preset="sd">&plusmn;2 s.d.</button>
+              </div>
+            </div>
+
+            <div class="ctl" id="ctlSym">
+              <label for="sym">Keep the range symmetric about zero</label>
+              <div class="seg" role="group" aria-label="Symmetric range" id="sym">
+                <button type="button" id="symOff" aria-pressed="true">Off</button>
+                <button type="button" id="symOn" aria-pressed="false">On</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The stretch and the data</h2>
+            <div class="ctl">
+              <label for="stretch">Stretch</label>
+              <div class="seg" role="group" aria-label="Stretch" id="stretch">
+                <button type="button" id="stLin" aria-pressed="true">Linear</button>
+                <button type="button" id="stGam" aria-pressed="false">Gamma</button>
+                <button type="button" id="stLog" aria-pressed="false">Logarithmic</button>
+              </div>
+            </div>
+            <div class="ctl" id="ctlGamma" hidden>
+              <label for="gamma">Gamma <span class="val" id="gammaV">1.00</span></label>
+              <input type="range" id="gamma" min="0.3" max="3" step="0.05" value="1">
+            </div>
+
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="coherence">Coherence</option>
+                <option value="meanCurvature">Mean curvature</option>
+                <option value="curvature">Most-positive curvature</option>
+                <option value="amplitude">Amplitude</option>
+              </select>
+            </div>
+            <div class="ctl">
+              <label for="cmap">Colormap</label>
+              <select id="cmap"></select>
+            </div>
+
+            <div class="ctl" id="ctlSpike" hidden>
+              <label for="spike">Strength of a few bad samples <span class="val" id="spikeV">0×</span></label>
+              <input type="range" id="spike" min="0" max="12" step="0.5" value="0">
+            </div>
+
+            <div class="ctl" id="ctlClip" hidden>
+              <label for="clip">Section clip level <span class="val" id="clipV">3.0 rms</span></label>
+              <input type="range" id="clip" min="0.3" max="6" step="0.1" value="3">
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · Where the ends go</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · A few bad samples</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Stretching the middle</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Gain on a section</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Where the ends of the color bar go</h3>
+    </div>
+    <p class="lede">The histogram in the panel is the attribute's distribution across the survey, and the
+      two red lines are the ends of the color bar. Everything between them is spread across the colormap.
+      Everything outside is <span class="term" data-term="clipping">clipped</span>: rendered in the end
+      color and no longer distinguishable from anything else out there.</p>
+
+    <p>Two readouts carry the consequence. The clipped percentages say how much of the survey has been
+      flattened at each end. The last one says how many of the colormap's 256 levels are reaching the
+      middle half of the data, which is where most of it usually sits.</p>
+
+    <p>Set the range to everything, with the attribute on envelope. Almost nothing is clipped, and the
+      middle half of the data receives 15 of the colormap's 256 levels, because the range is being held
+      open by a small number of very high values along the channel axis. Clipping at the 2nd and 98th
+      percentiles raises that to 21, and at the 5th and 95th to 24.</p>
+
+    <p>How much is gained depends entirely on how heavy the tails are, and the attributes differ a great
+      deal. Mean curvature is the extreme case in this model: at the full range the middle half of the data
+      gets 6 levels, and at a 5&ndash;95% clip it gets 50. The fault traces are what hold its range open,
+      and they are a tiny fraction of the survey.</p>
+
+    <p>That trade is the whole of this module. Clipping discards distinctions above the limit; it buys
+      distinctions below it. Neither direction is free and there is no setting that avoids the choice,
+      including the default.</p>
+
+    <div class="legend">
+      <span>An automatic range set from the data's own minimum and maximum is not a neutral choice. It is
+      the choice that gives the extreme samples the most influence over the display, and on most seismic
+      attributes those extreme samples are the least representative part of the volume.</span>
+    </div>
+
+    <p>The channel margins are the place to watch. They are a gradual thinning, so they occupy a narrow
+      band of envelope values a little above the background. Whether that band gets three colors or thirty
+      decides whether the margin reads as a gradient or as a hard edge, and neither reading is in the data
+      more than the other.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>A few bad samples</h3>
+    </div>
+    <p class="lede">The slider in the panel puts a handful of bad samples into the attribute: forty traces
+      out of thirty-two thousand, scaled by the amount selected. That is about one sample in eight hundred,
+      which is a mild version of what a processing artefact, a bad trace or an acquisition footprint
+      produces in real data.</p>
+
+    <p>With the range set to everything, the effect is immediate and out of all proportion. On envelope at
+      a setting of 8, the middle half of the data falls from 15 levels of the colormap to 2. The channel,
+      the faults and the pockmarks disappear together, and what is left is a nearly uniform field with
+      forty bright dots in it. The attribute volume is unchanged; only two numbers have moved.</p>
+
+    <p>The fix is to stop setting the limits from the extreme values and set them from the distribution
+      instead. A <span class="term" data-term="percentile-clip">percentile clip</span> puts the ends at
+      chosen percentiles: the 2nd and 98th, for instance, which is to say that two per cent of the survey
+      is deliberately clipped at each end. Forty bad samples out of thirty-two thousand are 0.12% and are
+      comfortably inside that, so they are clipped and stop mattering.</p>
+
+    <p>The preset buttons run the common choices. The differences between them matter less than the
+      difference between any of them and using the raw extremes.</p>
+
+    <table>
+      <thead><tr><th>Setting</th><th>What it does</th><th>Where it is appropriate</th></tr></thead>
+      <tbody>
+        <tr><td>Everything</td><td>Ends at the data's own minimum and maximum</td><td>When the extremes are the subject, and only then</td></tr>
+        <tr><td>2&ndash;98%</td><td>Clips a fiftieth at each end</td><td>A reasonable default for a clean attribute</td></tr>
+        <tr><td>5&ndash;95% or 10&ndash;90%</td><td>Clips more</td><td>Noisy attributes, and displays meant to show the bulk rather than the extremes</td></tr>
+        <tr><td>&plusmn;2 s.d.</td><td>Symmetric about the mean, two standard deviations out</td><td>Attributes that are roughly symmetric; poor on skewed ones</td></tr>
+      </tbody>
+    </table>
+
+    <p>The standard deviation preset is worth trying on a skewed attribute to see it fail. Sweetness and
+      envelope have a long tail toward high values, so their mean sits above the mode and two standard
+      deviations reaches below zero at the bottom and not far enough at the top. Percentiles make no
+      assumption about the shape of the distribution and do not have this problem.</p>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Stretching the middle</h3>
+    </div>
+    <p class="lede">Clipping moves the ends. A stretch changes what happens between them: which parts of
+      the range get many colors and which get few, without discarding anything.</p>
+
+    <p><b>Gamma</b> raises the normalized value to a power before the colormap is looked up. Above one, the
+      colors are spread over the high end of the range and the low end is compressed. Below one, the
+      reverse. The histogram in the panel does not change, because the data has not changed; what changes
+      is how many color levels each part of it receives.</p>
+
+    <p><b>A logarithmic stretch</b> is the appropriate choice when an attribute spans orders of magnitude.
+      Energy and envelope often do. A linear display of such an attribute spends most of its colors on the
+      top decade and renders everything below it in a narrow band, which is not a defect of the colormap.</p>
+
+    <p>Two cautions come with any stretch, and both follow from module 03.</p>
+
+    <p>A stretch undoes perceptual uniformity. A colormap that was evenly spaced in the data is no longer
+      evenly spaced once a gamma has been applied, and the strength of the stretch sets how badly. The
+      color bar remains correctly labelled, and its labels are no longer evenly spaced along it, which is
+      the visible symptom.</p>
+
+    <p>A stretch also moves any false boundary the colormap contains, in the same way that changing the
+      range does. Running the module 03 test through a stretch rather than through the range gives the same
+      answer: what moves belongs to the display.</p>
+
+    <div class="legend">
+      <span>Strong gamma settings are worth treating as a signal rather than a solution. An attribute that
+      needs a gamma of 2.5 before its features appear is usually an attribute that would be better computed
+      differently, better clipped, or displayed as a logarithm of itself with the color bar labelled that
+      way and the fact stated.</span>
+    </div>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>Gain on a section</h3>
+    </div>
+    <p class="lede">On a vertical section the same choice appears under a different name. Amplitude is
+      displayed at a clip level set as a multiple of the root mean square amplitude in the window, and
+      turning that number down is what interpreters mean by turning the gain up.</p>
+
+    <p>The section in the panel is line 2000 across the channel. The clip level control sets the ends of
+      the color bar at plus and minus that many times the section's own root mean square. The readout
+      gives the percentage of samples being clipped.</p>
+
+    <p>At six times the root mean square almost nothing clips and the section looks flat and grey, because
+      the strong channel reflection is holding the range open and the weaker events are compressed into a
+      few colors near the middle. At one times the root mean square the section looks crisp and structural,
+      the continuity of every reflector is easy to follow, and roughly a third of the samples have been
+      flattened. Below that the display becomes close to a two-colour rendering of the sign of the trace.</p>
+
+    <p>Which is right depends entirely on the question.</p>
+
+    <ul>
+      <li><b>Following structure</b> &mdash; a hard clip is genuinely better. Continuity is a question about
+        where reflectors are, not how strong they are, and clipping removes an irrelevant variable.</li>
+      <li><b>Anything about amplitude</b> &mdash; bright spots, dimming over a channel, tuning effects,
+        amplitude against offset &mdash; a hard clip destroys the measurement. The channel sand in this
+        model has a strong top reflection whose strength varies with the bed thickness, and at one times
+        the root mean square that variation is entirely gone.</li>
+    </ul>
+
+    <p>The trap is that these two displays are usually the same display. A section gained for picking gets
+      used to assess an amplitude anomaly, and the anomaly has already been clipped away. Changing the gain
+      and watching whether the anomaly changes with it is the check, and it is the same check as module 03:
+      what moves when the display moves belongs to the display.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>The value range is the part of a display most often left to a default and least often recorded. A
+      figure in a report carries its colormap visibly, in the color bar, and carries its range as two
+      numbers at the ends of that bar which nobody reads. Yet two displays of the same attribute at
+      different ranges can support opposite conclusions about how far an anomaly extends.</p>
+
+    <p>Three specific failures are worth naming.</p>
+
+    <p><b>The automatic range.</b> Software that sets the ends from the data's minimum and maximum has made
+      the extreme samples the most influential part of the volume. On any attribute with a processing
+      artefact or a bad trace in it, this compresses everything real into a fraction of the colormap.</p>
+
+    <p><b>The range that was right for the last volume.</b> A range carried over from another survey, or
+      from the same survey before reprocessing, will look plausible and be wrong, and there is nothing in
+      the image to say so.</p>
+
+    <p><b>The comparison at two ranges.</b> Comparing an attribute between two areas, two vintages or two
+      processing products requires the same range on both. This is obvious when stated and easy to lose
+      when the two displays were made in different sessions.</p>
+
+    <p>The practical answer is small: set the range from percentiles rather than extremes, keep it
+      symmetric when the attribute has a meaningful zero, and write the two numbers in the figure caption
+      along with the colormap name. That is enough for someone else to reproduce the display, which is the
+      point.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Buy colors with clipping.</b> With envelope on the full range, note how many colors reach
+          the middle half of the data. Set the 2&ndash;98% preset and note it again, then repeat the whole
+          exercise with mean curvature.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Envelope goes from 15 levels to
+            21 for a cost of four per cent of the survey. Mean curvature goes from 6 to 21, and to 50 at a
+            5&ndash;95% clip, because its range is held open by the fault traces, which are a very small
+            part of the survey and are already unmistakable. What is given up in both cases is the ability
+            to distinguish values inside the clipped tails.</span></details></li>
+
+        <li><b>Ruin a display with forty samples.</b> Set the range to everything and raise the bad-sample
+          slider to about 8.
+          <details class="reveal"><summary>Hint</summary><span class="ans">One sample in eight hundred
+            takes over the display completely: the limits stretch to accommodate them and everything else
+            collapses into a few colors. Switching to a 2&ndash;98% clip restores the display almost
+            exactly, because the bad samples are 0.12% of the survey and fall inside the clipped
+            tails.</span></details></li>
+
+        <li><b>Break the standard deviation preset.</b> Put the attribute on sweetness and compare
+          &plusmn;2 s.d. against 2&ndash;98%.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Sweetness has a long high tail,
+            so its mean sits well above its mode and two standard deviations runs below zero at the bottom,
+            wasting part of the colormap on values that do not exist, while stopping short at the top. The
+            percentile clip makes no assumption about the shape of the distribution and handles the skew
+            without being told about it.</span></details></li>
+
+        <li><b>Watch a stretch undo the uniformity.</b> Put the colormap on viridis, the stretch on gamma,
+          and move the gamma to 2.5, watching the tick labels along the color bar.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The labels bunch up at one end.
+            The colormap is still perceptually uniform in its own terms, but it is no longer evenly spaced
+            in the data, which is what module 03 was measuring. A stretch trades the uniformity for
+            emphasis on one part of the range, and that is a reasonable trade as long as it is
+            deliberate.</span></details></li>
+
+        <li><b>Gain a section two ways.</b> On step 4, set the clip level to 6 and then to 1, and watch the
+          top of the channel sand where the bed is thickest.
+          <details class="reveal"><summary>Hint</summary><span class="ans">At 6 the reflection strength
+            varies visibly along the channel as the bed thickens and thins through tuning. At 1 that
+            variation has gone, because every strong sample is rendered in the same end colour. The section
+            at 1 is the better display for following reflectors and the worse one for saying anything at
+            all about amplitude.</span></details></li>
+
+        <li><b>Move a boundary with the stretch.</b> Put the colormap on the rainbow with envelope
+          displayed, find a band edge on the flank of the channel, then change the gamma.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The edge slides, exactly as it
+            did when the range was changed in module 03. The test works on any change to the mapping
+            between data and color: what stays put belongs to the data and what moves belongs to the
+            display.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>The value range decides how much of the colormap each part of the data reaches. Clipping discards
+        distinctions outside the limits and buys distinctions inside them, and there is no setting that
+        avoids the trade.</li>
+      <li>A range set from the data's own minimum and maximum gives the most extreme samples the most
+        influence. A handful of bad samples can take over a display entirely.</li>
+      <li>Percentile clips make no assumption about the shape of the distribution. Standard-deviation clips
+        do, and fail on skewed attributes.</li>
+      <li>A stretch changes the spacing within the range rather than the ends. It undoes perceptual
+        uniformity, and the unevenly spaced tick labels on the color bar are the visible symptom.</li>
+      <li>Gain on a section is the same control. A hard clip helps with structure and destroys amplitude
+        information, and one display is usually being asked to do both jobs.</li>
+      <li>Two numbers in the caption, alongside the colormap name, are enough for someone else to reproduce
+        the display.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>The range sliders are expressed as percentages of the span the attribute actually covers in this
+      survey, so that the whole range is reachable for every attribute without separate scales. The preset
+      buttons compute percentiles from a sorted copy of the attribute, recomputed whenever the attribute or
+      the bad-sample setting changes.</p>
+
+    <p>The bad samples in step 2 are placed at forty scattered map positions and scaled by the slider as a
+      multiple of the attribute's own span. Forty of thirty-two thousand is 0.12% of the survey, which is
+      why a 2% clip removes them without being aimed at them. They are added to the attribute after it is
+      computed rather than to the model, so they behave like a display or processing artefact rather than
+      like geology.</p>
+
+    <p>The stretches are applied by building a warped copy of the colormap rather than by transforming the
+      data: level <i>i</i> of the warped table holds the color the original table had at position
+      <i>f</i>(<i>i</i>), where <i>f</i> is the gamma power or the logarithm. The result is identical to
+      transforming the data and looking the color up normally, and it keeps every other display in the site
+      working with the same code. The logarithmic stretch uses a fixed base chosen so the bottom of the
+      range stays finite.</p>
+
+    <p>The section clip level is expressed as a multiple of the root mean square amplitude of the section
+      being displayed, which is recomputed for each line. This is the convention used for setting gain, and
+      it makes the number comparable between sections with different absolute amplitudes. The percentage
+      clipped is counted from the samples in that section.</p>
+
+    <p>Nothing in this module changes the model. The synthetic is the one described in module 00, at its
+      default settings, and every figure here is the same data displayed differently.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Marfurt, K. J., 2015, Techniques and best practices in multiattribute display: Interpretation, 3,
+        B1&ndash;B23, doi:
+        <a href="https://doi.org/10.1190/INT-2014-0133.1">10.1190/INT-2014-0133.1</a>.</li>
+      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+        <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
+      <li>Radovich, B. J., and R. B. Oliveros, 1998, 3-D sequence interpretation of seismic instantaneous
+        attributes from the Gorgon Field: The Leading Edge, 17, 1286&ndash;1293, doi:
+        <a href="https://doi.org/10.1190/1.1438125">10.1190/1.1438125</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { attr: 'envelope', cmap: 'oslo', rlo: 0, rhi: 100, sym: false,
+                stretch: 'linear', gamma: 1, spike: 0, clip: 3, line: 100 };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+
+  const model = Synthetic.build({});
+
+  /* ---- the data, with the bad samples if any ----------------------------- */
+
+  let cache = null;
+
+  /* Forty scattered positions, fixed so the picture does not jump when the
+     slider moves. */
+  const BAD = (function () {
+    const out = [];
+    let seed = 20260914;
+    const rnd = function () {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    for (let i = 0; i < 40; i++) {
+      out.push(Math.floor(rnd() * model.nx * model.ny));
+    }
+    return out;
+  })();
+
+  function data() {
+    const key = S.attr + '@' + S.spike;
+    if (cache && cache.key === key) return cache;
+    const base = model.slice(S.attr);
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < base.length; i++) { lo = Math.min(lo, base[i]); hi = Math.max(hi, base[i]); }
+    const span = hi - lo;
+    let v = base;
+    if (S.spike > 0) {
+      v = Float32Array.from(base);
+      for (let i = 0; i < BAD.length; i++) {
+        v[BAD[i]] = hi + S.spike * span * (0.3 + 0.7 * ((i * 37) % 11) / 10);
+      }
+      lo = Infinity; hi = -Infinity;
+      for (let i = 0; i < v.length; i++) { lo = Math.min(lo, v[i]); hi = Math.max(hi, v[i]); }
+    }
+    const sorted = Float32Array.from(v);
+    sorted.sort();
+    let sum = 0, sum2 = 0;
+    for (let i = 0; i < v.length; i++) { sum += v[i]; sum2 += v[i] * v[i]; }
+    const mean = sum / v.length;
+    const sd = Math.sqrt(Math.max(0, sum2 / v.length - mean * mean));
+    cache = { key: key, v: v, min: lo, max: hi, sorted: sorted, mean: mean, sd: sd };
+    return cache;
+  }
+
+  function pctValue(p) {
+    const d = data();
+    const i = Math.min(d.sorted.length - 1, Math.max(0, Math.round(p / 100 * (d.sorted.length - 1))));
+    return d.sorted[i];
+  }
+  function valuePct(x) {
+    const s = data().sorted;
+    let lo = 0, hi = s.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (s[m] < x) lo = m + 1; else hi = m; }
+    return 100 * lo / (s.length - 1);
+  }
+
+  function range() {
+    const d = data();
+    const span = d.max - d.min;
+    let lo = d.min + span * S.rlo / 100;
+    let hi = d.min + span * S.rhi / 100;
+    if (S.sym && d.min < 0 && d.max > 0) {
+      const m = Math.max(Math.abs(lo), Math.abs(hi));
+      lo = -m; hi = m;
+    }
+    return [lo, hi];
+  }
+
+  /* ---- the stretch ------------------------------------------------------- */
+
+  /* Applied by warping a copy of the colormap rather than the data: level i of
+     the warped table holds the colour the original had at f(i). */
+  function stretchedKey() {
+    if (S.stretch === 'linear') return S.cmap;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3, out = [];
+    for (let i = 0; i < 256; i++) {
+      let t = i / 255;
+      if (S.stretch === 'gamma') t = Math.pow(t, S.gamma);
+      else t = Math.log(1 + 99 * t) / Math.log(100);
+      const j = Math.round(t * (n - 1)) * 3;
+      out.push([a[j], a[j + 1], a[j + 2]]);
+    }
+    Colormaps.define('m06', out, { name: Colormaps.meta[S.cmap].name + ', stretched' });
+    return 'm06';
+  }
+
+  /* ---- panel ------------------------------------------------------------- */
+
+  function drawMap() {
+    const rg = range();
+    const key = stretchedKey();
+    CMPLOT.map($('cMap'), data().v, {
+      nx: model.nx, ny: model.ny, cmap: key, min: rg[0], max: rg[1],
+      cyclic: false, height: 246, title: Synthetic.LABEL[S.attr]
+    });
+    CMPLOT.colorbar($('cBar'), { cmap: key, min: rg[0], max: rg[1],
+                                 label: Synthetic.LABEL[S.attr] });
+    $('capMap').textContent = S.stretch === 'linear'
+      ? Colormaps.meta[S.cmap].name + ', linear between the two limits.'
+      : Colormaps.meta[S.cmap].name + ', ' +
+        (S.stretch === 'gamma' ? 'gamma ' + S.gamma.toFixed(2) : 'logarithmic') +
+        ' between the two limits. The tick labels on the bar are no longer evenly spaced.';
+  }
+
+  function drawHist() {
+    const d = data();
+    const rg = range();
+    const res = CMPLOT.histogram($('cHist'), d.v, {
+      xMin: d.min, xMax: d.max, bins: 110, height: 176,
+      xLabel: Synthetic.LABEL[S.attr], yLabel: 'Share of the survey',
+      yFmt: (v) => v.toFixed(1),
+      title: 'Distribution, with the ends of the colour bar marked'
+    });
+    if (!res) return;
+    const ctx = res.ctx, rect = res.rect;
+    ctx.save();
+    ctx.strokeStyle = '#841617'; ctx.lineWidth = 1.8;
+    [rg[0], rg[1]].forEach(function (x) {
+      if (x < d.min || x > d.max) return;
+      ctx.beginPath();
+      ctx.moveTo(res.X(x), rect.y); ctx.lineTo(res.X(x), rect.y + rect.h);
+      ctx.stroke();
+    });
+    /* shade what is being clipped */
+    ctx.fillStyle = 'rgba(132,22,23,0.12)';
+    if (rg[0] > d.min) ctx.fillRect(rect.x, rect.y, res.X(rg[0]) - rect.x, rect.h);
+    if (rg[1] < d.max) ctx.fillRect(res.X(rg[1]), rect.y, rect.x + rect.w - res.X(rg[1]), rect.h);
+    ctx.restore();
+    $('capHist').textContent = 'Shaded areas are clipped: every sample there is rendered in the end ' +
+      'colour and cannot be told apart from any other.';
+  }
+
+  function drawSection() {
+    if ($('wrapSect').hidden) return;
+    const sec = model.section(S.line);
+    let sum2 = 0;
+    for (let i = 0; i < sec.data.length; i++) sum2 += sec.data[i] * sec.data[i];
+    const rms = Math.sqrt(sum2 / sec.data.length);
+    const lim = S.clip * rms;
+    let clipped = 0;
+    for (let i = 0; i < sec.data.length; i++) if (Math.abs(sec.data[i]) > lim) clipped++;
+    CMPLOT.section($('cSect'), sec, {
+      cmap: S.cmap, min: -lim, max: lim, height: 250,
+      title: 'Seismic amplitude, line ' + (1000 + 10 * sec.line) +
+             ', clipped at ' + S.clip.toFixed(1) + ' times r.m.s.'
+    });
+    $('capSect').textContent = (100 * clipped / sec.data.length).toFixed(1) +
+      '% of the samples in this section are clipped. Root mean square amplitude ' +
+      rms.toPrecision(2) + '.';
+  }
+
+  function readouts() {
+    const d = data();
+    const rg = range();
+    let low = 0, high = 0;
+    for (let i = 0; i < d.v.length; i++) {
+      if (d.v[i] < rg[0]) low++; else if (d.v[i] > rg[1]) high++;
+    }
+    $('sRange').textContent = rg[0].toPrecision(3) + ' to ' + rg[1].toPrecision(3);
+    $('sLow').textContent = (100 * low / d.v.length).toFixed(2) + '%';
+    $('sHigh').textContent = (100 * high / d.v.length).toFixed(2) + '%';
+    $('sPct').textContent = valuePct(rg[0]).toFixed(1) + '% and ' + valuePct(rg[1]).toFixed(1) + '%';
+
+    /* how many of the 256 levels the middle half of the data reaches */
+    const q1 = pctValue(25), q3 = pctValue(75);
+    const pos = function (x) {
+      let t = (x - rg[0]) / ((rg[1] - rg[0]) || 1);
+      return Math.max(0, Math.min(1, t));
+    };
+    /* the warped table already carries any stretch, so this counts levels of
+       the table actually in use between the two quartiles */
+    const levels = Math.round(256 * Math.abs(pos(q3) - pos(q1)));
+    $('sMid').textContent = levels + ' of 256';
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawMap();
+    drawHist();
+    drawSection();
+    readouts();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function bind(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = function () { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', function () {
+      S[key] = parseFloat(el.value);
+      if (key === 'rlo' && S.rlo > S.rhi - 1) { S.rlo = S.rhi - 1; el.value = S.rlo; }
+      if (key === 'rhi' && S.rhi < S.rlo + 1) { S.rhi = S.rlo + 1; el.value = S.rhi; }
+      show(); redraw();
+    });
+    show();
+  }
+  bind('rlo', 'rlo', (v) => v.toFixed(1) + '%');
+  bind('rhi', 'rhi', (v) => v.toFixed(1) + '%');
+  bind('gamma', 'gamma', (v) => v.toFixed(2));
+  bind('spike', 'spike', (v) => v.toFixed(1) + '\u00d7');
+  bind('clip', 'clip', (v) => v.toFixed(1) + ' rms');
+
+  function setLimits(lo, hi) {
+    const d = data();
+    const span = (d.max - d.min) || 1;
+    S.rlo = Math.max(0, Math.min(50, 100 * (lo - d.min) / span));
+    S.rhi = Math.max(50, Math.min(100, 100 * (hi - d.min) / span));
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi;
+    $('rloV').textContent = S.rlo.toFixed(1) + '%';
+    $('rhiV').textContent = S.rhi.toFixed(1) + '%';
+  }
+
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const d = data();
+      const p = b.dataset.preset;
+      if (p === 'full') setLimits(d.min, d.max);
+      else if (p === 'sd') setLimits(d.mean - 2 * d.sd, d.mean + 2 * d.sd);
+      else setLimits(pctValue(+p), pctValue(100 - +p));
+      document.querySelectorAll('[data-preset]').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      drawAll();
+    });
+  });
+
+  function segment(buttons, onPick) {
+    buttons.forEach(function (b) {
+      $(b[0]).addEventListener('click', function () {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['symOff', false], ['symOn', true]], function (v) { S.sym = v; drawAll(); });
+  segment([['stLin', 'linear'], ['stGam', 'gamma'], ['stLog', 'log']], function (v) {
+    S.stretch = v;
+    $('ctlGamma').hidden = (v !== 'gamma');
+    drawAll();
+  });
+
+  $('attr').addEventListener('change', function () {
+    S.attr = $('attr').value;
+    cache = null;
+    S.rlo = 0; S.rhi = 100;
+    $('rlo').value = 0; $('rhi').value = 100;
+    $('rloV').textContent = '0.0%'; $('rhiV').textContent = '100.0%';
+    drawAll();
+  });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach(function (cls) {
+      Object.keys(ERA).forEach(function (era) {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach(function (k) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', function () { S.cmap = sel.value; redraw(); });
+  })();
+
+  $('resetBtn').addEventListener('click', function () {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    cache = null;
+    $('attr').value = S.attr; $('cmap').value = S.cmap;
+    ['rlo', 'rhi', 'gamma', 'spike', 'clip'].forEach(function (id) { $(id).value = S[id === 'rlo' ? 'rlo' : id]; });
+    $('rlo').value = S.rlo; $('rhi').value = S.rhi; $('gamma').value = S.gamma;
+    $('spike').value = S.spike; $('clip').value = S.clip;
+    $('rloV').textContent = '0.0%'; $('rhiV').textContent = '100.0%';
+    $('gammaV').textContent = '1.00'; $('spikeV').textContent = '0.0\u00d7';
+    $('clipV').textContent = '3.0 rms';
+    $('symOff').setAttribute('aria-pressed', 'true');
+    $('symOn').setAttribute('aria-pressed', 'false');
+    $('stLin').setAttribute('aria-pressed', 'true');
+    $('stGam').setAttribute('aria-pressed', 'false');
+    $('stLog').setAttribute('aria-pressed', 'false');
+    $('ctlGamma').hidden = true;
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+
+  function showTab(id) {
+    PANES.forEach(function (q) { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    $('ctlSpike').hidden = (id !== 'p2');
+    $('ctlClip').hidden = (id !== 'p4');
+    $('wrapSect').hidden = (id !== 'p4');
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hue, lightness and saturation | How Colormaps Actually Work</title>
+<meta name="description" content="Which of the three perceptual dimensions of color carries fine spatial detail, which carries order, and which carries category.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../index.html"><span class="dot"></span>How colormaps <b>actually</b> work</a>
+    <nav>
+      <a href="../index.html">All modules</a>
+      <a href="#tabs" data-tab="pw">Why it matters</a>
+      <a href="#tabs" data-tab="pm">Method &amp; references</a>
+    </nav>
+  </header>
+
+  <div class="mod-head">
+    <p class="eyebrow">Module 02 &nbsp;·&nbsp; Colormaps</p>
+    <h1>Hue, lightness and saturation</h1>
+    <p class="sub">Module 01 built colors from three channels of light. Those channels are what a display
+      is made of, not what the eye reports. Perception separates a color into lightness, chroma and hue
+      instead, and those three are not interchangeable: one of them carries fine spatial detail, one
+      carries order, and one carries category. A colormap that puts its information in the wrong one looks
+      colorful and shows very little.</p>
+  </div>
+
+  <!-- ===================== the panel that drives everything ================ -->
+  <div class="labhead">
+    <div class="labgrid">
+      <div>
+        <p class="cap">The color and the ramp built from it <span>&mdash; panels update as you drag</span></p>
+        <canvas id="cSwatch" aria-label="The current color, with its lightness, chroma and hue"></canvas>
+        <canvas id="cStrip" aria-label="The ramp built by varying one dimension"></canvas>
+        <canvas id="cMap" aria-label="Map view of the seismic attribute through that ramp"></canvas>
+        <canvas id="cBar" aria-label="Color bar"></canvas>
+        <p class="hint-line" id="capMap">&nbsp;</p>
+
+        <div class="stats">
+          <div class="stat key"><span>Lightness L*</span><b id="sL">—</b></div>
+          <div class="stat"><span>Chroma C*</span><b id="sC">—</b></div>
+          <div class="stat"><span>Hue angle</span><b id="sH">—</b></div>
+          <div class="stat"><span>Most chroma available here</span><b id="sCmax">—</b></div>
+          <div class="stat"><span>Lightness spanned by the ramp</span><b id="sSpan">—</b></div>
+          <div class="stat"><span>Total color difference along it</span><b id="sDist">—</b></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="cap">The three dimensions <span>&mdash; and which one the ramp uses</span></p>
+        <div class="controls" id="mainControls">
+          <div class="ctl-col">
+            <h2>The color</h2>
+            <div class="ctl">
+              <label for="sl">Lightness L* <span class="val" id="slV">55</span></label>
+              <input type="range" id="sl" min="5" max="95" step="1" value="55">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">0 is black and 100 is white, on the perceptual
+              scale rather than the display's own.</p>
+
+            <div class="ctl">
+              <label for="sc">Chroma C* <span class="val" id="scV">55</span></label>
+              <input type="range" id="sc" min="0" max="110" step="1" value="55">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">Distance from gray. How much is available
+              depends on the lightness and the hue, and the readout says how much there is.</p>
+
+            <div class="ctl">
+              <label for="sh">Hue angle <span class="val" id="shV">274°</span></label>
+              <input type="range" id="sh" min="0" max="359" step="1" value="274">
+            </div>
+            <p class="hint-line" style="margin:-8px 0 0">Position around the color circle, in degrees.
+              Nothing about the hue says which values are high and which are low.</p>
+          </div>
+
+          <div class="ctl-col">
+            <h2>The ramp and the display</h2>
+            <div class="ctl">
+              <label for="vary">Vary along the map</label>
+              <div class="seg" role="group" aria-label="Which dimension varies" id="vary">
+                <button type="button" id="vL" aria-pressed="true">Lightness</button>
+                <button type="button" id="vC" aria-pressed="false">Chroma</button>
+                <button type="button" id="vH" aria-pressed="false">Hue</button>
+              </div>
+            </div>
+            <p class="hint-line" style="margin:-8px 0 14px">The other two are held at the values above, so
+              the ramp differs from end to end in one dimension only.</p>
+
+            <div class="ctl">
+              <label for="attr">Attribute</label>
+              <select id="attr">
+                <option value="envelope">Envelope</option>
+                <option value="coherence">Coherence</option>
+                <option value="sweetness">Sweetness</option>
+                <option value="thickness">Sand thickness (model)</option>
+                <option value="meanCurvature">Mean curvature</option>
+              </select>
+            </div>
+
+            <div class="ctl" id="ctlCmap" hidden>
+              <label for="cmap">Published colormap</label>
+              <select id="cmap"></select>
+            </div>
+
+            <button class="btn ghost small" id="resetBtn" type="button">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tabhint">Work through the four steps in order, <b>then try the exercises</b>.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Module steps">
+    <button role="tab" data-tab="p1" aria-selected="false">1 · The three dimensions</button>
+    <button role="tab" data-tab="p2" aria-selected="false">2 · Which one carries detail</button>
+    <button role="tab" data-tab="p3" aria-selected="false">3 · Which one carries order</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · What a good map does with all three</button>
+    <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
+    <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
+    <button role="tab" data-tab="pk" aria-selected="false">Key points</button>
+    <button role="tab" data-tab="pm" aria-selected="false">Method</button>
+  </nav>
+
+  <!-- ============================== STEP ONE ============================== -->
+  <section class="tabpane" id="p1" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">1</span>Three dimensions instead of three channels</h3>
+    </div>
+    <p class="lede">The same colors described in module 01 as amounts of red, green and blue light can be
+      described instead as a <span class="term" data-term="lightness">lightness</span>, a
+      <span class="term" data-term="chroma">chroma</span> and a
+      <span class="term" data-term="hue">hue angle</span>. Nothing is lost in the translation and the
+      colors are identical. What changes is that each of the three now corresponds to something the visual
+      system actually separates.</p>
+
+    <p>The three sliders set one color. The panel then builds a ramp from it by varying whichever dimension
+      is selected across the full data range and holding the other two fixed, and displays the attribute
+      through that ramp. Switching between the three with the sliders left alone is the experiment this
+      module is built around.</p>
+
+    <p>Two things show up immediately in the readouts.</p>
+
+    <p><b>Chroma is not freely available.</b> A display can only produce so much chroma at a given
+      lightness and hue, and the limit moves a great deal: near L* 40 a magenta can reach a chroma above
+      100, while a cyan at the same lightness stops around 30. Asking for more returns the most the display
+      can manage at that lightness rather than shifting the lightness to accommodate it, which is why the
+      chroma readout sometimes sits below the slider.</p>
+
+    <p><b>The three are not symmetric.</b> The lightness ramp spans a fixed range from dark to light
+      whatever the hue. The chroma ramp spans from gray to whatever chroma is available, which may be a
+      great deal or very little. The hue ramp spans half the color circle and, by construction, no
+      lightness at all.</p>
+  </section>
+
+  <!-- ============================== STEP TWO ============================== -->
+  <section class="tabpane" id="p2" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">2</span>Which dimension carries fine detail</h3>
+    </div>
+    <p class="lede">The figure below is a test pattern rather than seismic. It holds a single sine wave
+      whose spatial frequency increases from left to right and whose amplitude increases from top to
+      bottom. Every column contains the same wave at a different scale, and every row the same scale at a
+      different amplitude. Rendered through a ramp, the boundary where the pattern stops being visible
+      traces out what that ramp can and cannot resolve.</p>
+
+    <canvas id="cGrating" aria-label="Test pattern of a sine wave with frequency increasing to the right and amplitude increasing downward"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Frequency increases to the right; amplitude increases
+      downward. The ramp is the one selected in the panel, so switching between lightness, chroma and hue
+      changes this figure and the seismic map together.</p>
+
+    <p>With <b>lightness</b> varying, the visible region reaches far to the right and high up the figure:
+      fine detail survives at small amplitudes. The upper boundary is a curve rather than a straight line,
+      because the eye is most sensitive at intermediate scales and less so at both extremes.</p>
+
+    <p>With <b>chroma</b> varying, the visible region shrinks. The pattern holds at coarse scales and
+      disappears sooner as the bars narrow.</p>
+
+    <p>With <b>hue</b> varying at fixed lightness, most of the figure is blank. The coarse, high-amplitude
+      corner remains, and everything fine or faint is gone. The wave is still there in the numbers, and
+      the two colors at the extremes of the ramp are plainly different when placed side by side. They stop
+      being distinguishable as soon as the region carrying them becomes small.</p>
+
+    <p>The seismic map in the panel behaves the same way, because it is the same question asked of real
+      features. The channel edge, the fault traces, the pockmarks and the thinning of the sand toward the
+      margins are all fine, low-amplitude detail. They are legible in the lightness ramp, weak in the
+      chroma ramp and effectively absent in the hue ramp.</p>
+
+    <p>The readout in the panel gives the total color difference along the ramp: the summed distance in
+      CIE L*a*b* from one end to the other, which is how much color the ramp passes through in total. At
+      the default settings the hue ramp measures around 190 and the lightness ramp around 160. The hue ramp
+      passes through <i>more</i> color, and it is the one that shows nothing.</p>
+
+    <p>That is worth stopping on, because it is the limit of what a color-difference measurement can tell
+      you. CIE L*a*b* was built to predict when two patches of color, seen side by side and large enough to
+      fill a good part of the visual field, will look different. It says nothing about how small those
+      patches can be before the difference stops being visible, and that threshold is very different for
+      hue than for lightness. A colormap can be long in color-difference terms, evenly spaced along its
+      whole length, and still unable to resolve a fault trace.</p>
+
+    <div class="legend">
+      <span>The visual system samples luminance at much finer spatial scale than it samples color. The
+      cells that report brightness are more numerous and their receptive fields are smaller, and both the
+      eye's optics and the compression applied to almost every image format discard high-frequency color
+      information while keeping high-frequency brightness. A display whose information is carried in hue
+      is being fed through the low-resolution channel.</span>
+    </div>
+  </section>
+
+  <!-- ============================= STEP THREE ============================= -->
+  <section class="tabpane" id="p3" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">3</span>Which dimension carries order</h3>
+    </div>
+    <p class="lede">Detail is one requirement. A sequential attribute has another: the reader has to be
+      able to tell which of two colors stands for the larger value, without consulting the color bar every
+      time. Below are six swatches drawn from the current ramp and shuffled. The question is whether they
+      can be put back in order by eye.</p>
+
+    <canvas id="cOrder" aria-label="Six shuffled swatches drawn from the current ramp"></canvas>
+    <p style="margin:10px 0 16px">
+      <button class="btn small" id="shuffleBtn" type="button">Shuffle again</button>
+      <button class="btn ghost small" id="revealBtn" type="button">Show the order</button>
+    </p>
+
+    <p>With <b>lightness</b> varying, the order is immediate and no two people disagree about it. Darker
+      is one end and lighter is the other, and that mapping is not learned.</p>
+
+    <p>With <b>chroma</b> varying, the order is available but slower: gray at one end and the most vivid
+      version of the hue at the other. Intermediate swatches are harder to separate, and the confident
+      part of the judgement is concentrated near the gray end.</p>
+
+    <p>With <b>hue</b> varying, there is no order to find. Whether green comes before orange is a
+      convention, not a perception, and different readers will answer differently and be equally correct.
+      Any ordering a reader does produce has been learned from a color bar or from familiarity with a
+      particular color scheme, which means it transfers to no other scheme and holds only as long as the
+      color bar is in view.</p>
+
+    <p>This is what makes hue the right dimension for the one job the other two do badly. A facies
+      classification, a set of seismic facies from an unsupervised classification, a fault-block label:
+      these are categories, not magnitudes, and an ordering imposed on them would be a false claim about
+      the data. Distinct hues at similar lightness say nothing about which class is larger, and that is
+      exactly what is wanted.</p>
+  </section>
+
+  <!-- ============================== STEP FOUR ============================= -->
+  <section class="tabpane" id="p4" role="tabpanel" hidden>
+    <div class="plot-head" style="margin-bottom:14px">
+      <h3><span class="stepno">4</span>What a published colormap does with all three</h3>
+    </div>
+    <p class="lede">Every colormap in the menu can be decomposed the same way: lightness, chroma and hue
+      angle along its length. Module 01 plotted the red, green and blue channels, which describe the
+      display. These three describe what the reader gets.</p>
+
+    <canvas id="cLC" aria-label="Lightness and chroma along the selected colormap"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Lightness in red, chroma in slate. Both on the same
+      axis, since both are measured in the same units.</p>
+
+    <canvas id="cHue" aria-label="Hue angle along the selected colormap"></canvas>
+    <p class="hint-line" style="margin:8px 0 16px">Hue angle, which wraps at 360°. A jump from one edge of
+      this plot to the other is continuous in color and is not a discontinuity.</p>
+
+    <p><b>The scientific sequential maps</b> put a straight line through the lightness plot from one end to
+      the other, and move hue steadily and chroma modestly alongside it. The lightness does the work of
+      showing the values; the hue makes neighboring values easier to name and tell apart, and adds a second
+      cue for readers whose color vision is atypical. Nothing is being carried by hue that lightness is not
+      already carrying.</p>
+
+    <p><b>The rainbows</b> reverse the arrangement. Hue sweeps almost the full circle, chroma stays high
+      throughout, and lightness rises and falls several times. The plots make the consequence visible: a
+      lightness profile with a peak in the middle means two different data values are rendered at the same
+      brightness, so they look equally far from the ends even when one is near a maximum and the other near
+      a minimum. The eye reads the peak as a ridge in the data.</p>
+
+    <p><b>The diverging maps</b> show a symmetric V or inverted V in lightness, which is correct for an
+      attribute with a meaningful zero: distance from the centre is what should read as magnitude, and
+      lightness is what reports it. The traditional red-white-blue maps take the lightness all the way to
+      100 at the centre, which makes zero the brightest thing in the image. The scientific ones stop at a
+      mid gray, which leaves the centre quiet.</p>
+
+    <p>Whether the lightness merely rises, or rises at an even rate, is a further question. That is
+      perceptual uniformity, and module 03 measures it.</p>
+
+    <p>One caution carries forward from step 2. Perceptual uniformity is measured from color differences
+      between large patches, so a colormap can score well on it and still resolve nothing: the constant
+      lightness hue ramp built in this module is almost perfectly uniform by that measure, and the cyclic
+      RomaO is genuinely uniform by design and also runs at nearly constant lightness. Uniformity says that
+      the map does not distort the data it manages to show. Whether it shows the data at all is the
+      question this module asks, and the two are independent.</p>
+  </section>
+
+  <!-- ============================ WHY IT MATTERS ========================== -->
+  <section class="tabpane" id="pw" role="tabpanel" hidden>
+    <h3>Why it matters</h3>
+    <p>The most common way a seismic display fails is not that it is ugly or old-fashioned. It is that the
+      quantity of interest has been assigned to hue, and hue cannot resolve it. The display is then
+      genuinely colorful, genuinely varied, and quietly missing the small features it was made to show.</p>
+
+    <p>That failure is invisible from inside. A rainbow display of coherence looks detailed, because hue
+      changes rapidly and the image is full of variation. Whether the variation corresponds to the
+      variation in the data is a separate question, and comparing the same data in grayscale is the
+      cheapest way to answer it. If features appear in grayscale that were not visible in the rainbow, they
+      were being carried by a channel that could not deliver them.</p>
+
+    <p>The same reasoning settles where hue does belong. Classification output, facies volumes and any
+      labelled result should be displayed in distinct hues at similar lightness, because the classes have
+      no order and any lightness ramp applied to them would assert one. Module 07 takes that up.</p>
+
+    <p>It also explains why so many well-designed colormaps look, at first, less impressive than the
+      rainbow they replace. They spend most of their variation on lightness, which the eye reads as
+      structure rather than as color. The image carries more information and looks calmer, and those two
+      things are related.</p>
+  </section>
+
+  <!-- ============================== EXERCISES ============================= -->
+  <section class="tabpane" id="pe" role="tabpanel" hidden>
+    <div class="tryit" style="max-width:none">
+      <h3>Exercises</h3>
+      <ol>
+        <li><b>Run the substitution.</b> Set the attribute to coherence and step through the three ramps
+          with the sliders untouched, watching the polygonal fault swarm.
+          <details class="reveal"><summary>Hint</summary><span class="ans">In the lightness ramp the small
+            offsets are visible as faint lineaments. In the chroma ramp they are marginal. In the hue ramp
+            they are gone, along with most of the channel edge, even though the image is as colorful as
+            before. The data and the value range have not changed in any of the three.</span></details></li>
+
+        <li><b>Find the chroma ceiling.</b> Set the hue to about 250° and the lightness to 30, then push
+          chroma to its maximum and read the number returned. Do the same at hue 330°.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The blue-green direction runs
+            out of chroma long before the magenta direction does, at every lightness. This is a property of
+            the display rather than of perception, and it is why single-hue ramps built on some hues look
+            washed out while others look vivid. The colormap cannot use chroma that the display cannot
+            produce.</span></details></li>
+
+        <li><b>Read the test pattern.</b> On step 2, compare where the pattern disappears in the lightness
+          ramp and in the hue ramp, and note roughly how far right and how far up each one reaches.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The lightness ramp resolves
+            finer bars and weaker amplitudes by a wide margin. The upper edge of its visible region curves
+            over, because sensitivity falls off at both very coarse and very fine scales rather than
+            increasing without limit. The hue ramp keeps only the coarse, strong corner: it needs both a
+            large region and a large difference before it reports
+            anything.</span></details></li>
+
+        <li><b>Try to order the hues.</b> On step 3, put the ramp on hue, shuffle, and write down an order
+          before revealing it. Then shuffle again and repeat.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Any order produced comes from
+            the color bar or from habit rather than from the colors themselves, and it is common to give
+            two different answers on two shuffles of the same six swatches. The lightness version does not
+            behave this way: the answer is the same every time and takes no
+            effort.</span></details></li>
+
+        <li><b>Decompose a rainbow.</b> On step 4, look at the lightness plot for the rainbow and find the
+          value where it peaks, then find that position on the color bar in the panel.
+          <details class="reveal"><summary>Hint</summary><span class="ans">The peak is in the yellow, a
+            little past the middle of the range. Data at that value is rendered brighter than data at
+            either end, so a smoothly increasing attribute appears to have a bright ridge partway up its
+            range. Nothing in the data corresponds to it, and it appears in the same relative position on
+            every image made with that colormap.</span></details></li>
+
+        <li><b>Compare two diverging maps.</b> On step 4, look at the lightness plots for red-white-blue
+          and for balance.
+          <details class="reveal"><summary>Hint</summary><span class="ans">Both are symmetric, which is
+            right for an attribute with a meaningful zero. Red-white-blue reaches L* 100 at the centre, so
+            zero is the brightest value on the display and draws the eye to wherever the attribute happens
+            to cross it. Balance stops in the mid range, which leaves the centre quiet and keeps the
+            visual emphasis on the large departures in both
+            directions.</span></details></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================== KEY POINTS ============================ -->
+  <section class="tabpane" id="pk" role="tabpanel" hidden>
+    <ul>
+      <li>Lightness, chroma and hue are the dimensions the visual system separates. A colormap can be
+        described in them just as completely as in red, green and blue, and the description says more.</li>
+      <li>Fine spatial detail is carried by lightness. Chroma carries less of it and hue carries very
+        little, which is measurable on a test pattern and visible on seismic.</li>
+      <li>Order is carried by lightness without being learned. Chroma carries a weaker version of it. Hue
+        carries none, and any ordering a reader produces has come from the color bar.</li>
+      <li>Hue is the right dimension for categories, precisely because it asserts no order.</li>
+      <li>Chroma is limited by the display, and the limit depends strongly on lightness and hue. A ramp
+        built on a hue where little chroma is available cannot be made vivid by asking for more.</li>
+      <li>Comparing a display against the same data in grayscale is the quickest test of whether its
+        information is reaching the reader.</li>
+      <li>A colormap can pass through a great deal of color, spaced perfectly evenly, and still resolve
+        nothing. Color-difference measurements describe large patches seen side by side; they say nothing
+        about how small a feature can be before the difference stops being visible.</li>
+    </ul>
+  </section>
+
+  <!-- ================================ METHOD ============================== -->
+  <section class="tabpane" id="pm" role="tabpanel" hidden>
+    <h3>Method</h3>
+    <p>Colors are built in CIE L*C*h under D65, the cylindrical form of
+      <span class="term" data-term="cielab">CIE L*a*b*</span>: lightness, chroma as the distance from the
+      neutral axis, and hue as the angle around it. This is used in preference to the HSL and HSV models
+      familiar from graphics software, whose lightness and saturation are computed from the display's
+      channels rather than from perception, and whose lightness therefore varies by a factor of three
+      across a single hue circle at a fixed setting.</p>
+
+    <p>A color asked for outside the range the display can produce is brought back by reducing its chroma
+      and leaving lightness and hue as they are, by bisection on the gamut boundary. The result is that the
+      lightness requested is always the lightness delivered, which is what makes the hue ramp a fair test:
+      it is genuinely at constant lightness along its whole length, and its chroma varies only because the
+      available chroma varies with hue.</p>
+
+    <p>The test pattern is a chirped sinusoid: spatial frequency increases geometrically from left to
+      right, with the phase accumulated column by column, and amplitude increases from top to bottom. The
+      arrangement is that of Campbell and Robson (1968), where the boundary of the visible region traces
+      the observer's contrast sensitivity. Here the pattern is rendered through the ramp under
+      construction, so the boundary depends on the ramp as well as on the observer, which is the point.</p>
+
+    <p>What the pattern shows on a screen depends on the screen, on the viewing distance and on the
+      observer, so the absolute position of the boundary is not meaningful. The comparison between the
+      three ramps, made without moving, is.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>Campbell, F. W., and J. G. Robson, 1968, Application of Fourier analysis to the visibility of
+        gratings: The Journal of Physiology, 197, 551&ndash;566, doi:
+        <a href="https://doi.org/10.1113/jphysiol.1968.sp008574">10.1113/jphysiol.1968.sp008574</a>.</li>
+      <li>Mullen, K. T., 1985, The contrast sensitivity of human colour vision to red-green and
+        blue-yellow chromatic gratings: The Journal of Physiology, 359, 381&ndash;400, doi:
+        <a href="https://doi.org/10.1113/jphysiol.1985.sp015591">10.1113/jphysiol.1985.sp015591</a>.</li>
+      <li>Ware, C., M. Stone, and D. A. Szafir, 2023, Rainbow colormaps are not all bad: IEEE Computer
+        Graphics and Applications, 43, 88&ndash;93, doi:
+        <a href="https://doi.org/10.1109/MCG.2023.3246111">10.1109/MCG.2023.3246111</a>.</li>
+      <li>Kovesi, P., 2015, Good colour maps: how to design them: arXiv preprint, doi:
+        <a href="https://doi.org/10.48550/arXiv.1509.03700">10.48550/arXiv.1509.03700</a>.</li>
+      <li>Brewer, C. A., 1994, Color use guidelines for mapping and visualization: Modern Cartography
+        Series, 2, 123&ndash;148, doi:
+        <a href="https://doi.org/10.1016/B978-0-08-042415-6.50014-4">10.1016/B978-0-08-042415-6.50014-4</a>.</li>
+      <li>Bedle, H., and A. Moreno-Ward, 2025, Techniques for improved visualization and interpretation of
+        seismic attributes using scientific colormaps: Interpretation, 13, B25&ndash;B37, doi:
+        <a href="https://doi.org/10.1190/INT-2025-0003.1">10.1190/INT-2025-0003.1</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <p>Built for teaching by Dr. Heather Bedle and Dr. April Moreno-Ward, School of Geosciences,
+        University of Oklahoma, with the
+        <a href="https://www.ou.edu/mcee/labs/aaspi">AASPI</a> consortium.</p>
+      <p class="lic">Licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        Free to use, adapt and share, including in teaching, provided the source is credited and any
+        adaptation is released under the same license.</p>
+      <p class="lic">To cite: H. Bedle and A. Moreno-Ward, <i>How Colormaps Actually Work</i>, University of
+        Oklahoma, <span class="k">hbedle-subsurface.github.io/seismic-colormap</span>.</p>
+      <p class="lic">Nothing you do inside this module leaves your browser: no slider, no click and no
+        trace you generate is transmitted anywhere. The one request the page itself makes is a page-view
+        count, so that we can show the university these are being used &mdash; no cookie and no
+        identifier, and nothing about what you did on the page.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="../assets/count.js"></script>
+<script src="../assets/popout.js"></script>
+<script src="../assets/panelout.js"></script>
+<script src="../assets/seismic.js"></script>
+<script src="../assets/cmapdata.js"></script>
+<script src="../assets/colormaps.js"></script>
+<script src="../assets/colormodel.js"></script>
+<script src="../assets/cmplot.js"></script>
+<script src="../assets/glossary.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const DEF = { L: 55, C: 55, H: 274, vary: 'L', attr: 'envelope', cmap: 'jet' };
+  const S = Object.assign({}, DEF);
+  S.tab = 'p1';
+  let order = [0, 1, 2, 3, 4, 5];
+  let revealed = false;
+
+  const model = Synthetic.build({});
+
+  function lch(L, C, H) { return Colormaps.lchToRgb(L, C, H); }
+  function css(c) {
+    return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')';
+  }
+
+  /* ---- the ramp ---------------------------------------------------------- */
+
+  /* One dimension varies from end to end; the other two hold. Chroma is always
+     reduced to what the display can produce at the lightness and hue asked
+     for, so the lightness requested is the lightness delivered. */
+  function buildRamp() {
+    const out = [];
+    for (let i = 0; i < 256; i++) {
+      const t = i / 255;
+      let L = S.L, C = S.C, H = S.H;
+      if (S.vary === 'L') L = 5 + 90 * t;
+      else if (S.vary === 'C') C = S.C * t;
+      else H = (S.H + 180 * t) % 360;
+      out.push(lch(L, C, H).rgb);
+    }
+    return out;
+  }
+
+  function rampKey() {
+    if (S.tab === 'p4') return S.cmap;
+    Colormaps.define('m02ramp', buildRamp(), { name: 'Built ramp' });
+    return 'm02ramp';
+  }
+
+  /* ---- panel drawing ----------------------------------------------------- */
+
+  function drawSwatch() {
+    const cv = $('cSwatch');
+    const w = Math.max(240, cv.parentNode.clientWidth || 0);
+    if (w < 200) return;
+    const h = 92;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+
+    const got = lch(S.L, S.C, S.H);
+    ctx.fillStyle = css(got.rgb);
+    ctx.fillRect(12, 10, 72, 72);
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(12.5, 10.5, 72, 72);
+
+    /* the hue circle at this lightness and chroma, with the current angle marked */
+    const cx = w - 60, cy = h / 2, r = 34;
+    for (let a = 0; a < 360; a += 2) {
+      const c = lch(S.L, S.C, a).rgb;
+      ctx.strokeStyle = css(c);
+      ctx.lineWidth = 11;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 6, (a - 1) * Math.PI / 180, (a + 1.6) * Math.PI / 180);
+      ctx.stroke();
+    }
+    const rad = S.H * Math.PI / 180;
+    ctx.strokeStyle = '#16191C'; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(cx + (r - 13) * Math.cos(rad), cy + (r - 13) * Math.sin(rad));
+    ctx.lineTo(cx + (r + 1) * Math.cos(rad), cy + (r + 1) * Math.sin(rad));
+    ctx.stroke();
+
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('the colour set by the three sliders', 96, 14);
+    ctx.fillText(got.clipped
+      ? 'chroma reduced to what the display can show'
+      : 'inside the range the display can show', 96, 32);
+    ctx.fillText('hue circle at this lightness \u2192', 96, 56);
+  }
+
+  function drawStrip() {
+    const cv = $('cStrip');
+    const w = Math.max(240, cv.parentNode.clientWidth || 0);
+    if (w < 200) return;
+    const h = 46;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 54, ww = w - x0 - 14, bh = 22;
+    const key = rampKey();
+    const a = Colormaps.lut(key), n = a.length / 3;
+    for (let i = 0; i < ww; i++) {
+      const j = Math.round(i / (ww - 1) * (n - 1)) * 3;
+      ctx.fillStyle = 'rgb(' + a[j] + ',' + a[j + 1] + ',' + a[j + 2] + ')';
+      ctx.fillRect(x0 + i, 10, 1.2, bh);
+    }
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, 10.5, ww, bh);
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const lbl = S.tab === 'p4' ? Colormaps.meta[S.cmap].name
+              : (S.vary === 'L' ? 'lightness' : S.vary === 'C' ? 'chroma' : 'hue');
+    ctx.fillText(lbl, x0 - 6, 10 + bh / 2);
+  }
+
+  function drawMap() {
+    const key = rampKey();
+    const r = Synthetic.RANGES[S.attr];
+    CMPLOT.map($('cMap'), model.slice(S.attr), {
+      nx: model.nx, ny: model.ny, cmap: key, min: r[0], max: r[1],
+      cyclic: !!Synthetic.CYCLIC[S.attr], height: 252,
+      title: Synthetic.LABEL[S.attr]
+    });
+    CMPLOT.colorbar($('cBar'), { cmap: key, min: r[0], max: r[1],
+                                 label: Synthetic.LABEL[S.attr] });
+
+    const L = Colormaps.lightness(key);
+    let lo = 100, hi = 0;
+    for (let i = 0; i < L.length; i++) { lo = Math.min(lo, L[i]); hi = Math.max(hi, L[i]); }
+    $('sSpan').textContent = (hi - lo).toFixed(1) + ' L*  (from ' + lo.toFixed(0) +
+                             ' to ' + hi.toFixed(0) + ')';
+
+    /* The summed CIE76 distance from one end of the ramp to the other: how
+       much color the ramp passes through in total, however it spends it. */
+    const arr = Colormaps.lut(key), nn = arr.length / 3;
+    let dist = 0, prev = Colormaps.rgbToLab(arr[0], arr[1], arr[2]);
+    for (let i = 1; i < nn; i++) {
+      const cur = Colormaps.rgbToLab(arr[3 * i], arr[3 * i + 1], arr[3 * i + 2]);
+      dist += Math.sqrt((cur[0] - prev[0]) * (cur[0] - prev[0]) +
+                        (cur[1] - prev[1]) * (cur[1] - prev[1]) +
+                        (cur[2] - prev[2]) * (cur[2] - prev[2]));
+      prev = cur;
+    }
+    $('sDist').textContent = dist.toFixed(0);
+    if (S.tab === 'p4') {
+      $('capMap').textContent = Colormaps.meta[S.cmap].note;
+    } else {
+      const what = S.vary === 'L' ? 'Lightness varies along the map; chroma and hue are held.'
+                 : S.vary === 'C' ? 'Chroma varies along the map; lightness and hue are held.'
+                 : 'Hue varies along the map; lightness is held, and chroma only moves because the ' +
+                   'display cannot produce the same amount at every hue.';
+      $('capMap').textContent = what;
+    }
+  }
+
+  function readouts() {
+    const got = lch(S.L, S.C, S.H);
+    $('sL').textContent = S.L.toFixed(0);
+    $('sC').textContent = got.chroma.toFixed(0) + (got.clipped ? '  (asked ' + S.C + ')' : '');
+    $('sH').textContent = S.H.toFixed(0) + '\u00b0';
+    $('sCmax').textContent = Colormaps.maxChroma(S.L, S.H).toFixed(0);
+  }
+
+  /* ---- step figures ------------------------------------------------------ */
+
+  /* A chirped sinusoid: frequency rises to the right, amplitude downward. */
+  function drawGrating() {
+    const cv = $('cGrating');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const h = 260;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    const off = document.createElement('canvas');
+    const W = Math.min(760, Math.round(w)), H = 240;
+    off.width = W; off.height = H;
+    const img = off.getContext('2d').createImageData(W, H);
+
+    const a = Colormaps.lut(rampKey()), n = a.length / 3;
+    const f0 = 0.004, f1 = 0.22;                 // cycles per pixel
+    const phase = new Float64Array(W);
+    let ph = 0;
+    for (let x = 0; x < W; x++) {
+      const f = f0 * Math.pow(f1 / f0, x / (W - 1));
+      ph += 2 * Math.PI * f;
+      phase[x] = ph;
+    }
+    for (let y = 0; y < H; y++) {
+      const amp = Math.pow(10, -2 * (1 - y / (H - 1)));   // 1% at the top, 100% at the foot
+      for (let x = 0; x < W; x++) {
+        let v = 0.5 + 0.5 * amp * Math.sin(phase[x]);
+        let i = Math.round(v * (n - 1));
+        if (i < 0) i = 0; if (i > n - 1) i = n - 1;
+        const k = 4 * (y * W + x);
+        img.data[k] = a[3 * i]; img.data[k + 1] = a[3 * i + 1];
+        img.data[k + 2] = a[3 * i + 2]; img.data[k + 3] = 255;
+      }
+    }
+    off.getContext('2d').putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, w, h - 20);
+    ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, w - 1, h - 20);
+    ctx.font = '10.5px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5C6670';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('coarse', 2, h - 17);
+    ctx.textAlign = 'right';
+    ctx.fillText('fine', w - 2, h - 17);
+    ctx.textAlign = 'center';
+    ctx.fillText('amplitude 1% at the top, 100% at the foot', w / 2, h - 17);
+  }
+
+  function drawOrder() {
+    const cv = $('cOrder');
+    if (!cv || cv.hidden) return;
+    const w = Math.max(320, (cv.parentNode.clientWidth || 0) - 4);
+    if (w < 300) return;
+    const h = 120;
+    const ctx = SEIS.fitCanvas(cv, w, h);
+    ctx.clearRect(0, 0, w, h);
+    const a = Colormaps.lut(rampKey()), n = a.length / 3;
+    const gap = 10, bw = (w - gap * 7) / 6;
+    const letters = 'ABCDEF';
+    for (let s = 0; s < 6; s++) {
+      const rank = order[s];
+      const i = Math.round((0.08 + 0.84 * rank / 5) * (n - 1)) * 3;
+      const x = gap + s * (bw + gap);
+      ctx.fillStyle = 'rgb(' + a[i] + ',' + a[i + 1] + ',' + a[i + 2] + ')';
+      ctx.fillRect(x, 12, bw, 62);
+      ctx.strokeStyle = 'rgba(22,25,28,.45)'; ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, 12.5, bw, 62);
+      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#5C6670';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(letters[s], x + bw / 2, 80);
+      if (revealed) {
+        ctx.fillStyle = '#841617';
+        ctx.fillText('rank ' + (rank + 1), x + bw / 2, 96);
+      }
+    }
+    if (!revealed) {
+      ctx.font = '10.5px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#5C6670';
+      ctx.textAlign = 'left';
+      ctx.fillText('lowest value to highest: which order?', gap, 96);
+    }
+  }
+
+  function drawDecomp() {
+    if ($('cLC').hidden) return;
+    const a = Colormaps.lut(S.cmap), n = a.length / 3;
+    const x = [], L = [], C = [], Hs = [];
+    for (let i = 0; i < n; i++) {
+      const q = Colormaps.rgbToLch(a[3 * i], a[3 * i + 1], a[3 * i + 2]);
+      x.push(i / (n - 1)); L.push(q[0]); C.push(q[1]); Hs.push(q[2]);
+    }
+    CMPLOT.lines($('cLC'), [
+      { x: x, y: L, color: '#841617', width: 2 },
+      { x: x, y: C, color: '#5C6670', width: 1.8 }
+    ], {
+      xMin: 0, xMax: 1, yMin: 0, yMax: 130, height: 200,
+      xLabel: 'Position along the colormap', yLabel: 'L* and C*',
+      xFmt: (v) => v.toFixed(1), yFmt: (v) => v.toFixed(0),
+      title: 'Lightness and chroma along ' + Colormaps.meta[S.cmap].name
+    });
+    CMPLOT.lines($('cHue'), [{ x: x, y: Hs, color: '#2d5fa8', width: 1.8 }], {
+      xMin: 0, xMax: 1, yMin: 0, yMax: 360, height: 180,
+      xLabel: 'Position along the colormap', yLabel: 'Hue angle (\u00b0)',
+      xFmt: (v) => v.toFixed(1), yFmt: (v) => v.toFixed(0),
+      title: 'Hue angle along ' + Colormaps.meta[S.cmap].name
+    });
+  }
+
+  /* ---- redraw ------------------------------------------------------------ */
+
+  function drawAll() {
+    drawSwatch();
+    drawStrip();
+    drawMap();
+    readouts();
+    if (S.tab === 'p2') drawGrating();
+    if (S.tab === 'p3') drawOrder();
+    if (S.tab === 'p4') drawDecomp();
+  }
+
+  function throttle(fn) {
+    let queued = false;
+    return function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+  const redraw = throttle(drawAll);
+
+  /* ---- controls ---------------------------------------------------------- */
+
+  function range(id, key, fmt) {
+    const el = $(id), out = $(id + 'V');
+    const show = () => { if (out) out.textContent = fmt(parseFloat(el.value)); };
+    el.addEventListener('input', () => { S[key] = parseFloat(el.value); show(); redraw(); });
+    show();
+  }
+  range('sl', 'L', (v) => v.toFixed(0));
+  range('sc', 'C', (v) => v.toFixed(0));
+  range('sh', 'H', (v) => v.toFixed(0) + '\u00b0');
+
+  function segment(buttons, onPick) {
+    buttons.forEach((b) => {
+      $(b[0]).addEventListener('click', () => {
+        buttons.forEach((o) => $(o[0]).setAttribute('aria-pressed', String(o[0] === b[0])));
+        onPick(b[1]);
+      });
+    });
+  }
+  segment([['vL', 'L'], ['vC', 'C'], ['vH', 'H']], (v) => { S.vary = v; drawAll(); });
+
+  $('attr').addEventListener('change', () => { S.attr = $('attr').value; redraw(); });
+
+  (function fillCmapMenu() {
+    const sel = $('cmap');
+    const CLS = { sequential: 'Sequential', diverging: 'Diverging',
+                  cyclic: 'Cyclic', categorical: 'Categorical' };
+    const ERA = { scientific: 'scientific', traditional: 'in common use' };
+    Object.keys(CLS).forEach((cls) => {
+      Object.keys(ERA).forEach((era) => {
+        const keys = Colormaps.list(cls, era);
+        if (!keys.length) return;
+        const g = document.createElement('optgroup');
+        g.label = CLS[cls] + ' \u2014 ' + ERA[era];
+        keys.forEach((k) => {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = Colormaps.meta[k].name;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    });
+    sel.value = S.cmap;
+    sel.addEventListener('change', () => { S.cmap = sel.value; redraw(); });
+  })();
+
+  function shuffle() {
+    order = [0, 1, 2, 3, 4, 5];
+    for (let i = 5; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    revealed = false;
+    $('revealBtn').textContent = 'Show the order';
+    drawOrder();
+  }
+  $('shuffleBtn').addEventListener('click', shuffle);
+  $('revealBtn').addEventListener('click', () => {
+    revealed = !revealed;
+    $('revealBtn').textContent = revealed ? 'Hide the order' : 'Show the order';
+    drawOrder();
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    const tab = S.tab;
+    Object.assign(S, DEF);
+    S.tab = tab;
+    $('sl').value = S.L; $('sc').value = S.C; $('sh').value = S.H;
+    $('slV').textContent = S.L; $('scV').textContent = S.C;
+    $('shV').textContent = S.H + '\u00b0';
+    ['vL', 'vC', 'vH'].forEach((id) => {
+      $(id).setAttribute('aria-pressed', String(id === 'vL'));
+    });
+    $('attr').value = S.attr; $('cmap').value = S.cmap;
+    drawAll();
+  });
+
+  /* ---- tabs -------------------------------------------------------------- */
+
+  const PANES = ['p1', 'p2', 'p3', 'p4', 'pw', 'pe', 'pk', 'pm'];
+
+  function showTab(id) {
+    PANES.forEach((q) => { const el = $(q); if (el) el.hidden = q !== id; });
+    document.querySelectorAll('#tabs button').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    S.tab = id;
+    const live = (id === 'p1' || id === 'p2' || id === 'p3' || id === 'p4');
+    const lab = document.querySelector('.labhead');
+    if (lab) lab.hidden = !live;
+    $('ctlCmap').hidden = (id !== 'p4');
+    if (id === 'p3') shuffle();
+    if (live) drawAll();
+  }
+
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.addEventListener('click', () => showTab(b.dataset.tab));
+  });
+  document.querySelectorAll('.masthead a[data-tab]').forEach((a) => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      showTab(a.dataset.tab);
+      const strip = $('tabs');
+      if (strip && strip.scrollIntoView) strip.scrollIntoView({ block: 'start' });
+    });
+  });
+
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 140); });
+
+  showTab('p1');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>
