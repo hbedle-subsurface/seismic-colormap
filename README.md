@@ -66,7 +66,8 @@ assets/cmplot.js        map, precomputed image, section, color bar and line plot
 assets/glossary.js      click a marked term, get its definition
 assets/guide.js         the per-step "try this" task list
 assets/nextmod.js       previous and next module navigation
-assets/panelview.js     map / section switch, the vertical section, panel collapse
+assets/panelview.js     map / section switch, the vertical section, the map cut
+                        level, panel collapse
 ```
 
 Module code is inline at the foot of each module page, as in the other
@@ -125,6 +126,10 @@ crossline runs across the channel and shows the sand thinning to its margins.
 It returns the top and base of the sand along the same panel so the displays
 can be tied together with guide lines. `model.section(line)` is the older
 amplitude-only form and is still used by module 00.
+
+`model.setLevel({mode, offset, t})` moves the map view through the section:
+`horizon` follows the marker at an offset in ms, `time` cuts at a constant
+two-way time. It clears the slice cache, so call `redraw` after it.
 
 Display ranges are fixed constants in `Synthetic.RANGES`. Moving a slider
 changes the picture, not the scale. Module 06 is where the ranges come under the

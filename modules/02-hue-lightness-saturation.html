@@ -481,7 +481,9 @@ const GUIDE = {
   p2: { items: [
       { do: "Step through the three ramps and note how far right and how far up the pattern stays visible.", see: "Lightness reaches much finer bars and weaker amplitudes than either of the other two." },
       { do: "Set the attribute to coherence and repeat, watching the fault traces instead.", see: "The same result on real features: they survive in lightness and vanish in hue." },
-      { do: "Read the total colour difference for the hue ramp and for the lightness ramp.", see: "The hue ramp passes through more colour and shows less. Colour difference is not resolving power." }
+      { do: "Read the total colour difference for the hue ramp and for the lightness ramp.", see: "The hue ramp passes through more colour and shows less. Colour difference is not resolving power." },
+      { do: "Press Section at the top of the panel and step through the three ramps again.",
+        see: "The reflections are thin, high-contrast features, so the lightness ramp holds them and the hue ramp loses them entirely. Fine detail behaves the same way in time as it does in map view." }
   ]},
   p3: { items: [
       { do: "Put the ramp on lightness, shuffle, and put the swatches in order.", see: "Immediate, and nobody disagrees." },
@@ -902,6 +904,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const r = Synthetic.RANGES[S.attr];
       return { attr: S.attr, cmap: rampKey(), min: r[0], max: r[1],

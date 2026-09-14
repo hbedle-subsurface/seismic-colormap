@@ -211,6 +211,12 @@
       from the single-attribute display of the same data.</span>
     </div>
 
+    <p>The Section button shows the same corendering in time. Most of a section is quiet, so most of it is
+      dark before any modulation is applied, and what the corendering adds is a set of dark notches where
+      the faults cut the strong reflections. It is also the clearest demonstration of why coherence is
+      corendered rather than displayed on its own: between the reflections there is no signal for it to
+      measure, and it returns low values that mean nothing.</p>
+
     <p>A strength somewhere between 50% and 80% is where most displays of this kind end up, and the right
       value depends on whether the reader is being asked to read the first attribute's values or only to
       see where its features are. If the values matter, the strength should be low and the second attribute
@@ -472,7 +478,9 @@ const GUIDE = {
   ]},
   p2: { items: [
       { do: "Take the strength to 100% with Oslo and look at the low-envelope areas outside the channel.", see: "They are black, and so are the low-coherence areas: two different things rendered identically." },
-      { do: "Read the range left to the first attribute at 0%, 50% and 80% strength.", see: "L* 2 to 91 becomes L* 1 to 52. The colour bar has stopped describing the image." }
+      { do: "Read the range left to the first attribute at 0%, 50% and 80% strength.", see: "L* 2 to 91 becomes L* 1 to 52. The colour bar has stopped describing the image." },
+      { do: "Press Section with envelope in colour and coherence on the lightness.",
+        see: "The strong reflections carry the colour and the faults cut dark notches through them. Most of a section is quiet, so most of it is dark, which is what an envelope section looks like before any corendering." }
   ]},
   p3: { items: [
       { do: "Set phase in RomaO with the method on First only, then switch to Transparency with envelope as the mask.", see: "Unmasked, the display is equally confident where it is measuring noise. Masked, it speaks only where there is a reflection." },
@@ -518,13 +526,20 @@ const GUIDE = {
   const lin = Colormaps.srgbToLinear;
   const srgb = Colormaps.linearToSrgb;
 
-  function composite() {
-    const n = model.nx * model.ny;
+  /* The same compositing serves the map and the vertical section: the caller
+     supplies the two attribute arrays and gets RGBA back. */
+  function composeFrom(va, vb) {
+    const n = va.length;
     const a = Colormaps.lut(S.cmap), levels = a.length / 3;
-    const va = model.slice(S.attrA);
     const ra = Synthetic.RANGES[S.attrA];
+    const rb = Synthetic.RANGES[S.attrB];
     const cyc = !!Synthetic.CYCLIC[S.attrA];
-    const nb = norm(S.attrB);
+    const nb = new Float32Array(n);
+    const spb = (rb[1] - rb[0]) || 1;
+    for (let i = 0; i < n; i++) {
+      let t = (vb[i] - rb[0]) / spb;
+      nb[i] = t < 0 ? 0 : t > 1 ? 1 : t;
+    }
     const out = new Uint8ClampedArray(4 * n);
     const st = S.strength / 100, thr = S.thr / 100, tap = S.taper / 100;
     let muted = 0;
@@ -584,6 +599,10 @@ const GUIDE = {
     }
     return { rgba: out, muted: muted, n: n, worstLo: worstLo, worstHi: worstHi,
              lmin: lmin, lmax: lmax };
+  }
+
+  function composite() {
+    return composeFrom(model.slice(S.attrA), model.slice(S.attrB));
   }
 
   /* ---- the second attribute's strip -------------------------------------- */
@@ -827,7 +846,12 @@ const GUIDE = {
   showTab('p1');
   /* No section here: this display is built from two attributes at once and the
      section would need both. The Hide button is still worth having. */
-  PANELVIEW.init({ model: model });
+  PANELVIEW.init({
+    model: model, redraw: drawAll,
+    state: function () { return { attr: S.attrA }; },
+    sectionAttrs: function () { return [S.attrA, S.attrB]; },
+    compose: function (panels) { return composeFrom(panels[0].data, panels[1].data).rgba; }
+  });
 
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();

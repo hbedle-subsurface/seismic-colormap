@@ -458,7 +458,9 @@ const GUIDE = {
   p2: { items: [
       { do: "Put the rainbow on the smooth field, note where a band edge falls, then raise the bottom of the range to 20%.", see: "Every edge slides. The channel and the faults in the seismic map do not." },
       { do: "Switch to the sixteen-step rainbow.", see: "Sixteen flat bands with hard edges, all at values fixed by the table." },
-      { do: "Switch to viridis or Oslo.", see: "The field looks like what it is: smooth, with no edges anywhere." }
+      { do: "Switch to viridis or Oslo.", see: "The field looks like what it is: smooth, with no edges anywhere." },
+      { do: "Press Section, put the rainbow on amplitude, and move the bottom of the range.",
+        see: "The bands slide through the section while the reflections stay where they are. The same test works in either view." }
   ]},
   p3: { items: [
       { do: "Click the bar for balance and note where it sits in the chart.", see: "Well down it, because a diverging map is slow at its neutral point by design. The number is not a fault." },
@@ -887,6 +889,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const rg = range();
       return { attr: S.attr, cmap: S.cmap, min: rg[0], max: rg[1],

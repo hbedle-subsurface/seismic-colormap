@@ -600,7 +600,9 @@ const GUIDE = {
       { do: "Click the bar for viridis and read the numbers.", see: "0.27 on the smallest surviving step, 72% of the colour kept. Safe in the sense that matters, not unaffected." }
   ]},
   p3: { items: [
-      { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." }
+      { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." },
+      { do: "Press Section and compare the two panels again on amplitude.",
+        see: "The reflections survive any simulation when the colormap is diverging with a light centre, because the two arms differ in lightness as well as hue." }
   ]},
   p4: { items: [
       { do: "Put the display in the rainbow, the annotation hue on red and its lightness at 50, and follow the channel margin.", see: "The pick disappears wherever it crosses a similar colour, and over much more of the image under simulation." },
@@ -1047,6 +1049,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const r = Synthetic.RANGES[S.attr];
       return { attr: S.attr, cmap: displayKey(), min: r[0], max: r[1],

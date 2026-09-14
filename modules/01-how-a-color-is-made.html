@@ -966,6 +966,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const r = Synthetic.RANGES[S.attr];
       return { attr: S.attr, cmap: currentMapKey(), min: r[0], max: r[1] };

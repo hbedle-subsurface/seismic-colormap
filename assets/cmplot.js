@@ -165,6 +165,9 @@ const CMPLOT = (function () {
      Time increases downward.
      --------------------------------------------------------------------- */
 
+  /* opts.rgba, when present, is a finished RGBA buffer for the section: used
+     where the colours are composited from more than one attribute and there is
+     no single colormap to look them up in. */
   function section(canvas, sec, o) {
     const p = setup(canvas, o.height || 260);
     if (!p) return null;
@@ -174,11 +177,15 @@ const CMPLOT = (function () {
     off.width = sec.nTrace; off.height = sec.nt;
     const octx = off.getContext('2d');
     const img = octx.createImageData(sec.nTrace, sec.nt);
-    Colormaps.apply(sec.data, img, {
-      name: o.cmap || 'seismic', min: o.min, max: o.max,
-      nLevels: o.nLevels, invert: o.invert,
-      cvd: o.cvd, cvdSeverity: o.cvdSeverity
-    });
+    if (o.rgba) {
+      img.data.set(o.rgba);
+    } else {
+      Colormaps.apply(sec.data, img, {
+        name: o.cmap || 'seismic', min: o.min, max: o.max,
+        nLevels: o.nLevels, invert: o.invert,
+        cvd: o.cvd, cvdSeverity: o.cvdSeverity
+      });
+    }
     octx.putImageData(img, 0, 0);
 
     ctx.save();

@@ -488,7 +488,9 @@ const GUIDE = {
     { do: 'Switch the colormap to grayscale and back, watching the pockmark field.',
       see: 'Low-contrast fine detail is easier to follow in grayscale, because lightness is what resolves it.' },
     { do: 'Press the no-colour simulation button.',
-      see: 'What survives is carried by lightness. It is the strictest test available and the quickest.' }
+      see: 'What survives is carried by lightness. It is the strictest test available and the quickest.' },
+      { do: "Move the Map cut slider to +62 and then to +150, watching which features appear.",
+        see: "The second channel and then the deeper marker. A display is a choice of level as much as a choice of colours, and the level is almost never stated in a caption." }
   ]},
   p4: { items: [
     { do: 'Build a display you would defend, then read the record and decide which lines you would have written unprompted.',
@@ -909,6 +911,7 @@ const GUIDE = {
 
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const rg = range();
       return { attr: S.attr, cmap: mapKey(), min: rg[0], max: rg[1],

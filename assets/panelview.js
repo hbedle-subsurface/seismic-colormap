@@ -52,7 +52,9 @@ const PANELVIEW = (function () {
   ].join('');
 
   var cfg = null, view = 'map', collapsed = false;
-  var col = null, box = null, cv = null, cap = null;
+  var col = null, box = null, cv = null, cap = null, bar = null, levelBox = null;
+  var lvMode = 'horizon', lvOffset = 0, lvTime = 1050;
+  var lvSlider = null, lvOut = null, lvNote = null;
   var dirBtns = null, idxEl = null, idxOut = null;
   var dir = 'inline', index = 60;
 
@@ -71,6 +73,8 @@ const PANELVIEW = (function () {
     view = v;
     Array.prototype.forEach.call(col.children, function (c) {
       if (c === box) c.classList.toggle('pv-hidden', v !== 'section');
+      else if (c === levelBox) c.classList.toggle('pv-hidden', v !== 'map');
+      else if (c.contains(bar)) c.classList.remove('pv-hidden');   // the switch itself
       else c.classList.toggle('pv-hidden', v === 'section');
     });
     dirBtns.forEach(function (b) {
@@ -93,14 +97,30 @@ const PANELVIEW = (function () {
     if (!cfg || !cfg.state || view !== 'section' || collapsed) return;
     var s = cfg.state();
     if (!s) return;
-    var attr = SECTION_OK[s.attr] ? s.attr : 'amplitude';
-    var p = cfg.model.panel(dir, index, attr);
+
+    /* A display composited from more than one attribute has no single colormap
+       to look the section up in, so the module builds the colours itself from
+       the panels it asks for. */
+    var rgba = null, p, attr;
+    if (cfg.compose) {
+      var names = cfg.sectionAttrs ? cfg.sectionAttrs() : [s.attr];
+      var panels = names.map(function (a) {
+        return cfg.model.panel(dir, index, SECTION_OK[a] ? a : 'amplitude');
+      });
+      p = panels[0];
+      attr = names[0];
+      rgba = cfg.compose(panels);
+    } else {
+      attr = SECTION_OK[s.attr] ? s.attr : 'amplitude';
+      p = cfg.model.panel(dir, index, attr);
+    }
     var lo = s.min, hi = s.max;
-    if (attr !== s.attr) {
+    if (!rgba && attr !== s.attr) {
       var r = Synthetic.RANGES.amplitude;
       lo = r[0]; hi = r[1];
     }
     CMPLOT.section(cv, p, {
+      rgba: rgba,
       cmap: s.cmap, min: lo, max: hi, nLevels: s.nLevels || 0,
       cvd: (s.cvd && s.cvd !== 'off') ? s.cvd : undefined,
       cvdSeverity: s.cvdSeverity === undefined ? 1 : s.cvdSeverity,
@@ -122,16 +142,26 @@ const PANELVIEW = (function () {
           }
           ctx.stroke();
         });
+        /* where the map view is being cut, so the two views tie together */
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = '#16191C'; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (var i2 = 0; i2 < p.nTrace; i2++) {
+          var tt = (lvMode === 'time') ? lvTime : p.top[i2] + lvOffset;
+          var q2 = toPix(i2, tt);
+          if (i2 === 0) ctx.moveTo(q2[0], q2[1]); else ctx.lineTo(q2[0], q2[1]);
+        }
+        ctx.stroke();
         ctx.restore();
       }
     });
-    cap.textContent = (attr !== s.attr
+    cap.textContent = ((!rgba && attr !== s.attr)
       ? Synthetic.LABEL[s.attr] + ' is a map surface with no section equivalent, so amplitude is shown. '
       : '') +
       (dir === 'inline'
         ? 'This line crosses all three faults and several bends of the channel.'
         : 'This line crosses the channel, where the sand thins to nothing at both margins.') +
-      ' Solid line: top of the sand. Dashed: base.';
+      ' Solid red: top of the sand. Dashed red: base. Fine black: where the map view is cut.';
   }
 
   function build() {
@@ -144,9 +174,9 @@ const PANELVIEW = (function () {
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    var bar = el('div', 'pv-bar');
+    bar = el('div', 'pv-bar');
     dirBtns = [];
-    if (cfg.state) {
+    if (cfg.state && (!cfg.noSection || cfg.compose)) {
       [['map', 'Map'], ['section', 'Section']].forEach(function (v) {
         var b = el('button', null, v[1]);
         b.type = 'button';
@@ -167,6 +197,7 @@ const PANELVIEW = (function () {
     if (cap0) cap0.appendChild(bar); else head.insertBefore(bar, head.firstChild);
 
     if (!cfg.state) return true;
+    if (cfg.noSection && !cfg.compose) { buildLevel(); return true; }
 
     /* the section block, which lives in the same column as the map */
     box = el('div', 'pv-sect pv-hidden');
@@ -222,8 +253,92 @@ const PANELVIEW = (function () {
     ctl2.appendChild(idxEl);
     box.appendChild(ctl2);
     col.appendChild(box);
+    buildLevel();
     showIdx();
     return true;
+  }
+
+  /* where the map is cut: along a phantom horizon or at a constant time */
+  function buildLevel() {
+    levelBox = el('div', 'pv-sect');
+    var lc = el('div', 'ctl');
+    var ll = el('label');
+    ll.appendChild(el('span', null, 'Map cut'));
+    lc.appendChild(ll);
+    var lseg = el('div', 'seg');
+    lseg.setAttribute('role', 'group');
+    [['horizon', 'Along the marker'], ['time', 'Constant time']].forEach(function (mo) {
+      var b = el('button', null, mo[1]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(mo[0] === lvMode));
+      b.addEventListener('click', function () {
+        lvMode = mo[0];
+        Array.prototype.forEach.call(lseg.children, function (o) {
+          o.setAttribute('aria-pressed', String(o === b));
+        });
+        syncLevelSlider();
+        applyLevel();
+      });
+      lseg.appendChild(b);
+    });
+    lc.appendChild(lseg);
+    levelBox.appendChild(lc);
+
+    var lc2 = el('div', 'ctl');
+    var l3 = el('label');
+    l3.appendChild(el('span', null, 'Level'));
+    lvOut = el('span', 'val');
+    l3.appendChild(lvOut);
+    lc2.appendChild(l3);
+    lvSlider = el('input');
+    lvSlider.type = 'range';
+    lvSlider.step = 1;
+    lvSlider.addEventListener('input', function () {
+      if (lvMode === 'time') lvTime = +lvSlider.value; else lvOffset = +lvSlider.value;
+      applyLevel();
+    });
+    lc2.appendChild(lvSlider);
+    levelBox.appendChild(lc2);
+    lvNote = el('p', 'hint-line');
+    lvNote.innerHTML = '&nbsp;';
+    levelBox.appendChild(lvNote);
+    col.appendChild(levelBox);
+    syncLevelSlider();
+  }
+
+  function syncLevelSlider() {
+    if (!lvSlider) return;
+    if (lvMode === 'time') {
+      lvSlider.min = 880; lvSlider.max = 1300; lvSlider.value = lvTime;
+    } else {
+      lvSlider.min = -150; lvSlider.max = 210; lvSlider.value = lvOffset;
+    }
+    showLevel();
+  }
+
+  function showLevel() {
+    if (!lvOut) return;
+    lvOut.textContent = lvMode === 'time'
+      ? lvTime + ' ms'
+      : (lvOffset > 0 ? '+' : '') + lvOffset + ' ms from the marker';
+    var s = cfg && cfg.state ? cfg.state() : null;
+    var levelled = s && cfg.model.levelled[s.attr];
+    if (lvNote) {
+      lvNote.textContent = levelled
+        ? (lvMode === 'time'
+            ? 'A constant two-way time everywhere, which cuts across the structure.'
+            : 'A phantom horizon following the marker, which keeps a stratigraphic interval together. '
+              + 'The wedge is near \u2212115, the second channel at +62, the sheet at +105 and the deeper marker at +150.')
+        : (s ? Synthetic.LABEL[s.attr] + ' is a property of a surface and does not have a level.' : '');
+    }
+  }
+
+  function applyLevel() {
+    if (!cfg || !cfg.model.setLevel) return;
+    cfg.model.setLevel({ mode: lvMode, offset: lvOffset, t: lvTime });
+    showLevel();
+    if (cfg.redraw) cfg.redraw();
+    draw();
   }
 
   function showIdx() {

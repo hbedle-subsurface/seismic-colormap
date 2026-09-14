@@ -76,6 +76,17 @@ PANELVIEW.init({
 - The section carries its own direction and position controls. An inline
   crosses all three faults and several bends of the channel; a crossline
   crosses the channel and shows the sand thinning to its margins.
+- The map view carries a **Map cut** control: a phantom horizon following the
+  marker at a chosen offset, or a constant two-way time. The section draws a
+  fine black line at whatever level the map is being cut, so the two views tie
+  together. Changing it calls `model.setLevel` and then `redraw`, so pass
+  `redraw: drawAll` in the options or the map will not update.
+- `noSection: true` gives the Map cut control without the section.
+- A display composited from more than one attribute supplies `sectionAttrs`,
+  returning the attribute names the section needs, and `compose`, which is
+  handed the panels and returns a finished RGBA buffer. That is how the
+  corendered and blended modules draw a section without having a single
+  colormap to look it up in.
 
 ## Checking
 

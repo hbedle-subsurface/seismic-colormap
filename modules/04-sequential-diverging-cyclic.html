@@ -481,7 +481,9 @@ const GUIDE = {
   ]},
   p4: { items: [
       { do: "Put phase in balance and drag the wrap rotation through a full turn.", see: "A hard edge sweeps across the survey. Nothing in the data changed: every pair of samples is the same distance apart." },
-      { do: "Switch the colormap to RomaO and rotate again.", see: "Nothing happens, which is the whole point of a cyclic colormap." }
+      { do: "Switch the colormap to RomaO and rotate again.", see: "Nothing happens, which is the whole point of a cyclic colormap." },
+      { do: "Press Section with phase in balance, then rotate the wrap.",
+        see: "The seam runs through the section as a set of hard edges cutting across the reflections, which is the clearest view of it being an artefact of the reporting convention." }
   ]}
 };
 </script>
@@ -779,6 +781,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const rg = range();
       return { attr: S.attr, cmap: S.cmap, min: rg[0], max: rg[1],

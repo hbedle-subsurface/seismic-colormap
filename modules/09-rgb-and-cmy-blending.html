@@ -487,7 +487,9 @@
 const GUIDE = {
   p1: { items: [
       { do: "Take one gain to 3 and watch the saturation readout and that channel's image.", see: "Above about 20% saturation the channel has stopped carrying information over much of the survey." },
-      { do: "Compare the blend against the three grayscale channel images below it.", see: "Everything the blend can show is in those three, and each of them is more readable on its own." }
+      { do: "Compare the blend against the three grayscale channel images below it.", see: "Everything the blend can show is in those three, and each of them is more readable on its own." },
+      { do: "Press Section at the top of the panel.",
+        see: "The three channels are blended in time as well as in map view. Where the three attributes disagree the section turns a secondary colour, and where they agree it runs gray." }
   ]},
   p2: { items: [
       { do: "Press Rotate the three inputs three times.", see: "The image returns to where it started. Each version makes a different attribute look like the subject." },
@@ -569,8 +571,20 @@ const GUIDE = {
 
   /* ---- the blend --------------------------------------------------------- */
 
-  function blend() {
-    const R = channel(S.aR, S.gR), G = channel(S.aG, S.gG), B = channel(S.aB, S.gB);
+  /* Normalize one panel of section data the same way a map channel is done. */
+  function panelChannel(v, attr, gain) {
+    const q = BAND_HZ[attr] ? { r: bandRange } : { r: Synthetic.RANGES[attr] };
+    const out = new Float32Array(v.length);
+    const span = (q.r[1] - q.r[0]) || 1;
+    for (let i = 0; i < v.length; i++) {
+      let t = (v[i] - q.r[0]) / span * gain;
+      out[i] = t < 0 ? 0 : t > 1 ? 1 : t;
+    }
+    return out;
+  }
+
+  /* The same blend serves the map and the vertical section. */
+  function blendFrom(R, G, B) {
     const n = R.length;
     const out = new Uint8ClampedArray(4 * n);
     const corner = new Float64Array(8);
@@ -592,6 +606,10 @@ const GUIDE = {
     }
     return { rgba: out, n: n, corner: corner,
              sat: [satR / n, satG / n, satB / n], R: R, G: G, B: B };
+  }
+
+  function blend() {
+    return blendFrom(channel(S.aR, S.gR), channel(S.aG, S.gG), channel(S.aB, S.gB));
   }
 
   function corr(a, b) {
@@ -798,7 +816,22 @@ const GUIDE = {
 
   seen.p1 = true;
   showTab('p1');
-  PANELVIEW.init({ model: model });
+  PANELVIEW.init({
+    model: model, redraw: drawAll,
+    state: function () { return { attr: S.aR }; },
+    sectionAttrs: function () {
+      /* the three frequency bands have no section of their own here, so a
+         blend built from them falls back to envelope on all three channels */
+      return [S.aR, S.aG, S.aB].map(function (a) { return BAND_HZ[a] ? 'envelope' : a; });
+    },
+    compose: function (panels) {
+      const at = [S.aR, S.aG, S.aB].map(function (a) { return BAND_HZ[a] ? 'envelope' : a; });
+      const g = [S.gR, S.gG, S.gB];
+      return blendFrom(panelChannel(panels[0].data, at[0], g[0]),
+                       panelChannel(panels[1].data, at[1], g[1]),
+                       panelChannel(panels[2].data, at[2], g[2])).rgba;
+    }
+  });
 
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
 })();

@@ -460,7 +460,30 @@ const Synthetic = (function () {
 
     const cacheSlices = {};
 
-    function sliceTime(k, offset) { return tTop[k] + offset; }
+    /* Where the map view is extracted. A phantom horizon follows the marker at
+       a constant offset, which keeps a stratigraphic interval together across
+       the structure; a time slice cuts at one two-way time everywhere, which
+       crosses it. Both are in use in interpretation and they are not the same
+       picture. */
+    let cutLevel = { mode: 'horizon', offset: 0, t: 1050 };
+
+    function setLevel(l) {
+      cutLevel = { mode: (l && l.mode) || 'horizon',
+                   offset: (l && l.offset !== undefined) ? l.offset : 0,
+                   t: (l && l.t !== undefined) ? l.t : 1050 };
+      for (const k in cacheSlices) delete cacheSlices[k];
+      return cutLevel;
+    }
+    function getLevel() { return cutLevel; }
+
+    /* attributes taken from the trace at the chosen level, as against the ones
+       that are properties of a surface and do not have a level */
+    const LEVELLED = { amplitude: 1, envelope: 1, phase: 1, frequency: 1,
+                       sweetness: 1, coherence: 1 };
+
+    function sliceTime(k) {
+      return cutLevel.mode === 'time' ? cutLevel.t : tTop[k] + cutLevel.offset;
+    }
 
     /* Time of the strongest envelope within a window around the deeper
        reflector, one value per trace. That event is isolated, so this is the
@@ -540,7 +563,7 @@ const Synthetic = (function () {
         const buf = new Float64Array(9 * nw);
         for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
           const k = y * NX + x;
-          const t0 = sliceTime(k, off);
+          const t0 = sliceTime(k);
           let m = 0;
           for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
             const xx = Math.min(NX - 1, Math.max(0, x + i));
@@ -563,7 +586,7 @@ const Synthetic = (function () {
       }
       else {
         for (let k = 0; k < n; k++) {
-          const t0 = sliceTime(k, off);
+          const t0 = sliceTime(k);
           analyticNoisy(k, t0, c);
           if (attr === "amplitude") out[k] = c[0];
           else if (attr === "envelope") out[k] = Math.sqrt(c[0] * c[0] + c[1] * c[1]);
@@ -705,6 +728,7 @@ const Synthetic = (function () {
       rc1: rc1, rc2: rc2,
       slice: slice, section: section, sectionHorizons: sectionHorizons,
       pickedHorizon: pickedHorizon, panel: panel,
+      setLevel: setLevel, getLevel: getLevel, levelled: LEVELLED,
       analytic: analyticNoisy,
       channelCenter: channelCenter
     };

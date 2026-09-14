@@ -458,7 +458,9 @@ const GUIDE = {
   ]},
   p2: { items: [
       { do: "Put the attribute on two-way time at 8 levels, then back to continuous.", see: "Contours against shape. Neither is a substitute for the other." },
-      { do: "Put it on coherence at 8 levels and look at where an edge falls on the fault flanks.", see: "Useful if the edge is at a value that means something, and a contour through nothing if not." }
+      { do: "Put it on coherence at 8 levels and look at where an edge falls on the fault flanks.", see: "Useful if the edge is at a value that means something, and a contour through nothing if not." },
+      { do: "With two-way time at 8 levels, switch the Map cut to Constant time and move the slider.",
+        see: "The contours vanish: a time slice of a time surface is a single value everywhere. It is a reminder that the level and the attribute are separate choices." }
   ]},
   p3: { items: [
       { do: "Put sweetness on 8 equal-value levels and read the largest and smallest bin shares. Then switch to equal population.", see: "74% in one bin and 0.4% in the emptiest, against an eighth in each." },
@@ -824,6 +826,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const s = sorted(S.attr);
       return { attr: S.attr, cmap: S.cmap, min: s[0], max: s[s.length - 1],

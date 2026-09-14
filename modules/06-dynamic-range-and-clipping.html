@@ -860,6 +860,7 @@ const GUIDE = {
   showTab('p1');
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const rg = range();
       return { attr: S.attr, cmap: stretchedKey(), min: rg[0], max: rg[1] };

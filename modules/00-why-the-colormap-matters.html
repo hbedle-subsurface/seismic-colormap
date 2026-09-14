@@ -173,11 +173,21 @@
       </tbody>
     </table>
 
-    <p>Twelve interfaces in all. The attribute maps are extracted along the top of the sand, so most of
-      what is in the list is visible only in the section view, which is what the Section button at the top
-      of the panel is for. The wedge, the second channel, the sheet and the thin pair exist to give the
-      section something to read: three sand bodies of quite different size tuning at different
-      frequencies, and a pinchout.</p>
+    <p>Twelve interfaces in all. The attribute maps are cut along the top of the sand by default, so most
+      of what is in the list is reached in one of two ways: the Section button at the top of the panel,
+      which swaps the map for a vertical slice, and the Map cut control beside it, which moves the map
+      through the section.</p>
+
+    <p>The Map cut control offers a phantom horizon, following the marker at a chosen offset, or a constant
+      two-way time. They are not the same picture. A phantom horizon keeps a stratigraphic interval
+      together across the structure, so the second channel at +62 ms appears as a channel. A time slice at
+      one two-way time cuts across the structure, so the same channel appears in pieces separated by the
+      faults, and the faults themselves appear as broad bands rather than as lines. Both are in use, and
+      which one is right depends on whether the question is stratigraphic or structural.</p>
+
+    <p>The section draws a fine black line wherever the map is being cut, so the two views can be read
+      against each other. The wedge is near &minus;115 ms, the second channel at +62, the sheet at +105 and
+      the deeper marker at +150.</p>
 
     <div class="legend">
       <span>Two of the attributes in the menu &mdash; sand thickness and two-way time to the marker &mdash;
@@ -895,6 +905,7 @@ const GUIDE = {
   /* the Map / Section switch and the panel collapse */
   PANELVIEW.init({
     model: model,
+    redraw: drawAll,
     state: function () {
       const r = Synthetic.RANGES[S.attr];
       return { attr: S.attr, cmap: S.cmapA, min: r[0], max: r[1],
