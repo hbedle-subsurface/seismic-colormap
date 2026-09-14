@@ -158,15 +158,26 @@
       time.</p>
 
     <table>
-      <thead><tr><th>Element</th><th>What it is in the model</th><th>What it produces in the seismic</th></tr></thead>
+      <thead><tr><th>Element</th><th>Where it sits</th><th>What it produces in the seismic</th></tr></thead>
       <tbody>
-        <tr><td>Channel sand</td><td>A lens up to 40 m thick, pinching out at both margins</td><td>Top and base reflections that converge and interfere toward the margins</td></tr>
-        <tr><td>Three normal faults</td><td>Offsets of 11&ndash;20 ms on the marker</td><td>Waveform discontinuities from trace to trace</td></tr>
-        <tr><td>Polygonal fault swarm</td><td>Many offsets of 1&ndash;4 ms in one part of the survey</td><td>Small waveform changes near the limit of detection</td></tr>
-        <tr><td>Pockmarks</td><td>Circular depressions a few ms deep, with reduced reflection strength</td><td>Low-amplitude circular features on the marker</td></tr>
-        <tr><td>Deeper reflector</td><td>118 ms below the marker, carrying the structure without the pockmarks</td><td>An isolated event, and the surface the curvature attributes are picked from</td></tr>
+        <tr><td>Shallow marker</td><td>152 ms above the marker</td><td>A continuous reflection, offset by the faults at about half their throw at the marker</td></tr>
+        <tr><td>Pinchout wedge</td><td>115 ms above the marker</td><td>Top and base separate at its thick end, converging leftward through tuning to a pinchout</td></tr>
+        <tr><td>Channel sand</td><td>The marker itself</td><td>A lens up to 40 m thick whose top and base interfere as it thins toward both margins</td></tr>
+        <tr><td>Second channel</td><td>62 ms below the marker</td><td>Narrower and about half the thickness, so it tunes at a different frequency from the first</td></tr>
+        <tr><td>Sheet sand</td><td>105 ms below</td><td>Broad and no more than a few metres thick: below tuning at every frequency on the slider, so always one loop</td></tr>
+        <tr><td>Deeper reflector</td><td>150 ms below</td><td>An isolated event carrying the structure without the pockmarks, and the surface the curvature is picked from</td></tr>
+        <tr><td>Thin pair</td><td>196 and 204 ms below</td><td>Two reflections 8 ms apart, never resolved into two loops</td></tr>
+        <tr><td>Three normal faults</td><td>Through the whole section</td><td>Offsets of 11&ndash;20 ms at the marker, dying upward, with waveform discontinuities from trace to trace</td></tr>
+        <tr><td>Polygonal fault swarm</td><td>One part of the survey</td><td>Many offsets of 1&ndash;4 ms, near the limit of detection</td></tr>
+        <tr><td>Pockmarks</td><td>On the marker only</td><td>Circular depressions a few ms deep with a reduced reflection strength beneath them</td></tr>
       </tbody>
     </table>
+
+    <p>Twelve interfaces in all. The attribute maps are extracted along the top of the sand, so most of
+      what is in the list is visible only in the section view, which is what the Section button at the top
+      of the panel is for. The wedge, the second channel, the sheet and the thin pair exist to give the
+      section something to read: three sand bodies of quite different size tuning at different
+      frequencies, and a pinchout.</p>
 
     <div class="legend">
       <span>Two of the attributes in the menu &mdash; sand thickness and two-way time to the marker &mdash;
@@ -677,7 +688,7 @@ const GUIDE = {
 
   function drawTrace() {
     const k = S.cdp * model.nx + S.line;
-    const t0 = 980, t1 = 1230, n = 501;
+    const t0 = 828, t1 = 1332, n = 631;
     const x = [], y = [], c = [0, 0];
     for (let i = 0; i < n; i++) {
       const t = t0 + (t1 - t0) * i / (n - 1);

@@ -64,6 +64,11 @@ const Synthetic = (function () {
   const Z_MARKER     = 7.1;   // continuous levee and overbank unit
   const Z_DEEP       = 8.4;   // unit below, giving the deeper marker
 
+  /* Any interface further from the sample being evaluated than this contributes
+     nothing worth adding, so the summation skips it. Keeps a twelve-interface
+     model about as quick to evaluate as the three-interface one it replaced. */
+  const REACH = 70;           // ms
+
   /* ---- small numerical helpers ----------------------------------------- */
 
   function mulberry32(a) {
@@ -148,11 +153,45 @@ const Synthetic = (function () {
 
   /* ---- the earth model -------------------------------------------------- */
 
+  /* The large channel: wide, thick, gently sinuous. */
   function channelCenter(x) {
     return 78 + 34 * Math.sin(2 * Math.PI * x / 150) + 12 * Math.sin(2 * Math.PI * x / 47 + 1.1);
   }
   function channelHalfWidth(x) {
     return 15 + 5 * Math.sin(2 * Math.PI * x / 90 + 0.4);
+  }
+
+  /* A second, much narrower and more sinuous channel 62 ms below it, at a
+     little under half the thickness. Two channels of different size in the
+     same section tune at different frequencies, which is the point of having
+     both. */
+  function channelBCenter(x) {
+    return 96 + 26 * Math.sin(2 * Math.PI * x / 88 + 2.0) + 7 * Math.sin(2 * Math.PI * x / 31);
+  }
+  function channelBHalfWidth(x) {
+    return 7.5 + 2.5 * Math.sin(2 * Math.PI * x / 64 + 1.7);
+  }
+
+  /* A broad, very thin sheet sand 72 ms below the marker. It stays below
+     tuning at every frequency in the slider's range, so its top and base never
+     separate and it is always a single loop. */
+  function sheetThickness(x, y, tmax) {
+    const dy = (y - 46) / 62, dx = (x - 110) / 105;
+    const r = dx * dx + dy * dy;
+    if (r > 1) return 0;
+    return tmax * 0.19 * Math.pow(1 - r, 0.5);
+  }
+
+  /* A wedge that thins to a pinchout, sitting well above the marker so it has
+     room of its own. At its thick end it is two to three times the tuning
+     thickness and its top and base are separate loops; toward the pinchout they
+     converge, interfere, reach maximum amplitude at tuning and then cancel.
+     This is the textbook wedge, and the reason the wedge model exists. */
+  function wedgeThickness(x, y, tmax) {
+    const u = (x - 18) / 128;               // 0 at the pinchout, 1 at full thickness
+    if (u <= 0) return 0;
+    const t = Math.min(1, u);
+    return tmax * 1.25 * t * (1 + 0.15 * Math.sin(2 * Math.PI * y / 130));
   }
 
   /* Fault throw in ms added to a surface at map position (x,y). */
@@ -206,6 +245,14 @@ const Synthetic = (function () {
     const rc3 = new Float32Array(n);
     const thick = new Float32Array(n);
 
+    /* Twelve interfaces, held interleaved: time then reflection coefficient,
+       twelve of each per map position. Layers above the marker carry less of
+       the fault throw than layers below it, which is what growth across a
+       normal fault looks like. */
+    const NI = 12;
+    const ifT = new Float32Array(n * NI);
+    const ifR = new Float32Array(n * NI);
+
     /* Outside the channel the marker is a single interface, shale over the
        levee unit. Inside the channel the upper part of that unit is sand, so
        the marker becomes a pair of reflections whose separation is set by the
@@ -215,21 +262,37 @@ const Synthetic = (function () {
     const rcSandBase = (Z_MARKER - Zs) / (Z_MARKER + Zs);
     const rcMarker   = (Z_MARKER - Z_OVERBURDEN) / (Z_MARKER + Z_OVERBURDEN);
     const rcDeep     = (Z_DEEP - Z_MARKER) / (Z_DEEP + Z_MARKER);
+    /* the second channel and the sheet cut the same sand into different units */
+    const rcSandB    = (Zs - 6.9) / (Zs + 6.9);
+    const rcSandBBase = (7.3 - Zs) / (7.3 + Zs);
+
+    const MS = 2000 / V_SAND;                 // metres of sand to milliseconds
+
+    /* Everything that depends only on the line number is worked out once here
+       rather than thirty-two thousand times inside the loop. */
+    const cc = new Float32Array(NX), chw = new Float32Array(NX);
+    const cbc = new Float32Array(NX), cbhw = new Float32Array(NX);
+    const wbase = new Float32Array(NX);
+    for (let x = 0; x < NX; x++) {
+      cc[x] = channelCenter(x); chw[x] = channelHalfWidth(x);
+      cbc[x] = channelBCenter(x); cbhw[x] = channelBHalfWidth(x);
+      const u = (x - 18) / 128;
+      wbase[x] = u <= 0 ? 0 : p.thickness * 2.2 * Math.min(1, u);
+    }
+    const wy = new Float32Array(NY);
+    for (let y = 0; y < NY; y++) wy[y] = 1 + 0.15 * Math.sin(2 * Math.PI * y / 130);
 
     for (let y = 0; y < NY; y++) {
       for (let x = 0; x < NX; x++) {
         const k = y * NX + x;
 
-        /* structure: regional dip, a broad fold, faults. The pockmarks are
-           added to the marker only, so the deeper reflector carries the
-           structure without them. */
-        const tStruct = T0 + 0.16 * x + 0.07 * y
-              + 6 * Math.sin(2 * Math.PI * x / 180) * Math.cos(2 * Math.PI * y / 210)
-              + faultThrow(x, y, poly);
-        let t = tStruct;
+        const thr = faultThrow(x, y, poly);
+        const tS = T0 + 0.16 * x + 0.07 * y
+                 + 6 * Math.sin(2 * Math.PI * x / 180) * Math.cos(2 * Math.PI * y / 210);
+        const tStruct = tS + thr;
 
-        /* pockmarks */
-        let dim = 1;
+        /* pockmarks dimple the marker only */
+        let t = tStruct, dim = 1;
         for (let i = 0; i < pock.length; i++) {
           const dx = x - pock[i][0], dy = y - pock[i][1], r = pock[i][3];
           if (dx < -2.1 * r || dx > 2.1 * r || dy < -2.1 * r || dy > 2.1 * r) continue;
@@ -241,23 +304,62 @@ const Synthetic = (function () {
           }
         }
 
-        /* channel lens */
-        const dyc = y - channelCenter(x);
-        const hw = channelHalfWidth(x);
+        /* the large channel */
+        const dyc = y - cc[x];
+        const hw = chw[x];
         let h = 0;
         if (Math.abs(dyc) < hw) {
           const u = dyc / hw;
           h = p.thickness * Math.pow(1 - u * u, 0.65);
         }
         thick[k] = h;
-
         const inChannel = h > 0.5;
+
         tTop[k] = t;
-        tBase[k] = t + 2000 * h / V_SAND;
-        tDeep[k] = tStruct + 118;
+        tBase[k] = t + h * MS;
+        tDeep[k] = tS + 150 + thr;
         rc1[k] = (inChannel ? rcSandTop : rcMarker) * dim;
         rc2[k] = inChannel ? rcSandBase * dim : 0;
         rc3[k] = rcDeep;
+
+        /* the wedge that pinches out, above the marker */
+        const wt = wbase[x] * wy[y] * MS;
+        const wTop = tS - 115 + thr * 0.7;
+
+        /* the narrow second channel */
+        const dyb = y - cbc[x];
+        const hwb = cbhw[x];
+        let hb = 0;
+        if (Math.abs(dyb) < hwb) {
+          const u = dyb / hwb;
+          hb = 0.45 * p.thickness * Math.pow(1 - u * u, 0.6);
+        }
+        const bTop = tS + 62 + thr;
+
+        /* the broad thin sheet */
+        const hs = sheetThickness(x, y, p.thickness);
+        const sTop = tS + 105 + thr;
+
+        const o = k * NI;
+        /* 0: shallow marker, faults dying upward */
+        ifT[o]      = tS - 152 + thr * 0.45; ifR[o]      = 0.055;
+        /* 1,2: the wedge, top and base, meeting at the pinchout */
+        ifT[o + 1]  = wTop;                  ifR[o + 1]  = wt > 0.05 ? -0.056 : 0;
+        ifT[o + 2]  = wTop + wt;             ifR[o + 2]  = wt > 0.05 ? 0.056 : 0;
+        /* 3,4: the marker, with the large channel cut into it */
+        ifT[o + 3]  = tTop[k];               ifR[o + 3]  = rc1[k];
+        ifT[o + 4]  = tBase[k];              ifR[o + 4]  = rc2[k];
+        /* 5,6: the narrow channel */
+        ifT[o + 5]  = bTop;                  ifR[o + 5]  = hb > 0.3 ? rcSandB : 0.030;
+        ifT[o + 6]  = bTop + hb * MS;        ifR[o + 6]  = hb > 0.3 ? rcSandBBase : 0;
+        /* 7,8: the thin sheet, never resolved at any frequency on the slider */
+        ifT[o + 7]  = sTop;                  ifR[o + 7]  = hs > 0.2 ? -0.042 : 0;
+        ifT[o + 8]  = sTop + hs * MS;        ifR[o + 8]  = hs > 0.2 ? 0.042 : 0;
+        /* 9: the deep marker the curvature horizon is picked from */
+        ifT[o + 9]  = tDeep[k];              ifR[o + 9]  = rcDeep;
+        /* 10,11: a pair 8 ms apart, below tuning at every frequency */
+        ifT[o + 10] = tS + 196 + thr;        ifR[o + 10] = 0.050;
+        ifT[o + 11] = tS + 204 + thr;        ifR[o + 11] = -0.050;
       }
     }
 
@@ -321,12 +423,19 @@ const Synthetic = (function () {
 
     const tmp = [0, 0];
 
-    /* Analytic trace value at map index k and time t (ms). */
+    /* Analytic trace value at map index k and time t (ms), summed over every
+       interface close enough to contribute. */
     function analytic(k, t, out) {
       let re = 0, im = 0;
-      wav(wl, t - tTop[k], tmp); re += rc1[k] * tmp[0]; im += rc1[k] * tmp[1];
-      wav(wl, t - tBase[k], tmp); re += rc2[k] * tmp[0]; im += rc2[k] * tmp[1];
-      wav(wl, t - tDeep[k], tmp); re += rc3[k] * tmp[0]; im += rc3[k] * tmp[1];
+      const o = k * NI;
+      for (let j = 0; j < NI; j++) {
+        const r = ifR[o + j];
+        if (r === 0) continue;
+        const lag = t - ifT[o + j];
+        if (lag < -REACH || lag > REACH) continue;
+        wav(wl, lag, tmp);
+        re += r * tmp[0]; im += r * tmp[1];
+      }
       out[0] = re; out[1] = im;
       return out;
     }
@@ -485,8 +594,8 @@ const Synthetic = (function () {
        channel, so the sand body appears as a lens. */
     function section(lineIndex, tMin, tMax) {
       const x = Math.max(0, Math.min(NX - 1, Math.round(lineIndex)));
-      const t0 = tMin === undefined ? 980 : tMin;
-      const t1 = tMax === undefined ? 1230 : tMax;
+      const t0 = tMin === undefined ? 828 : tMin;
+      const t1 = tMax === undefined ? 1332 : tMax;
       const nt = Math.round((t1 - t0) / DT) + 1;
       const data = new Float32Array(NY * nt);
       const c = [0, 0];
@@ -512,8 +621,8 @@ const Synthetic = (function () {
       const nTrace = inline ? NX : NY;
       const idx = Math.max(0, Math.min((inline ? NY : NX) - 1, Math.round(index)));
       const at = function (i) { return inline ? (idx * NX + i) : (i * NX + idx); };
-      const t0 = tMin === undefined ? 980 : tMin;
-      const t1 = tMax === undefined ? 1260 : tMax;
+      const t0 = tMin === undefined ? 828 : tMin;
+      const t1 = tMax === undefined ? 1332 : tMax;
       const nt = Math.round((t1 - t0) / DT) + 1;
       const out = new Float32Array(nTrace * nt);
       const c = [0, 0], cp = [0, 0], cm = [0, 0];

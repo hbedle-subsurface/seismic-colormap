@@ -74,13 +74,26 @@ repositories.
 
 ## The synthetic model
 
-`assets/colormodel.js` builds a 200 × 160 map of a shale section containing one
-sinuous channel sand. The sand pinches out at both channel margins, so a
-profile across it is a wedge in both directions. Three normal faults offset the
-section, a swarm of small polygonal faults sits in one part of the survey, and a
-field of pockmarks dimples the marker and dims the reflection beneath each one.
-A deeper reflector 118 ms below carries the structure without the pockmarks, and
-is the surface the curvature attributes are picked from.
+`assets/colormodel.js` builds a 200 × 160 survey over a twelve-interface layered
+model, spanning about 500 ms of two-way time:
+
+| | Interval | Behaviour |
+|---|---|---|
+| Shallow marker | −152 ms | continuous, faults dying upward |
+| Pinchout wedge | −115 ms | opens to two loops at its thick end, pinches out to the west |
+| Marker + channel sand | 0 | a lens up to 40 m thick, thinning to both margins |
+| Second channel | +62 ms | narrower, about half the thickness, tunes at a different frequency |
+| Sheet sand | +105 ms | broad and only metres thick: below tuning at every frequency |
+| Deeper reflector | +150 ms | isolated; the surface curvature is picked from |
+| Thin pair | +196 / +204 ms | 8 ms apart, never resolved |
+
+Three normal faults offset the whole section with growth, a swarm of small
+polygonal faults sits in one part of the survey, and a field of pockmarks
+dimples the marker and dims the reflection beneath each one.
+
+Interfaces further than 70 ms from the sample being evaluated are skipped in the
+summation, so twelve interfaces cost about the same to evaluate as the three the
+model started with.
 
 Reflectivity is convolved with a Ricker wavelet. Rather than building a volume
 and transforming it, the analytic trace is evaluated directly at whatever time
