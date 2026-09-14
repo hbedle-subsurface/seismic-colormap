@@ -49,6 +49,13 @@
         <p class="hero-cta"><a class="btn" href="modules/00-why-the-colormap-matters.html">Start with
           module 00 &rarr;</a></p>
       </div>
+
+      <div class="hero-panel">
+        <canvas id="heroMosaic" aria-label="One seismic attribute map drawn twelve times, each in a different colormap"></canvas>
+        <p class="hero-cap">One attribute, twelve colormaps. This is the reflection strength over a channel
+          system, computed once and displayed twelve ways at the same value range. Everything that differs
+          between these panels was put there by the color.</p>
+      </div>
     </div>
   </section>
 
@@ -239,5 +246,96 @@
 </div>
 
 <script src="assets/count.js"></script>
+<script src="assets/cmapdata.js"></script>
+<script src="assets/colormaps.js"></script>
+<script src="assets/colormodel.js"></script>
+<script>
+/* The banner: the synthetic attribute from the modules, drawn once per
+   colormap. It is the argument the whole site makes, so it is worth making it
+   from real data rather than from a decorative gradient. */
+(function () {
+  'use strict';
+
+  /* traditional and scientific alternating, so neighbouring tiles differ and
+     the comparison is there to be made without anything being labelled good */
+  var SHOW = ['jet', 'viridis', 'bgyor', 'oslo',
+              'turbo', 'roma', 'rainbowwc', 'batlow',
+              'lajolla', 'balance', 'romaO', 'gray'];
+  var COLS = 4, LABEL = 15, GAP = 5;
+
+  var cv = document.getElementById('heroMosaic');
+  if (!cv) return;
+  var field = null, NX = 0, NY = 0;
+
+  function build() {
+    var m = Synthetic.build({});
+    var v = m.slice('envelope');
+    /* every second sample: the banner is small and this halves the work */
+    NX = Math.floor(m.nx / 2); NY = Math.floor(m.ny / 2);
+    field = new Float32Array(NX * NY);
+    for (var y = 0; y < NY; y++) {
+      for (var x = 0; x < NX; x++) field[y * NX + x] = v[(2 * y) * m.nx + 2 * x];
+    }
+  }
+
+  function draw() {
+    var w = cv.parentNode.clientWidth || 520;
+    if (w < 160) return;
+    var rows = Math.ceil(SHOW.length / COLS);
+    var tw = (w - GAP * (COLS - 1)) / COLS;
+    var th = tw * NY / NX;
+    var h = rows * (th + LABEL + GAP) - GAP;
+    var r = window.devicePixelRatio || 1;
+    cv.width = Math.round(w * r); cv.height = Math.round(h * r);
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var off = document.createElement('canvas');
+    off.width = NX; off.height = NY;
+    var octx = off.getContext('2d');
+
+    SHOW.forEach(function (key, i) {
+      var cx = (i % COLS) * (tw + GAP);
+      var cy = Math.floor(i / COLS) * (th + LABEL + GAP);
+      var img = octx.createImageData(NX, NY);
+      Colormaps.apply(field, img, { name: key, min: 0, max: 0.16 });
+      octx.putImageData(img, 0, 0);
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(cx, cy, tw, th); ctx.clip();
+      ctx.imageSmoothingEnabled = true;
+      ctx.translate(cx, cy + th); ctx.scale(1, -1);
+      ctx.drawImage(off, 0, 0, tw, th);
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(22,25,28,.35)'; ctx.lineWidth = 1;
+      ctx.strokeRect(cx + 0.5, cy + 0.5, tw - 1, th - 1);
+
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#5C6670';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      /* a couple of the names are longer than a tile is wide */
+      var name = Colormaps.meta[key].name;
+      while (name.length > 4 && ctx.measureText(name).width > tw - 2) {
+        name = name.slice(0, -2) + '\u2026';
+      }
+      ctx.fillText(name, cx + 1, cy + th + 3);
+    });
+  }
+
+  function start() { build(); draw(); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else { start(); }
+
+  var t;
+  window.addEventListener('resize', function () {
+    clearTimeout(t); t = setTimeout(draw, 160);
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
 </body>
 </html>

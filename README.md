@@ -152,7 +152,7 @@ rather than from those constants.
 The tables in `assets/cmapdata.js` are the published definitions, sampled at 256
 levels, not approximations built from a handful of anchor colors.
 
-- Crameri, F., 2018, *Scientific color maps*,
+- Crameri, F., 2018, *Scientific colour maps*,
   doi:[10.5281/zenodo.1243862](https://doi.org/10.5281/zenodo.1243862) —
   Oslo, Roma, RomaO, Lajolla, Batlow, Vik
 - Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco,

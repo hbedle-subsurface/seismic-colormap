@@ -8,7 +8,7 @@
    from a handful of anchor colors, because the whole subject of this module
    set is what happens between the anchors.
 
-     Crameri, F., 2018, Scientific color maps, doi:10.5281/zenodo.1243862
+     Crameri, F., 2018, Scientific colour maps, doi:10.5281/zenodo.1243862
        — oslo, viridis's companions batlow and lajolla, roma, vik, romaO
      Thyng, K. M. et al., 2016, True colors of oceanography, Oceanography 29(3)
        — balance
