@@ -33,7 +33,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The colormap, measured <span>&mdash; panels update as you drag</span></p>
@@ -172,10 +172,10 @@
     <p>The test that settles it is in the panel: move the bottom or the top of the display range. Every
       boundary in the image slides sideways, because the data value that lands on a given part of the color
       table has changed. A boundary that belongs to the data cannot behave that way. The channel edge and
-      the fault traces in the seismic map stay exactly where they are while the bands migrate across them.</p>
+      the fault traces in the seismic map stay where they are while the bands migrate across them.</p>
 
     <div class="legend">
-      <span>This is the most useful field test available and it costs nothing: change the display range and
+      <span>The field test is to change the display range and
       watch what moves. Features that hold still are in the data. Features that slide are in the color
       table. The same check catches a value range so narrow that the attribute is saturating, which is
       module 06.</span>
@@ -185,7 +185,7 @@
       envelope develops a rim part of the way down the flank of the channel, at the value where the color
       table turns quickly. It looks like a boundary in the sand body. Moving the display range moves it to
       a different part of the flank, and switching to a uniform map removes it and leaves the gradual
-      thinning that is actually there.</p>
+      thinning that is in the model.</p>
   </section>
 
   <!-- ============================= STEP THREE ============================= -->
@@ -220,7 +220,7 @@
 
     <p><b>A diverging map is slow at its neutral point, by design.</b> Balance measures 4.7, which places
       it well down the chart, and the slow part is the mid gray at the center where the map turns around.
-      That is not a defect. A diverging map is meant to compress near zero and spend its color on the
+      That is not a defect. A diverging map is meant to compress near zero and put its color into the
       departures, and comparing its number against a sequential map's is comparing two different
       intentions.</p>
 
@@ -284,11 +284,11 @@
       diagenetic front, and nothing in its appearance separates it from one. That is why an invented
       boundary causes more trouble than a hidden feature: it has the shape of a result.</p>
 
-    <p>Published interpretations have been drawn along such edges. The check is cheap and takes seconds:
+    <p>Published interpretations have been drawn along such edges. The check takes seconds:
       change the display range and see what moves.</p>
 
     <p>The hidden half of the same problem is quieter. Where a colormap is flat, real differences are
-      rendered in nearly the same color and are simply absent from the display. Nothing appears in their
+      rendered in nearly the same color and are absent from the display. Nothing appears in their
       place, so nothing prompts a second look. This is why comparing an attribute against grayscale is
       worth doing as a matter of routine rather than only when something looks wrong.</p>
 
@@ -383,8 +383,8 @@
       enough to keep the features that matter, which are tens of levels wide. The sixteen-step rainbow
       still returns exact zeros, correctly: its flat stretches are sixteen levels long.</p>
 
-    <p>The distance used is CIE76, the plain Euclidean distance in L*a*b*. Later formulae &mdash; CIE94,
-      CIEDE2000 &mdash; correct known errors in it, particularly for saturated colors and for large
+    <p>The distance used is CIE76, the plain Euclidean distance in L*a*b*. Later formulae such as CIE94 and
+      CIEDE2000 correct known errors in it, particularly for saturated colors and for large
       differences. They would change the numbers here by some tens of percent and would not change which
       maps are well spaced and which are not. CIE76 is used because it is the measure the published
       colormap designs were assessed against, so the numbers here are comparable with theirs.</p>
@@ -463,7 +463,7 @@ const GUIDE = {
       { do: "Put the rainbow on the smooth field, note where a band edge falls, then raise the bottom of the range to 20%.", see: "Every edge slides. The channel and the faults in the seismic map do not." },
       { do: "Switch to the sixteen-step rainbow.", see: "Sixteen flat bands with hard edges, all at values fixed by the table." },
       { do: "Switch to viridis or Oslo.", see: "The field looks like what it is: smooth, with no edges anywhere." },
-      { do: "Press Section, put the rainbow on amplitude, and move the bottom of the range.",
+      { do: "Press Section, put the rainbow on envelope, and move the bottom of the range.",
         see: "The bands slide through the section while the reflections stay where they are. The same test works in either view." }
   ]},
   p3: { items: [

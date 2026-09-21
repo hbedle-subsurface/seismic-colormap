@@ -33,7 +33,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The color and the ramp built from it <span>&mdash; panels update as you drag</span></p>
@@ -140,7 +140,7 @@
       <span class="term" data-term="chroma">chroma</span> and a
       <span class="term" data-term="hue">hue angle</span>. Nothing is lost in the translation and the
       colors are identical. What changes is that each of the three now corresponds to something the visual
-      system actually separates.</p>
+      system separates.</p>
 
     <p>The three sliders set one color. The panel then builds a ramp from it by varying whichever dimension
       is selected across the full data range and holding the other two fixed, and displays the attribute
@@ -248,7 +248,7 @@
       classification, a set of seismic facies from an unsupervised classification, a fault-block label:
       these are categories, not magnitudes, and an ordering imposed on them would be a false claim about
       the data. Distinct hues at similar lightness say nothing about which class is larger, and that is
-      exactly what is wanted.</p>
+      what is wanted.</p>
   </section>
 
   <!-- ============================== STEP FOUR ============================= -->
@@ -292,7 +292,7 @@
     <p>One caution carries forward from step 2. Perceptual uniformity is measured from color differences
       between large patches, so a colormap can score well on it and still resolve nothing: the constant
       lightness hue ramp built in this module is almost perfectly uniform by that measure, and the cyclic
-      RomaO is genuinely uniform by design and also runs at nearly constant lightness. Uniformity says that
+      RomaO is uniform by design and also runs at nearly constant lightness. Uniformity says that
       the map does not distort the data it manages to show. Whether it shows the data at all is the
       question this module asks, and the two are independent.</p>
   </section>
@@ -302,7 +302,7 @@
     <h3>Why it matters</h3>
     <p>The most common way a seismic display fails is not that it is ugly or old-fashioned. It is that the
       quantity of interest has been assigned to hue, and hue cannot resolve it. The display is then
-      genuinely colorful, genuinely varied, and quietly missing the small features it was made to show.</p>
+      colorful and varied, and it is missing the small features it was made to show.</p>
 
     <p>That failure is invisible from inside. A rainbow display of coherence looks detailed, because hue
       changes rapidly and the image is full of variation. Whether the variation corresponds to the
@@ -311,11 +311,11 @@
       were being carried by a channel that could not deliver them.</p>
 
     <p>The same reasoning settles where hue does belong. Classification output, facies volumes and any
-      labelled result should be displayed in distinct hues at similar lightness, because the classes have
+      labeled result should be displayed in distinct hues at similar lightness, because the classes have
       no order and any lightness ramp applied to them would assert one. Module 07 takes that up.</p>
 
     <p>It also explains why so many well-designed colormaps look, at first, less impressive than the
-      rainbow they replace. They spend most of their variation on lightness, which the eye reads as
+      rainbow they replace. They put most of their variation into lightness, which the eye reads as
       structure rather than as color. The image carries more information and looks calmer, and those two
       things are related.</p>
   </section>
@@ -410,7 +410,7 @@
     <p>A color asked for outside the range the display can produce is brought back by reducing its chroma
       and leaving lightness and hue as they are, by bisection on the gamut boundary. The result is that the
       lightness requested is always the lightness delivered, which is what makes the hue ramp a fair test:
-      it is genuinely at constant lightness along its whole length, and its chroma varies only because the
+      it is at constant lightness along its whole length, and its chroma varies only because the
       available chroma varies with hue.</p>
 
     <p>The test pattern is a chirped sinusoid: spatial frequency increases geometrically from left to
@@ -627,7 +627,7 @@ const GUIDE = {
                              ' to ' + hi.toFixed(0) + ')';
 
     /* The summed CIE76 distance from one end of the ramp to the other: how
-       much color the ramp passes through in total, however it spends it. */
+       much color the ramp passes through in total, however it is distributed. */
     const arr = Colormaps.lut(key), nn = arr.length / 3;
     let dist = 0, prev = Colormaps.rgbToLab(arr[0], arr[1], arr[2]);
     for (let i = 1; i < nn; i++) {

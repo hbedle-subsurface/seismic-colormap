@@ -32,7 +32,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The corendered display <span>&mdash; panels update as you drag</span></p>
@@ -62,6 +62,7 @@
                 <option value="meanCurvature">Mean curvature</option>
                 <option value="phase">Instantaneous phase</option>
                 <option value="amplitude">Amplitude</option>
+                <option value="coherence">Coherence</option>
                 <option value="thickness">Sand thickness (model)</option>
               </select>
             </div>
@@ -130,7 +131,7 @@
     <button role="tab" data-tab="p1" aria-selected="false">1 · Two attributes</button>
     <button role="tab" data-tab="p2" aria-selected="false">2 · Lightness</button>
     <button role="tab" data-tab="p3" aria-selected="false">3 · Transparency</button>
-    <button role="tab" data-tab="p4" aria-selected="false">4 · What it costs</button>
+    <button role="tab" data-tab="p4" aria-selected="false">4 · Limitations</button>
     <button class="gap" tabindex="-1" aria-hidden="true"></button>
     <button role="tab" data-tab="pw" aria-selected="false">Why it matters</button>
     <button role="tab" data-tab="pe" aria-selected="false">Exercises</button>
@@ -195,7 +196,7 @@
       is rendered somewhere below it, by an amount the reader cannot recover.</p>
 
     <p>The overall image gets darker rather than flatter, which is worth being clear about. Its total
-      lightness range actually widens, because the modulation pushes some cells to black while the
+      lightness range widens, because the modulation pushes some cells to black while the
       unmodulated cells stay where they were. What has been compressed is the range available to the first
       attribute at any given value of the second, and that compression is invisible in the finished
       picture.</p>
@@ -244,7 +245,7 @@
 
     <p>This is the arrangement used for aberrancy in Bedle and Moreno-Ward (2025): aberrancy azimuth in a
       cyclic colormap, masked by aberrancy magnitude, so that the lineation directions are shown only where
-      there is a lineation. It applies to the same pairing generally &mdash; dip azimuth masked by dip
+      there is a lineation. It applies to the same pairing generally: dip azimuth masked by dip
       magnitude, phase masked by envelope, any angle masked by the strength of the thing whose angle it
       is.</p>
 
@@ -257,17 +258,17 @@
 
     <p>The taper is worth setting to zero once, to see why it is normally not. A hard threshold puts a
       contour of the second attribute into the image as a visible edge, and that edge is a boundary in the
-      display rather than in the data, in exactly the sense of module 03. A taper of ten or twenty per cent
+      display rather than in the data, in the sense of module 03. A taper of ten or twenty per cent
       removes it without changing what is being shown.</p>
   </section>
 
   <!-- ============================== STEP FOUR ============================= -->
   <section class="tabpane" id="p4" role="tabpanel" hidden>
     <div class="plot-head" style="margin-bottom:14px">
-      <h3><span class="stepno">4</span>What it costs</h3>
+      <h3><span class="stepno">4</span>Limitations of a corendered display</h3>
     </div>
-    <p class="lede">A corendered display is a compromise, and it is worth being specific about what has
-      been given up, because the image looks complete either way.</p>
+    <p class="lede">A corendered display is a compromise. The image looks complete either
+      way, so what has been given up has to be stated.</p>
 
     <p><b>Neither attribute remains quantitative.</b> The first has had its lightness modified by the
       second, so its color bar no longer describes the image. The second has no color bar at all. A
@@ -283,7 +284,7 @@
       panel. A single-attribute display that fails under deutan simulation is missing information; a
       corendered one is missing information from one layer while the other layer continues to look
       authoritative, and the result is harder to recognize as broken. Corendering with a colormap whose
-      hue is doing the work, such as a rainbow, produces exactly this.</p>
+      hue is doing the work, such as a rainbow, produces this.</p>
 
     <p>Three checks make the compromise safe enough to live with.</p>
     <ul>
@@ -377,7 +378,7 @@
             display failing outright.</span></details></li>
       
         <li><b>A dark lineament runs across a corendered display. Give three explanations and a test for each.</b>
-          <details class="reveal"><summary>Hint</summary><span class="ans">Low coherence, meaning something interrupts the waveform \u2014 a fault, a channel edge, noise. Low envelope, meaning a genuinely weak reflection. Or the dark end of the colormap, where two quite different values are both rendered near black. Toggle the second attribute off: if the lineament goes, it belongs to that attribute. Switch to a colormap that stops short of black: if it goes, it was the colormap running out of room.</span></details></li>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Low coherence, meaning something interrupts the waveform, such as a fault, a channel edge or noise. Low envelope, meaning a weak reflection. Or the dark end of the colormap, where two quite different values are both rendered near black. Toggle the second attribute off: if the lineament goes, it belongs to that attribute. Switch to a colormap that stops short of black: if it goes, it was the colormap running out of room.</span></details></li>
       </ol>
     </div>
   </section>

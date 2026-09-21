@@ -32,7 +32,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The display <span>&mdash; both panels hold identical numbers</span></p>
@@ -191,7 +191,7 @@
       the deeper marker at +150.</p>
 
     <div class="legend">
-      <span>Two of the attributes in the menu &mdash; sand thickness and two-way time to the marker &mdash;
+      <span>Two of the attributes in the menu, sand thickness and two-way time to the marker,
       are properties of the model rather than measurements. Neither could be obtained from real seismic
       data. They are included so that every later display can be checked against the thing it is trying
       to image.</span>
@@ -408,10 +408,10 @@
             distribution is centered on the colormap's neutral point.</span></details></li>
       
         <li><b>Give two explanations for the bright envelope along the channel axis.</b>
-          <details class="reveal"><summary>Hint</summary><span class="ans">Two will do. One: the sand has a large impedance contrast against the shale, so the reflection is genuinely strong. Two: the bed is close to tuning thickness there, so the reflections from its top and base interfere constructively and the composite is large. The envelope cannot separate them. What separates them is the frequency slider \u2014 a tuning effect moves when the bandwidth changes and a contrast effect does not \u2014 and the sand thickness attribute, which this model gives you and real data does not.</span></details></li>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Two will do. One: the sand has a large impedance contrast against the shale, so the reflection is strong. Two: the bed is close to tuning thickness there, so the reflections from its top and base interfere constructively and the composite is large. The envelope cannot separate them. What separates them is the frequency slider, because a tuning effect moves when the bandwidth changes and a contrast effect does not. The sand thickness attribute separates them too, and the model supplies it where real data would not.</span></details></li>
 
         <li><b>A colleague points at the pockmark field and calls it a facies change. What would you check before agreeing?</b>
-          <details class="reveal"><summary>Hint</summary><span class="ans">Whether it survives a change of display. Set a different colormap, move the range, and move the level: an anomaly that is in the data holds still. Then ask what else produces a circular low-amplitude patch \u2014 in this model it is a shallow depression with a dimmed reflection beneath it, and on real data it might equally be gas in the near surface, a processing footprint or a shallow velocity anomaly. The map alone does not decide between them.</span></details></li>
+          <details class="reveal"><summary>Hint</summary><span class="ans">Whether it survives a change of display. Set a different colormap, move the range, and move the level: an anomaly that is in the data holds still. Then ask what else produces a circular low-amplitude patch. In this model it is a shallow depression with a dimmed reflection beneath it, and on real data it might equally be gas in the near surface, a processing footprint or a shallow velocity anomaly. The map alone does not decide between them.</span></details></li>
       </ol>
     </div>
   </section>
@@ -468,13 +468,13 @@
     <p>The tables are the published definitions, sampled at 256 levels, not approximations.</p>
     <ul>
       <li>Crameri, F., 2018, Scientific colour maps, doi:
-        <a href="https://doi.org/10.5281/zenodo.1243862">10.5281/zenodo.1243862</a> &mdash; Oslo, Roma,
+        <a href="https://doi.org/10.5281/zenodo.1243862">10.5281/zenodo.1243862</a>, for Oslo, Roma,
         RomaO, Lajolla, Batlow, Vik.</li>
       <li>Thyng, K. M., C. A. Greene, R. D. Hetland, H. M. Zimmerle, and S. F. DiMarco, 2016, True colors
         of oceanography: Oceanography, 29, 9&ndash;13, doi:
-        <a href="https://doi.org/10.5670/oceanog.2016.66">10.5670/oceanog.2016.66</a> &mdash; balance.</li>
+        <a href="https://doi.org/10.5670/oceanog.2016.66">10.5670/oceanog.2016.66</a>, for balance.</li>
       <li>Smith, N., and S. van der Walt, 2015, MPL color maps,
-        <a href="https://bids.github.io/colormap">bids.github.io/colormap</a> &mdash; Viridis.</li>
+        <a href="https://bids.github.io/colormap">bids.github.io/colormap</a>, for Viridis.</li>
       <li>Rainbow (jet), turbo, red-white-blue, the cyclic HSV map and the categorical set are from
         matplotlib, for comparison.</li>
     </ul>

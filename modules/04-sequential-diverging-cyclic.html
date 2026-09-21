@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sequential, diverging, cyclic | How Colormaps Actually Work</title>
-<meta name="description" content="Matching the class of colormap to the mathematics of the attribute, and what each mismatch costs.">
+<meta name="description" content="Matching the class of colormap to the mathematics of the attribute, and what each mismatch loses.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The attribute and its distribution <span>&mdash; panels update as you drag</span></p>
@@ -142,7 +142,7 @@
     <p><b>Does zero mean anything, and does the sign?</b> <span class="term" data-term="amplitude">Amplitude</span> has a zero: it separates a peak from a
       trough, and the difference between +0.05 and −0.05 is a difference in polarity, not a difference in
       size. Curvature has a zero: it separates anticlinal from synclinal bending. Envelope does not. It is
-      a magnitude, it cannot be negative, and its smallest value is simply its smallest value.</p>
+      a magnitude, it cannot be negative, and its smallest value has no special meaning.</p>
 
     <p><b>Does it wrap?</b> Instantaneous phase runs to +180° and continues at −180°, and those two values
       are adjacent measurements of almost the same thing. Dip azimuth and aberrancy azimuth do the same at
@@ -195,7 +195,7 @@
       The anticlinal and synclinal sides of every fault are no longer separated by anything: they are just
       two different brightnesses, and which one is which has to be recovered from the color bar. The
       paired lineaments that make a fault recognizable on a curvature display become a single smeared
-      band. Nothing has been hidden exactly, but the structure the attribute was computed to show has been
+      band. Nothing has been hidden, but the structure the attribute was computed to show has been
       taken apart.</p>
 
     <p><b>A cyclic attribute in a sequential or diverging map.</b> Put instantaneous phase in Oslo or in
@@ -224,18 +224,18 @@
 
     <p>The arrow above the color bar marks where zero in the data falls. With the range symmetric it sits
       at the center of the map, on the neutral color. Move either range slider with the symmetric lock off
-      and it slides away, and the display quietly starts reporting a polarity that is not there: values
+      and it slides away, and the display starts reporting a polarity that is not there: values
       that are positive appear on the negative arm, or the other way round.</p>
 
     <div class="legend">
       <span>Set the attribute to mean curvature, switch the symmetric lock off, and raise the bottom of the
       range to about 30%. The neutral color now sits on a positive curvature value. Every anticline weaker
       than that threshold is rendered in the synclinal arm of the colormap and reads as a syncline. The
-      attribute volume has not changed and the color bar is labelled correctly throughout.</span>
+      attribute volume has not changed and the color bar is labeled correctly throughout.</span>
     </div>
 
     <p>Most-positive curvature makes this awkward in a way worth understanding rather than working around.
-      Its values sit mostly above zero, so a range symmetric about zero spends half its colors on data that
+      Its values sit mostly above zero, so a range symmetric about zero gives half its colors to data that
       is nearly absent, and the display looks washed out on one side. The temptation is to set the range to
       the data's own minimum and maximum, which puts the neutral point somewhere in the positive values.
       Both options are defensible and neither is automatic. What is not defensible is doing the second one
@@ -247,7 +247,7 @@
 
     <p>The same issue arises for amplitude whenever an automatic range is computed from a window that
       happens to contain more peak than trough, which is common near a strong reflector. The symmetric lock
-      is the fix, and it costs nothing on an attribute that is genuinely balanced.</p>
+      is the fix, and it changes nothing on an attribute that is already balanced.</p>
   </section>
 
   <!-- ============================== STEP FOUR ============================= -->
@@ -281,7 +281,7 @@
 
     <div class="legend">
       <span>A cyclic map that is also perceptually uniform, such as RomaO, gives every azimuth equal visual
-      weight. The lineaments that stand out are then the ones that are actually strongest, rather than the
+      weight. The lineaments that stand out are then the ones that are strongest, rather than the
       ones whose direction happened to land on a bright part of the color wheel.</span>
     </div>
   </section>
@@ -306,7 +306,7 @@
       A display built with an automatic range on an attribute that is not balanced about zero will do this
       by default.</p>
 
-    <p>None of this requires the scientific colormaps. A traditional red-white-blue map on a genuinely
+    <p>None of this requires the scientific colormaps. A traditional red-white-blue map on a
       diverging attribute with a symmetric range is doing its job. Get the class right first, then look at
       uniformity and accessibility. Those two improve a correct choice; they do not repair a wrong one.</p>
   </section>
@@ -345,7 +345,7 @@
           range to 30%.
           <details class="reveal"><summary>Hint</summary><span class="ans">The arrow marking zero slides
             away from the center of the colormap, and weak anticlines are now rendered in the synclinal
-            arm. The color bar is still labelled correctly and there is nothing in the image to indicate
+            arm. The color bar is still labeled correctly and there is nothing in the image to indicate
             the problem. This is what an automatic range does to an attribute that is not balanced about
             zero.</span></details></li>
 
@@ -477,13 +477,11 @@ const GUIDE = {
   ]},
   p3: { items: [
       { do: "Set mean curvature in balance with the symmetric lock on, note where the arrow sits, then switch the lock off and raise the bottom of the range to 30%.", see: "The arrow leaves the center of the colormap and weak anticlines start rendering in the synclinal arm." },
-      { do: "Switch to most-positive curvature with the lock on.", see: "Half the colormap is spent on data that is nearly absent, which is why this attribute has no automatic answer." }
+      { do: "Switch to most-positive curvature with the lock on.", see: "Half the colormap goes to data that is nearly absent, which is why this attribute has no automatic answer." }
   ]},
   p4: { items: [
       { do: "Put phase in balance and drag the wrap rotation through a full turn.", see: "A hard edge sweeps across the survey. Nothing in the data changed: every pair of samples is the same distance apart." },
-      { do: "Switch the colormap to RomaO and rotate again.", see: "Nothing happens, which is the whole point of a cyclic colormap." },
-      { do: "Press Section with phase in balance, then rotate the wrap.",
-        see: "The seam runs through the section as a set of hard edges cutting across the reflections, which is the clearest view of it being an artefact of the reporting convention." }
+      { do: "Switch the colormap to RomaO and rotate again.", see: "Nothing happens, which is the whole point of a cyclic colormap." }
   ]}
 };
 </script>

@@ -134,6 +134,25 @@
     '.po-stale { display:none; font-size:12px; color:var(--crimson,#841617); }'
   ].join('\n');
 
+  /* Opt-in: <div class="labhead" data-po-layout="side">. A panel whose left
+     column holds large displays is no easier to use when the displays are
+     stacked above the controls, because the controls end up a long scroll
+     below them. With this set, the second window opens wide and keeps the
+     page's own two columns, displays on the left and controls on the right,
+     falling back to one column only when the window is made narrow. Without
+     it, nothing changes. */
+  var SIDE_CSS = [
+    '@media (min-width: 900px) {',
+    '  .labhead .labgrid { grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr) !important;',
+    '    gap:22px !important; align-items:start; }',
+    '  .labhead .labgrid > div:last-child { position:sticky; top:0; }',
+    '}'
+  ].join('\n');
+
+  function sideLayout() {
+    return !!(panel && panel.getAttribute('data-po-layout') === 'side');
+  }
+
   function buildDocument() {
     var title = moduleTitle();
     return '<!doctype html>\n<html lang="en">\n<head>\n' +
@@ -141,7 +160,7 @@
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
       '<title>Controls \u2014 ' + escapeHtml(title) + '</title>\n' +
       headLinks() +
-      '<style>\n' + OWN_CSS + '\n</style>\n' +
+      '<style>\n' + OWN_CSS + (sideLayout() ? '\n' + SIDE_CSS : '') + '\n</style>\n' +
       '</head>\n<body>\n' +
       '<div class="po-head">' +
         '<h1>' + escapeHtml(title) + '</h1>' +
@@ -363,8 +382,9 @@
     if (win && !win.closed) { win.focus(); return; }
 
     try {
-      win = window.open('', windowName(),
-        'width=560,height=720,scrollbars=yes,resizable=yes');
+      win = window.open('', windowName(), sideLayout()
+        ? 'width=1240,height=880,scrollbars=yes,resizable=yes'
+        : 'width=560,height=720,scrollbars=yes,resizable=yes');
     } catch (e) { win = null; }
 
     if (!win) {

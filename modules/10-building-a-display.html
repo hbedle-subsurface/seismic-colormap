@@ -31,7 +31,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The display <span>&mdash; every control in one place</span></p>
@@ -227,8 +227,8 @@
       reporting a sign that is not there.</p>
 
     <p>Reach for a stretch only after the clip. A <span class="term" data-term="gamma">gamma</span> spreads the colors over one end of the range and
-      undoes the even spacing that module 03 measured, which is a reasonable trade when it is deliberate.
-      A logarithmic stretch is the right answer for an attribute that genuinely spans orders of magnitude,
+      undoes the even spacing that module 03 measured, which is reasonable when it is deliberate.
+      A logarithmic stretch is the right answer for an attribute that spans orders of magnitude,
       and should be stated on the color bar when it is used.</p>
 
     <div class="legend">
@@ -323,11 +323,11 @@
     <p>None of this requires new software or new colormaps. Most of it is available in whatever package is
       already being used, and the parts that are not — a simulator, a percentile clip — take minutes to
       arrange. What it requires is treating the display as a choice rather than as a default, which is the
-      only part that is genuinely a change in habit.</p>
+      only part that is a change in habit.</p>
 
     <p>The counterargument deserves a hearing. Interpreters have worked productively in rainbow colormaps
       for forty years, and Ware et al. (2023) make a reasonable case that the rainbow's bad reputation is
-      partly overstated: its high number of distinguishable colors is genuinely useful for some tasks, and
+      partly overstated: its high number of distinguishable colors is useful for some tasks, and
       an experienced reader who knows a colormap's quirks can work around them. The reply is that the
       workarounds are individual and unwritten, and that a display which needs them is doing less work than
       it could. Where a rainbow is chosen deliberately, for a reason, that is a considered decision. Where
@@ -381,7 +381,7 @@
           and decide which lines you would have thought to write unprompted.
           <details class="reveal"><summary>Hint</summary><span class="ans">Most people write the attribute
             and the colormap. Most people do not write the range, the stretch or the corendering, and those
-            are exactly the ones a reader cannot recover from the picture.</span></details></li>
+            are the ones a reader cannot recover from the picture.</span></details></li>
       
         <li><b>Build a display, copy the record, and hand only the record to someone else. Ask them to reproduce the figure and note everything they have to ask you.</b>
           <details class="reveal"><summary>Hint</summary><span class="ans">Usually the level and the corendering strength, because those are the two that leave no trace in the image. If a colleague cannot rebuild the figure from what you wrote down, they cannot check it, and the settings are part of the work in the same way the processing parameters are.</span></details></li>

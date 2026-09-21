@@ -220,7 +220,7 @@ const CMPLOT = (function () {
   /* ---------------------------------------------------------------------
      COLOR BAR
      Horizontal, with the data values ticked underneath. This is the object
-     the whole module set is about, so it is drawn full width and labelled
+     the whole module set is about, so it is drawn full width and labeled
      rather than tucked beside the panel.
      --------------------------------------------------------------------- */
 

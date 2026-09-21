@@ -32,7 +32,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The blend <span>&mdash; panels update as you drag</span></p>
@@ -231,7 +231,7 @@
       measurement. The color sequence from the axis outward follows the thinning, and it does so without
       anyone having picked a horizon or measured an isochron.</p>
 
-    <p>This is the strongest argument for blends, and it is worth being precise about why. Three bands of
+    <p>The spectral case is the strongest argument for blends. Three bands of
       the same attribute are not three independent things. The correlation readout says so bluntly: the low
       and middle bands here correlate at 0.96, because both of them respond to whether there is a
       reflection at all. A blend of three attributes that correlated that strongly would normally be a
@@ -241,7 +241,7 @@
       is about which band is strongest relative to the other two, and that comparison is meaningful however
       strongly the three rise and fall together. The blend is not showing three attributes; it is showing
       one attribute as a function of frequency, and color is a reasonable way to encode where the peak of
-      that function lies. The reading is qualitative &mdash; thicker here than there &mdash; and that is
+      that function lies. The reading is qualitative (thicker here than there), and that is
       the reading a spectral blend supports.</p>
 
     <p>It also explains why the gains matter more here than anywhere else. Balancing the three bands so
@@ -266,7 +266,7 @@
 
     <p><b>Correlated inputs.</b> Three attributes that measure nearly the same thing produce a blend along
       the gray diagonal of the color cube: bright where all three are high, dark where all are low, and
-      almost no color anywhere. It looks like a competent grayscale display and it has cost three
+      almost no color anywhere. It looks like a competent grayscale display and it took three
       attributes to make. The correlation readout in the panel gives the largest pairwise correlation
       between the three inputs. Envelope and sweetness in this model correlate at 1.00, and envelope and
       sand thickness at 0.91: any blend built from two of those is a two-channel display.</p>
@@ -280,7 +280,7 @@
 
     <p>So the readout is asking a specific question: are two of these channels carrying the same
       information? A high number means yes unless the three inputs are related in a way that makes their
-      differences meaningful, which is exactly the situation a band decomposition is in and is not the
+      differences meaningful, which is the situation a band decomposition is in and is not the
       situation envelope and sweetness are in.</p>
 
     <p><b>Gains chosen by eye.</b> Every gain setting produces a plausible image, and there is no setting
@@ -298,7 +298,7 @@
       blend is printed. Switch to it and the image inverts in character: the corners swap, black becomes
       white, and the saturated colors that carried the message on screen are the ones a press reproduces
       least well, as module 01 showed. A blend designed on a monitor and printed without checking is
-      likely to lose exactly its most informative areas.</p>
+      likely to lose its most informative areas.</p>
 
     <p>The check that covers most of this is the one from module 08, applied three times: look at each
       channel on its own first. The three grayscale images in step 1 are more informative per attribute
@@ -334,12 +334,12 @@
       <h3>Exercises</h3>
       <ol>
         <li><b>Make a gray blend.</b> Set all three channels to attributes that measure similar things
-          &mdash; envelope, sweetness and sand thickness &mdash; and read the correlation figure.
+          such as envelope, sweetness and sand thickness, and read the correlation figure.
           <details class="reveal"><summary>Hint</summary><span class="ans">The blend is nearly gray
             everywhere, because all three channels rise and fall together and the result sits along the
             diagonal of the color cube. Envelope and sweetness correlate at 1.00 in this model and
             envelope and thickness at 0.91, so the readout reaches its maximum. Three attributes have been
-            spent to produce something a single grayscale display would have shown better.</span></details></li>
+            used to produce something a single grayscale display would have shown better.</span></details></li>
 
         <li><b>Find the exception.</b> Now set the three frequency bands and read the correlation figure
           again, then look at the image.
@@ -421,7 +421,7 @@
       is the idealized relationship from module 01.</p>
 
     <p>The channels are written in the display's own encoding rather than in linear light. That is what
-      every implementation of this does, and it is worth knowing that it is a convention rather than a
+      every implementation of this does, and it is a convention rather than a
       physical statement: a blend is not a measurement of light, so there is no correct answer, and doing
       it in linear light would produce a different and equally defensible image.</p>
 
@@ -501,7 +501,7 @@ const GUIDE = {
       { do: "Read the correlation figure.", see: "0.96, and the blend works anyway: the reading is which band is strongest relative to the others." }
   ]},
   p4: { items: [
-      { do: "Put envelope, sweetness and sand thickness into the three channels and read the correlation.", see: "Near the maximum, and the blend is nearly gray: three attributes spent on one attribute's worth of content." },
+      { do: "Put envelope, sweetness and sand thickness into the three channels and read the correlation.", see: "Near the maximum, and the blend is nearly gray: three attributes carrying one attribute's worth of content." },
       { do: "Switch the model to subtractive.", see: "The corners swap and every reading rule from step 2 reverses." },
       { do: "Switch the simulation to deutan on the spectral blend.", see: "The low and middle bands merge. There is no better blend to switch to, which is the difference from a colormap." }
   ]}

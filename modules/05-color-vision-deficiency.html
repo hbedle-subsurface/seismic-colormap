@@ -33,7 +33,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">As displayed, and as seen <span>&mdash; panels update as you drag</span></p>
@@ -200,7 +200,7 @@
       top rather than in the hue itself.</p>
 
     <p><b>Something is lost, and the order survives.</b> Batlow measures 0.38, balance and lajolla 0.30,
-      viridis 0.27. Viridis is worth a note here, because it is often described simply as colorblind-safe.
+      viridis 0.27. Viridis is often described as colorblind-safe.
       It keeps about 72% of its total color difference under deutan simulation and never goes flat, so the
       order of values remains readable everywhere. Its smallest surviving step is about a quarter of its
       average, which means some parts of its range become harder to separate than others. Safe in the sense
@@ -246,7 +246,7 @@
       by anything. On the envelope display the channel axis and its flanks merge; on coherence the fault
       traces lose the contrast that made them followable.</p>
 
-    <p>The second pair is Oslo. The two images are not identical — the hue has changed — but every feature
+    <p>The second pair is Oslo. The two images are not identical, since the hue has changed, but every feature
       visible in the first is visible in the second, and the value order is unchanged. That is the whole
       of the requirement: nothing has to look the same, and everything has to remain distinguishable.</p>
 
@@ -265,10 +265,10 @@
       indistinguishable.</p>
 
     <p>The reason is that red against blue is a difference along the blue-to-yellow direction, which the
-      red-green deficiencies leave largely intact, while red against green is exactly the difference they
+      red-green deficiencies leave largely intact, while red against green is the difference they
       remove. The traditional seismic polarity convention survives this test; the traditional risk
-      convention does not. Red-white-blue has other problems &mdash; its white neutral point is the
-      brightest thing in the image, and its spacing measured 7.9 to 1 in module 03 &mdash; but color vision
+      convention does not. Red-white-blue has other problems. Its white neutral point is the
+      brightest thing in the image, and its spacing measured 7.9 to 1 in module 03. Color vision
       is not among them.</p>
 
     <p>That result is about the blue arm rather than about red-white-blue in particular, and the
@@ -313,13 +313,13 @@
 
     <p><b>Give the colormap somewhere to be quiet.</b> A colormap that never reaches very dark or very light
       leaves both ends of the lightness scale free for annotation. Several of the scientific maps stop short
-      of black and white for exactly this reason.</p>
+      of black and white for this reason.</p>
 
     <p>Legends and keys have the same problem in a worse form, because a legend is a small patch of color
       next to a label and small patches are where color discrimination is weakest. A legend that relies on
       hue alone to distinguish five categories is asking for a judgement that some readers cannot make,
       about the smallest objects on the page. Adding a pattern, a letter or a distinct lightness to each
-      category removes the dependency at no cost.</p>
+      category removes the dependency.</p>
   </section>
 
   <!-- ============================== STEP FIVE ============================= -->
@@ -379,15 +379,15 @@
       points of L* to 54, and its smallest step drops to a tenth of what it was. Grayscale falls from 100
       to 54 as well and its smallest step goes to zero: the display trusted above all others for edge
       detection loses its dark end outright in a lit room, because its lowest levels are near-black and
-      near-black is exactly what ambient light destroys. Viridis holds up best of the four, at 0.21, having
-      less of its range invested in the very dark. A colormap chosen on a calibrated monitor is not the
+      near-black is what ambient light destroys. Viridis holds up best of the four, at 0.21, having
+      less of its range in the very dark. A colormap chosen on a calibrated monitor is not the
       colormap the lecture theatre is seeing.</span>
     </div>
 
     <p>Neither of these is an argument against measuring. The measurements identify displays that fail for
       everyone, which is worth knowing and is most of the problem. They are an argument against treating a
-      number as a guarantee, and for the one check that costs nothing: look at the figure on the screen it
-      will actually be shown on, and ask the people in the room whether they can see the feature being
+      number as a guarantee, and for one quick check: look at the figure on the screen it
+      will be shown on, and ask the people in the room whether they can see the feature being
       pointed at.</p>
   </section>
 
@@ -404,7 +404,7 @@
       different interpretations from those readers. Paton (2017) and Nuñez et al. (2018) both make the
       point that this is a data quality issue rather than an accessibility courtesy.</p>
 
-    <p>The fix costs nothing at the point of use. Choosing a colormap whose lightness runs one way is a
+    <p>The fix needs nothing new at the point of use. Choosing a colormap whose lightness runs one way is a
       choice already recommended for the reasons in modules 02 and 03, and it happens to solve this as
       well. The cases that need specific attention are the ones where hue is doing real work: categorical
       facies displays, azimuth displays, and anything corendered, which is module 08.</p>
@@ -425,7 +425,7 @@
             runs green to red at nearly constant lightness, and that is precisely the distinction deutan
             vision does not make. The axis and its flanks, separated in the display by that transition,
             merge into one tone. Everything below the green is unaffected, so the lower half of the range
-            still works and the failure is confined to exactly the part holding the
+            still works and the failure is confined to the part holding the
             anomaly.</span></details></li>
 
         <li><b>Find the severity where it goes.</b> With the same display, bring the severity up from zero
@@ -462,13 +462,13 @@
         <li><b>Try the honest baseline.</b> Set the simulation to no color at all and step through the
           colormaps.
           <details class="reveal"><summary>Hint</summary><span class="ans">What is left is the lightness
-            profile from module 02, and the maps that still show the data are exactly the ones whose
+            profile from module 02, and the maps that still show the data are the ones whose
             lightness runs one way from end to end. This is a harsher test than any real form of color
             vision deficiency, and a display that passes it has nothing left to worry about on this
             score.</span></details></li>
       
         <li><b>Show one of your figures to two colleagues and ask each of them to point at the feature you are describing.</b>
-          <details class="reveal"><summary>Hint</summary><span class="ans">This is the only test that catches the problem reliably, and it takes less time than the simulation does. A reader who cannot see the feature will usually not say so \u2014 they will assume they are missing something obvious \u2014 so the question has to be asked directly. The people who need to read the figure are the test of whether it works.</span></details></li>
+          <details class="reveal"><summary>Hint</summary><span class="ans">This is the only test that catches the problem reliably, and it takes less time than the simulation does. A reader who cannot see the feature will usually not say so, assuming they are missing something obvious, so the question has to be asked directly. The people who need to read the figure are the test of whether it works.</span></details></li>
       </ol>
     </div>
   </section>
@@ -524,7 +524,7 @@
       information has been scaled.</p>
 
     <p>A simulation of this kind reproduces which color pairs become confusable. It does not reproduce what
-      a person with the condition actually experiences, which is a lifetime of a different mapping and not
+      a person with the condition experiences, which is a lifetime of a different mapping and not
       a degraded version of someone else's. The purpose here is to find displays that withhold
       information, and for that the simulation is the right instrument.</p>
 
@@ -597,16 +597,14 @@
 const GUIDE = {
   p1: { items: [
       { do: "Put envelope in the rainbow with deutan at 100% and compare the two panels at the channel axis.", see: "The green-to-red part of the range flattens, and that is the part holding the anomaly." },
-      { do: "Bring the severity up from zero slowly.", see: "There is no threshold. It degrades continuously, which is what the anomalous forms actually are." }
+      { do: "Bring the severity up from zero slowly.", see: "There is no threshold. It degrades continuously, which is how the anomalous forms behave." }
   ]},
   p2: { items: [
       { do: "Switch between deutan and tritan and watch the ordering of the chart change.", see: "A map safe under one form is not automatically safe under another." },
       { do: "Click the bar for viridis and read the numbers.", see: "0.27 on the smallest surviving step, 72% of the color kept. Safe in the sense that matters, not unaffected." }
   ]},
   p3: { items: [
-      { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." },
-      { do: "Press Section and compare the two panels again on amplitude.",
-        see: "The reflections survive any simulation when the colormap is diverging with a light center, because the two arms differ in lightness as well as hue." }
+      { do: "Set mean curvature and compare red-white-blue with red-yellow-green under deutan.", see: "Red-white-blue holds because one arm is blue; red-yellow-green collapses because both arms are the difference deutan removes." }
   ]},
   p4: { items: [
       { do: "Put the display in the rainbow, the annotation hue on red and its lightness at 50, and follow the channel margin.", see: "The pick disappears wherever it crosses a similar color, and over much more of the image under simulation." },

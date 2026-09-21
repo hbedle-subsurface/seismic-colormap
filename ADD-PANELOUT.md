@@ -97,3 +97,26 @@ forward events between the two.
 **Does not:** fetch anything, send anything, store anything, or set a cookie. It
 works from a `file://` copy with no network, which is the case that matters when
 a student is working from a downloaded folder.
+
+## Side-by-side layout (optional)
+
+By default the second window is narrow and stacks the panel into one column:
+whatever is in the left column goes above the controls. That suits a panel
+whose left column is a small thumbnail. It does not suit one whose left column
+holds full-size displays, because the controls end up a long scroll below them
+and the window is no easier to use than the page.
+
+Add one attribute to opt in:
+
+```html
+<div class="labhead" data-po-layout="side">
+```
+
+The window then opens at 1240 × 880 and keeps the page's own two columns,
+displays on the left and controls on the right, with the controls column held
+in place while the displays scroll. If the window is dragged narrower than
+900 px it falls back to one column.
+
+Without the attribute nothing changes, so this version of `panelout.js` can be
+copied into every repository and each keeps its current behavior until it opts
+in. The colormap modules opt in on every page.

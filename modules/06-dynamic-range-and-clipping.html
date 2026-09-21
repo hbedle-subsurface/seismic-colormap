@@ -27,12 +27,12 @@
     <h1>Dynamic range and clipping</h1>
     <p class="sub">Every module so far has held the value range fixed so that only the colormap was in
       question. It is released here. Which two numbers the ends of the color bar are set to decides how
-      much of the colormap any part of the data actually reaches, and that choice changes a display at
+      much of the colormap any part of the data reaches, and that choice changes a display at
       least as much as the choice of colors does.</p>
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The display and its histogram <span>&mdash; panels update as you drag</span></p>
@@ -178,9 +178,8 @@
       gets 6 levels, and at a 5&ndash;95% clip it gets 50. The fault traces are what hold its range open,
       and they are a tiny fraction of the survey.</p>
 
-    <p>That trade is the whole of this module. Clipping discards distinctions above the limit; it buys
-      distinctions below it. Neither direction is free and there is no setting that avoids the choice,
-      including the default.</p>
+    <p>Clipping removes the distinctions above the limit and spreads more of the colormap over the values
+      below it. Every setting makes that choice one way or the other, including the default.</p>
 
     <div class="legend">
       <span>An automatic range set from the data's own minimum and maximum is not a neutral choice. It is
@@ -248,14 +247,14 @@
       is how many color levels each part of it receives.</p>
 
     <p><b>A logarithmic stretch</b> is the appropriate choice when an attribute spans orders of magnitude.
-      Energy and envelope often do. A linear display of such an attribute spends most of its colors on the
+      Energy and envelope often do. A linear display of such an attribute puts most of its colors into the
       top decade and renders everything below it in a narrow band, which is not a defect of the colormap.</p>
 
     <p>Two cautions come with any stretch, and both follow from module 03.</p>
 
     <p>A stretch undoes perceptual uniformity. A colormap that was evenly spaced in the data is no longer
       evenly spaced once a gamma has been applied, and the strength of the stretch sets how badly. The
-      color bar remains correctly labelled, and its labels are no longer evenly spaced along it, which is
+      color bar remains correctly labeled, and its labels are no longer evenly spaced along it, which is
       the visible symptom.</p>
 
     <p>A stretch also moves any false boundary the colormap contains, in the same way that changing the
@@ -265,7 +264,7 @@
     <div class="legend">
       <span>Strong gamma settings are worth treating as a signal rather than a solution. An attribute that
       needs a gamma of 2.5 before its features appear is usually an attribute that would be better computed
-      differently, better clipped, or displayed as a logarithm of itself with the color bar labelled that
+      differently, better clipped, or displayed as a logarithm of itself with the color bar labeled that
       way and the fact stated.</span>
     </div>
   </section>
@@ -292,10 +291,10 @@
     <p>Which is right depends entirely on the question.</p>
 
     <ul>
-      <li><b>Following structure</b> &mdash; a hard clip is genuinely better. Continuity is a question about
+      <li><b>Following structure.</b> A hard clip is better. Continuity is a question about
         where reflectors are, not how strong they are, and clipping removes an irrelevant variable.</li>
-      <li><b>Anything about amplitude</b> &mdash; bright spots, dimming over a channel, tuning effects,
-        amplitude against offset &mdash; a hard clip destroys the measurement. The channel sand in this
+      <li><b>Anything about amplitude.</b> For bright spots, dimming over a channel, tuning effects or
+        amplitude against offset, a hard clip destroys the measurement. The channel sand in this
         model has a strong top reflection whose strength varies with the bed thickness, and at one times
         the root mean square that variation is entirely gone.</li>
     </ul>
@@ -338,11 +337,11 @@
     <div class="tryit" style="max-width:none">
       <h3>Exercises</h3>
       <ol>
-        <li><b>Buy colors with clipping.</b> With envelope on the full range, note how many colors reach
+        <li><b>Clip, and count the colors.</b> With envelope on the full range, note how many colors reach
           the middle half of the data. Set the 2&ndash;98% preset and note it again, then repeat the whole
           exercise with mean curvature.
           <details class="reveal"><summary>Hint</summary><span class="ans">Envelope goes from 15 levels to
-            21 for a cost of four per cent of the survey. Mean curvature goes from 6 to 21, and to 50 at a
+            21, with four per cent of the survey clipped. Mean curvature goes from 6 to 21, and to 50 at a
             5&ndash;95% clip, because its range is held open by the fault traces, which are a very small
             part of the survey and are already unmistakable. What is given up in both cases is the ability
             to distinguish values inside the clipped tails.</span></details></li>
@@ -367,9 +366,8 @@
           and move the gamma to 2.5, watching the tick labels along the color bar.
           <details class="reveal"><summary>Hint</summary><span class="ans">The labels bunch up at one end.
             The colormap is still perceptually uniform in its own terms, but it is no longer evenly spaced
-            in the data, which is what module 03 was measuring. A stretch trades the uniformity for
-            emphasis on one part of the range, and that is a reasonable trade as long as it is
-            deliberate.</span></details></li>
+            in the data, which is what module 03 was measuring. A stretch gives up the uniformity to emphasize one part of the range, which is reasonable as long
+            as it is deliberate.</span></details></li>
 
         <li><b>Gain a section two ways.</b> On step 4, set the clip level to 6 and then to 1, and watch the
           top of the channel sand where the bed is thickest.
@@ -381,7 +379,7 @@
 
         <li><b>Move a boundary with the stretch.</b> Put the colormap on the rainbow with envelope
           displayed, find a band edge on the flank of the channel, then change the gamma.
-          <details class="reveal"><summary>Hint</summary><span class="ans">The edge slides, exactly as it
+          <details class="reveal"><summary>Hint</summary><span class="ans">The edge slides, as it
             did when the range was changed in module 03. The test works on any change to the mapping
             between data and color: what stays put belongs to the data and what moves belongs to the
             display.</span></details></li>
@@ -395,9 +393,9 @@
   <!-- ============================== KEY POINTS ============================ -->
   <section class="tabpane" id="pk" role="tabpanel" hidden>
     <ul>
-      <li>The value range decides how much of the colormap each part of the data reaches. Clipping discards
-        distinctions outside the limits and buys distinctions inside them, and there is no setting that
-        avoids the trade.</li>
+      <li>The value range decides how much of the colormap each part of the data reaches. Clipping removes
+        distinctions outside the limits and spreads more of the colormap over the values inside them, and
+        every setting, including the default, makes that choice.</li>
       <li>A range set from the data's own minimum and maximum gives the most extreme samples the most
         influence. A handful of bad samples can take over a display entirely.</li>
       <li>Percentile clips make no assumption about the shape of the distribution. Standard-deviation clips
@@ -492,7 +490,7 @@ const GUIDE = {
   ]},
   p2: { items: [
       { do: "Set the range to Everything and raise the bad samples to 8.", see: "One sample in eight hundred takes the display over: the middle half of the data falls to 2 levels." },
-      { do: "Press 2\u201398%.", see: "Back to 21, exactly where it was before the bad samples existed." },
+      { do: "Press 2\u201398%.", see: "Back to 21, where it was before the bad samples existed." },
       { do: "Put the attribute on sweetness and compare \u00b12 s.d. against 2\u201398%.", see: "The standard deviation limit falls below zero, because sweetness is skewed." }
   ]},
   p3: { items: [

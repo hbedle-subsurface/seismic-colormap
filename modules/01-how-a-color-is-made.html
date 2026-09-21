@@ -33,7 +33,7 @@
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The color <span>&mdash; and the display it produces</span></p>
@@ -181,7 +181,7 @@
       <li>One channel at full and the other two at zero. A saturated primary. The ramp still runs from
         black, so lightness still increases, but it reaches a lower maximum: pure blue is a much darker
         color than pure yellow, and the map correspondingly has less range to work with.</li>
-      <li>Two channels at full. A secondary color &mdash; yellow, cyan or magenta. These are the lightest
+      <li>Two channels at full. A secondary color: yellow, cyan or magenta. These are the lightest
         colors available short of white, which is why they sit at the bright end of so many colormaps.</li>
     </ul>
 
@@ -215,9 +215,9 @@
     <p><b>There is a limit to how much ink the paper will take.</b> The
       <span class="term" data-term="ink-limit">ink coverage limit</span> slider sets it, and the total for
       the current color is in the readout. Lowering it below what a color asks for has two stages. First
-      the separation shifts more of the neutral into black, which costs nothing: the color printed is the
-      same. When black can carry no more &mdash; which is the case for saturated colors, where the three
-      colored inks have little neutral in common &mdash; the colored inks are scaled back instead, and the
+      the separation shifts more of the neutral into black, and the color printed stays the
+      same. When black can carry no more, which is the case for saturated colors whose three
+      colored inks have little neutral in common, the colored inks are scaled back instead, and the
       color changes. The strip in the panel shows the ramp twice: as the screen renders it above, and as
       the press would lay it down below.</p>
 
@@ -226,12 +226,12 @@
       and grays hold, because black ink can absorb the whole reduction. Saturated blues, greens and reds
       give way: they lighten and lose saturation, and the stretch of the ramp they occupy stops separating.
       That is the usual reason a figure legible on a monitor is not legible in print, and it falls hardest
-      on exactly the saturated colors the rainbow maps are built from.</span>
+      on the saturated colors the rainbow maps are built from.</span>
     </div>
 
     <p>The model here is the textbook one and is deliberately simple: real inks do not absorb exactly one
-      band each, real paper is not perfectly white, and the set of colors a press can reach &mdash; its
-      <span class="term" data-term="gamut">gamut</span> &mdash; is smaller than the model suggests,
+      band each, real paper is not perfectly white, and the set of colors a press can reach, its
+      <span class="term" data-term="gamut">gamut</span>, is smaller than the model suggests,
       particularly for saturated blues and greens. The direction of every effect shown here is right; the
       magnitudes depend on the press.</p>
   </section>
@@ -373,7 +373,7 @@
         <li><b>Compare the sixteen-step rainbow with the smooth one.</b> On step 3, look at the channel
           curves of both.
           <details class="reveal"><summary>Hint</summary><span class="ans">The staircase makes explicit
-            what the smooth rainbow does more quietly. Each tread is a range of data values rendered in
+            what the smooth rainbow does less visibly. Each tread is a range of data values rendered in
             one identical color, and each riser is a step change at a value fixed by the table rather than
             by the data. The smooth rainbow has the same structure with the treads and risers rounded off,
             which is why contouring appears in rainbow displays of smoothly varying
@@ -410,7 +410,7 @@
     <p>The ramp is built in linear light rather than in the stored sRGB values, so that a point halfway
       along it carries half the light rather than half the encoded number. Lightness is CIE L* under D65.
       Holding lightness constant scales each entry in linear light, by bisection, until its L* matches the
-      target, and clamps where the result leaves the displayable range &mdash; which is why a strongly
+      target, and clamps where the result leaves the displayable range, which is why a strongly
       saturated color cannot be held at a lightness far from its own.</p>
 
     <p>The print simulation treats absorption in each band as the colored ink plus the black, so a color
@@ -422,8 +422,8 @@
     <p>Two consequences of the simplification are worth stating. Coverage in this model tops out near 200%,
       whereas presses usually quote a limit between about 240% and 340%, because real separations carry
       more ink than neutrality alone requires, for density and for trapping. And real inks are not
-      perfectly selective, real paper is not perfectly white, and the set of colors a press can reach
-      &mdash; its <span class="term" data-term="gamut">gamut</span> &mdash; is smaller than this model
+      perfectly selective, real paper is not perfectly white, and the set of colors a press can reach, its
+      <span class="term" data-term="gamut">gamut</span>, is smaller than this model
       suggests, particularly for saturated blues and greens. The numbers on the slider are therefore on the
       idealized scale rather than a press's own. Which colors give way first, and in what order, is not
       affected.</p>
@@ -441,9 +441,9 @@
 
     <p>Two fields in each colormap's record are claims about provenance rather than measurements: whether
       the map was designed for perceptual uniformity, and whether it was designed for color vision
-      accessibility. The rest &mdash; the L* range it covers, whether its lightness runs one way from end
+      accessibility. The rest (the L* range it covers, whether its lightness runs one way from end
       to end, the spread of its local color difference, and the worst of that spread under simulated color
-      vision deficiency &mdash; are computed from the table itself and can be checked in module 03.</p>
+      vision deficiency) are computed from the table itself and can be checked in module 03.</p>
 
     <h3>References</h3>
     <ul>
@@ -704,7 +704,7 @@ const GUIDE = {
     });
   }
 
-  /* One or two strips, drawn by hand so they can be labelled. */
+  /* One or two strips, drawn by hand so they can be labeled. */
   function drawStrip() {
     const cv = $('cStrip');
     const w = Math.max(240, cv.parentNode.clientWidth || 0);

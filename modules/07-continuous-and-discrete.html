@@ -27,13 +27,13 @@
     <h1>Continuous and discrete color</h1>
     <p class="sub">Module 03 treated banding as a fault, because the bands came from a colormap that
       nobody chose to put there. Bands deliberately placed at known values are a different object. They
-      turn a display that can only be compared into one that can be read, at the price of everything
-      inside each band. This module is about when that trade is worth making, and about the output that
-      has no continuous values to begin with.</p>
+      turn a display that can only be compared into one that can be read, and they discard everything
+      inside each band. Stepped color suits some questions and not others, and some output has no
+      continuous values to begin with.</p>
   </div>
 
   <!-- ===================== the panel that drives everything ================ -->
-  <div class="labhead">
+  <div class="labhead" data-po-layout="side">
     <div class="labgrid">
       <div>
         <p class="cap">The display <span>&mdash; panels update as you drag</span></p>
@@ -158,12 +158,12 @@
       higher than another, and close to impossible to say by how much, or to read a value off it and get
       the same answer as a colleague.</p>
 
-    <p>A stepped display trades that around. Each color names a range of values rather than a value, and
+    <p>A stepped display reverses that. Each color names a range of values rather than a value, and
       that name is stated on the color bar, so two readers examining the same feature will place it in the
       same bin. Nothing inside the bin can be recovered, and nothing inside the bin has to be argued
       about.</p>
 
-    <p>Three situations where the trade is usually worth making.</p>
+    <p>Three situations where a stepped display usually serves better.</p>
 
     <p><b>A threshold that means something.</b> <span class="term" data-term="coherence">Coherence</span> below some value is where an interpreter starts
       picking faults. Setting the levels so that a bin edge falls at that value makes the display show
@@ -172,7 +172,7 @@
 
     <p><b>Reading numbers off a map.</b> A thickness map that will be used to estimate a volume, or a
       time-structure map that will be used to pick a contour, is being read rather than compared. Steps at
-      stated intervals are the map-making convention for exactly this reason, and a contoured map is the
+      stated intervals are the map-making convention for this reason, and a contoured map is the
       limiting case of a stepped one.</p>
 
     <p><b>Counting.</b> Three or four bands can be counted across an image and their widths compared; a
@@ -198,7 +198,7 @@
     <p><b>Equal value</b> divides the range into bins of the same width. It is the option almost every
       piece of software offers first, and it is right when the bin edges are supposed to be round numbers
       the reader can use. It has a specific failure: on a lopsided attribute nearly all the samples land in
-      one or two bins and the other colors are spent on data that barely exists. The readout gives the
+      one or two bins and the other colors go to data that barely exists. The readout gives the
       share of the survey in the largest and smallest bins, and at eight equal-value levels the numbers on
       this model are stark. Envelope puts 68% of the survey in one bin and 0.6% in the emptiest. Sweetness
       puts 74% in one bin. Coherence puts 88% in one bin and 0.04% in the emptiest, which is to say that
@@ -209,10 +209,10 @@
       range, which is why contour intervals of equal value have been the convention for structure maps for
       as long as there have been structure maps.</p>
 
-    <p><b>Equal population</b> divides the survey so that each bin holds the same number of samples, which is the same idea as the <span class="term" data-term="percentile-clip">percentile clip</span> of module 06 applied inside the range rather than at its ends. Every
-      color then does the same amount of work, and the display separates the bulk of the data rather than
-      the tails. Its cost is that the bin edges are no longer round numbers and no longer evenly spaced, so
-      the color bar must be labelled with the actual values or it will be misread. A reader who assumes
+    <p><b>Equal population</b> divides the survey so that each bin holds the same number of samples, which is the same idea as the <span class="term" data-term="percentile-clip">percentile clip</span> of module 06, applied inside the range instead of at its ends. Every
+      color then does the same amount of work, and the display separates the bulk of the data, not the
+      tails. The bin edges are then no longer round numbers and no longer evenly spaced, so
+      the color bar must be labeled with the actual values or it will be misread. A reader who assumes
       the bins are evenly spaced will conclude that the attribute varies more smoothly than it does.</p>
 
     <p>The choice follows from what the display is for. Equal value keeps the arithmetic honest and is
@@ -227,7 +227,7 @@
 
     <p>One combination is worth avoiding. Equal population with a diverging colormap moves the neutral
       color off the attribute's zero, for the reason set out in module 04: the middle of the display is now
-      the median of the data rather than zero, and unless the attribute happens to be symmetric those are
+      the median of the data instead of zero, and unless the attribute happens to be symmetric those are
       different values.</p>
   </section>
 
@@ -264,8 +264,8 @@
 
     <p>The categorical version makes no claim beyond difference. Its colors are chosen to be distinguishable
       from each other and to sit at similar lightness, so no class looks more important than any other.
-      That is the whole requirement, and it is why hue &mdash; which module 02 found to be poor at carrying
-      order and detail &mdash; is exactly right here.</p>
+      That is the whole requirement, and it is why hue, which module 02 found to be poor at carrying
+      order and detail, is right here.</p>
 
     <p>Two practical points follow.</p>
 
@@ -275,8 +275,8 @@
 
     <p><b>Some classification output does have an order.</b> A self-organizing map lays its classes out on a
       grid so that neighbors are similar, and a colormap that follows that grid is carrying real
-      information rather than inventing it. The distinction is whether the ordering came from the method or
-      from the display, and it has to be checked rather than assumed.</p>
+      information instead of inventing it. The distinction is whether the ordering came from the method or
+      from the display, and it has to be checked.</p>
   </section>
 
   <!-- ============================ WHY IT MATTERS ========================== -->
@@ -291,7 +291,7 @@
       exceed a cutoff: all of these are being read rather than compared, and a continuous display makes
       that reading unreliable in a way nobody notices, because a reader will always produce an answer.</p>
 
-    <p>The classification case is more serious, because it is an assertion rather than an imprecision. A
+    <p>The classification case is more serious, because it asserts something that is not in the data. A
       sequential colormap applied to facies output tells the reader that the classes are ordered. Readers
       believe it, because that is what a sequential colormap means everywhere else, and they will describe
       the result in terms of a trend that does not exist. Permuting the labels and redrawing the figure is
@@ -312,8 +312,7 @@
           distracting.
           <details class="reveal"><summary>Hint</summary><span class="ans">Visibility usually begins
             somewhere around 32 levels and the display becomes a set of bands by 16. The exact point
-            depends on the smoothness of the attribute and on the screen, and it is worth noticing that
-            this is the same threshold that decides whether a badly designed 256-level colormap looks
+            depends on the smoothness of the attribute and on the screen. It is the same threshold that decides whether a badly designed 256-level colormap looks
             banded: what matters is the size of the step in appearance, not the number of
             entries.</span></details></li>
 
@@ -330,7 +329,7 @@
           <details class="reveal"><summary>Hint</summary><span class="ans">One bin holds most of the
             survey and several hold almost none, because sweetness has a long tail toward high values.
             Switching to equal population evens them out and the display separates the bulk of the data,
-            at the cost of bin edges that are no longer round numbers and no longer evenly
+            although the bin edges are then no longer round numbers and no longer evenly
             spaced.</span></details></li>
 
         <li><b>Break a diverging map with equal population.</b> Put mean curvature in balance at eight
@@ -353,7 +352,7 @@
           <details class="reveal"><summary>Hint</summary><span class="ans">The channel and the background
             separate at three classes. The channel margin appears as its own class somewhere around five,
             and beyond six the additional classes mostly subdivide the background. The number of classes is
-            a modelling choice, and the display cannot tell the reader which of the classes are real
+            a modeling choice, and the display cannot tell the reader which of the classes are real
             distinctions.</span></details></li>
       </ol>
     </div>
@@ -369,7 +368,7 @@
         it. Most attribute interpretation wants the first, and anything with a threshold or a number
         attached wants the second.</li>
       <li>Equal-value bins keep the arithmetic simple and waste colors on a lopsided attribute.
-        Equal-population bins spend every color usefully and require the bar to be labelled with the real
+        Equal-population bins use every color and require the bar to be labeled with the real
         edges.</li>
       <li>Equal-population binning moves the neutral point of a diverging colormap off zero, for the same
         reason an asymmetric range does.</li>
@@ -388,7 +387,7 @@
       slider leaves the full 256-level table in place.</p>
 
     <p>Equal-population binning is done by replacing each value with its rank in the sorted data before
-      quantizing, so the bins hold equal counts by construction. The color bar is then labelled with the
+      quantizing, so the bins hold equal counts by construction. The color bar is then labeled with the
       actual values at the bin edges, which are recovered from the same sorted array. Displaying an
       equal-population map against evenly spaced labels would misstate the attribute, so the labels move
       instead of the colors.</p>
@@ -397,7 +396,7 @@
       to zero mean and unit standard deviation so that neither dominates through its units. Initial centers
       are placed at evenly spaced quantiles of the first attribute and the algorithm is run to convergence
       or twenty iterations, from a fixed starting point so the result does not change between visits. The
-      class labels are then in whatever order the initialisation produced, which is exactly the point being
+      class labels are then in whatever order the initialization produced, which is the point being
       made: they carry no meaning.</p>
 
     <p>This is a deliberately plain method, chosen because it is easy to state. Self-organizing maps and
@@ -459,9 +458,7 @@ const GUIDE = {
   ]},
   p2: { items: [
       { do: "Put the attribute on two-way time at 8 levels, then back to continuous.", see: "Contours against shape. Neither is a substitute for the other." },
-      { do: "Put it on coherence at 8 levels and look at where an edge falls on the fault flanks.", see: "Useful if the edge is at a value that means something, and a contour through nothing if not." },
-      { do: "With two-way time at 8 levels, switch the Map cut to Constant time and move the slider.",
-        see: "The contours vanish: a time slice of a time surface is a single value everywhere. It is a reminder that the level and the attribute are separate choices." }
+      { do: "Put it on coherence at 8 levels and look at where an edge falls on the fault flanks.", see: "Useful if the edge is at a value that means something, and a contour through nothing if not." }
   ]},
   p3: { items: [
       { do: "Put sweetness on 8 equal-value levels and read the largest and smallest bin shares. Then switch to equal population.", see: "74% in one bin and 0.4% in the emptiest, against an eighth in each." },
@@ -529,7 +526,7 @@ const GUIDE = {
     return [s[0], s[s.length - 1]];
   }
 
-  /* The attribute value at each bin edge, for labelling the bar. */
+  /* The attribute value at each bin edge, for labeling the bar. */
   function edgeValues() {
     const k = nLevels();
     const s = sorted(S.attr);
