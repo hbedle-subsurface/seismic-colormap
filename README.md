@@ -17,11 +17,6 @@ display introduced.
 Heather Bedle and April Moreno-Ward, School of Geosciences, University of
 Oklahoma, with the [AASPI](https://www.ou.edu/mcee/labs/aaspi) consortium.
 
-Built to the same house template as the other teaching repositories, so
-`assets/style.css`, `assets/count.js`, `assets/popout.js`, `assets/panelout.js`
-and `assets/seismic.js` are the shared files and go in unchanged. See
-`ADD-COUNTING.md`, `ADD-POPOUT.md`, `ADD-PANELOUT.md` and `ADD-GUIDE.md`.
-
 ## Modules
 
 | | Module | Status |
@@ -38,51 +33,6 @@ and `assets/seismic.js` are the shared files and go in unchanged. See
 | 09 | RGB and CMY blending | built |
 | 10 | Building a display | built |
 
-## Running it
-
-Static HTML, CSS and JavaScript. No build step and no dependencies. Open
-`index.html`, or serve the folder:
-
-```
-python3 -m http.server 8000
-```
-
-GitHub Pages serves it from the repository root.
-
-## Files
-
-```
-index.html
-modules/00-why-the-colormap-matters.html
-modules/01-how-a-color-is-made.html
-modules/02-hue-lightness-saturation.html
-modules/03-perceptual-uniformity.html
-modules/04-sequential-diverging-cyclic.html
-modules/05-color-vision-deficiency.html
-modules/06-dynamic-range-and-clipping.html
-modules/07-continuous-and-discrete.html
-modules/08-corendering.html
-modules/09-rgb-and-cmy-blending.html
-modules/10-building-a-display.html
-assets/style.css        shared house stylesheet
-assets/count.js         shared page-view counting
-assets/popout.js        shared exercise pop-out
-assets/panelout.js      shared control-panel pop-out
-assets/seismic.js       shared math and canvas core
-assets/cmapdata.js      colormap tables, 256 levels each
-assets/colormaps.js     lookup, application to data, L* profiles, CVD simulation
-assets/colormodel.js    the synthetic model these modules run on
-assets/cmplot.js        map, precomputed image, section, color bar and line plotting
-assets/glossary.js      term definitions, the attribute explanations, and the
-                        outbound links to the other module sets
-assets/guide.js         the per-step "try this" task list
-assets/nextmod.js       previous and next module navigation
-assets/panelview.js     map / section switch, the vertical section, the map cut
-                        level, panel collapse
-```
-
-Module code is inline at the foot of each module page, as in the other
-repositories.
 
 ## The synthetic model
 
@@ -173,8 +123,8 @@ examined rather than recommended. `bgyor`, `rainbowwc` and `legacy16` are
 reconstructions of arrangements in general use, not copies of any particular
 implementation, and no software is named anywhere in the modules.
 
-Four further legacy diverging arrangements are included because module 05 needs
-them: red-white-green, magenta-white-cyan, red-green with no neutral, and
+Four further legacy diverging arrangements are included: red-white-green, 
+magenta-white-cyan, red-green with no neutral, and
 red-black-blue. The first three collapse under red-green color vision
 deficiency where red-white-blue does not, which is the point they are there to
 make.
